@@ -1,9 +1,4 @@
 // Пакет board реализует шахматную доску.
-//
-// Функции, требующие указания клетки, будут принимать int от 0 до 63,
-// либо строку вида "a1", "c7", "e8" и т.п.
-// Соответственно, "a1" будет указывать на ту же клетку, что 0,
-// "e1" - на ту же, что 4, и т. д., вплоть до "h8" - 63.
 package board
 
 import (
@@ -19,7 +14,7 @@ type Board struct {
 	brd [64]piece // доска из 64 клеток
 	blk bool      // false - ход белых, true - чёрных
 	cas castling  // битовая маска возможных рокировок
-	ep  enPassant // клетка, которая в прошлом ходу перепрыгнута пешкой
+	ep  square    // клетка, которая в прошлом ходу перепрыгнута пешкой
 	hm  int       // полуходы без взятий и продвижения пешек
 	fm  int       // номер хода -1 (для возможности использовать пустую доску)
 }
@@ -43,7 +38,7 @@ func FromFEN(fen string) (*Board, error) {
 		return nil, er
 	}
 	if ss[2] != "-" {
-		if ok := b.SetEnPassant(square(ss[3])); !ok {
+		if ok := b.SetEnPassant(Sq(ss[3])); !ok {
 			return nil, er
 		}
 	}
@@ -109,8 +104,7 @@ func FromFEN(fen string) (*Board, error) {
 type piece int
 
 const (
-	None piece = iota
-	WhitePawn
+	WhitePawn piece = iota + 1
 	BlackPawn
 	WhiteKnight
 	BlackKnight
@@ -124,68 +118,165 @@ const (
 	BlackKing
 )
 
+// castling обозначает возможность рокировки.
 type castling byte
 
 const (
-	kingsideW castling = 1 << iota
-	queensideW
-	kingsideB
-	queensideB
+	CastlingWhiteKingside castling = 1 << iota
+	CastlingWhiteQueenside
+	CastlingBlackKingside
+	CastlingBlackQueenside
 )
-
-type enPassant int8 // может принимать значения от 0 до 63, номер клетки
 
 // Get возвращает фигуру, стоящую в заданной клетке.
 func (b *Board) Get(s square) (piece, error) {
-	i, err := s.toInt()
-	if err != nil {
-		return 0, err
+	if s == -1 {
+		return 0, fmt.Errorf("%w: %v", errSquareNotExist, s)
 	}
-	return b.brd[i], nil
+	return b.brd[s], nil
+}
+
+// Move перемещает фигуру из from в to.
+// Валидность хода не проверяется, но по итогам ход переходит к
+// другому игроку, количество полуходов и ходов обновляется,
+// обновляются данные о пешке en passant и рокировках.
+// Чтобы сделать рокировку, надо, например, сделать ход королём,
+// а ладью убрать с доски и поставить на новое место, чтобы это
+// защиталось как только один ход.
+func (b *Board) Move(from, to square) error {
+	if from < 0 {
+		return fmt.Errorf("%w: %v", errSquareNotExist, from)
+	}
+	if to < 0 {
+		return fmt.Errorf("%w: %v", errSquareNotExist, to)
+	}
+	b.ep = 0
+	if b.blk {
+		b.fm++
+	}
+	b.blk = !b.blk
+	pc := b.brd[from]
+	if pc != BlackPawn && pc != WhitePawn && b.brd[to] == 0 {
+		b.hm++
+	}
+	switch from {
+	case 0:
+		b.RemoveCastling(CastlingWhiteQueenside)
+	case 7:
+		b.RemoveCastling(CastlingWhiteKingside)
+	case 56:
+		b.RemoveCastling(CastlingBlackQueenside)
+	case 63:
+		b.RemoveCastling(CastlingBlackKingside)
+	}
+	switch pc {
+	case BlackKing:
+		b.RemoveCastling(CastlingBlackKingside)
+		b.RemoveCastling(CastlingBlackQueenside)
+	case WhiteKing:
+		b.RemoveCastling(CastlingWhiteKingside)
+		b.RemoveCastling(CastlingWhiteQueenside)
+	case BlackPawn:
+		if from >= 8*6 && from < 8*7 && to >= 8*4 && to < 8*5 {
+			b.ep = 8*5 + to%8
+		}
+	case WhitePawn:
+		if from >= 8*1 && from < 8*2 && to >= 8*3 && to < 8*4 {
+			b.ep = 8*2 + to%8
+		}
+	}
+	b.brd[from] = 0
+	b.brd[to] = pc
+	return nil
 }
 
 // Remove убирает фигуру, стоящую в заданной клетке.
 func (b *Board) Remove(s square) error {
-	i, err := s.toInt()
-	if err != nil {
-		return err
+	if s == -1 {
+		return fmt.Errorf("%w: %v", errSquareNotExist, s)
 	}
-	if b.brd[i] == 0 {
-		return fmt.Errorf("%s is empty", s)
+	if b.brd[s] == 0 {
+		return fmt.Errorf("%v is empty", s)
 	}
-	b.brd[i] = 0
+	b.brd[s] = 0
 	return nil
+}
+
+// WhiteToMove устанавливает следующих ход белых.
+func (b *Board) WhiteToMove() {
+	b.blk = false
+}
+
+// BlackToMove устанавливает следующих ход белых.
+func (b *Board) BlackToMove() {
+	b.blk = true
+}
+
+// NextToMove возвращает true, если следующий ход белых,
+// false, если следующий ход чёрных.
+func (b *Board) NextToMove() bool {
+	return !b.blk
 }
 
 // SetCastlingString устанавливает, какие рокировки доступны, по строке
 // K, Q - королевская и ферзевая ладья для белых, k, q - для чёрных
+// TODO: проверять, что в строке нет лишних символов
 func (b *Board) SetCastlingString(s string) {
 	if strings.Contains(s, "K") {
-		b.cas = b.cas | kingsideW
+		b.SetCastling(CastlingWhiteKingside)
 	}
 	if strings.Contains(s, "k") {
-		b.cas = b.cas | kingsideB
+		b.SetCastling(CastlingBlackKingside)
 	}
 	if strings.Contains(s, "Q") {
-		b.cas = b.cas | queensideW
+		b.SetCastling(CastlingWhiteQueenside)
 	}
 	if strings.Contains(s, "q") {
-		b.cas = b.cas | queensideW
+		b.SetCastling(CastlingBlackQueenside)
 	}
+}
+
+// SetCastling устанавливает доступность рокировки.
+func (b *Board) SetCastling(c castling) {
+	b.cas = b.cas | c
+}
+
+// HaveCastling проверяет доступность рокировки.
+func (b *Board) HaveCastling(c castling) bool {
+	return b.cas&c != 0
+}
+
+// RemoveCastling убирает возможность рокировки.
+func (b *Board) RemoveCastling(c castling) {
+	b.cas = b.cas &^ c
 }
 
 // SetEnPassant устанавливает клетку, перепрыгнутую пешкой в прошлом
 // полуходу. Валидность не проверяется, только горизонталь // TODO?
 func (b *Board) SetEnPassant(s square) bool {
-	i, err := s.toInt()
-	if err != nil {
+	if s/8 != 2 && s/8 != 5 {
 		return false
 	}
-	if s[1] != '3' && s[1] != '6' {
-		return false
-	}
-	b.ep = enPassant(i)
+	b.ep = s
 	return true
+}
+
+// GetEnPassant возвращает клетку, перепрыгнутую пешкой в прошлом ходу,
+// -1 если такой не было.
+func (b *Board) GetEnPassant() square {
+	if b.ep == 0 {
+		return -1
+	}
+	return b.ep
+}
+
+// IsEnPassant возвращает true, если заданная клетка была перепрыгнута
+// пешкой в прошлом ходу.
+func (b *Board) IsEnPassant(s square) bool {
+	if s == 0 {
+		return false
+	}
+	return s == b.ep
 }
 
 // GetMoveNumber возвращает номер хода (полного).
@@ -208,24 +299,43 @@ func (b *Board) SetHalfMoves(n int) {
 	b.hm = n
 }
 
-// square - представление клетки доски в текстовом виде (напр.: "b1", "e8")
-type square string
+// square - представление для клетки на доске.
+type square int8
 
-// IsValid возвращает true, если клетка существует.
-func (s square) IsValid() bool {
-	if len(s) != 2 {
-		return false
+var errSquareNotExist = fmt.Errorf("square does not exist")
+
+// String возвращает строковое представление клетки.
+func (s square) String() string {
+	if s < 0 || s > 63 {
+		return "-"
 	}
-	if s[0] < 'a' || s[0] > 'h' {
-		return false
-	}
-	return s[1] >= '1' || s[1] <= '8'
+	r := s / 8
+	c := s % 8
+	b := []byte{byte(c) + 'a', byte(r) + '1'}
+	return string(b)
 }
 
-// toInt возвращает номер клетки на доске.
-func (s square) toInt() (int, error) {
-	if !s.IsValid() {
-		return 0, fmt.Errorf("%s is not a valid square", s)
+// Sq возвращает номер клетки на доске, -1 в случае, если клетки
+// не существует. Принимает int от 0 до 63, либо строка вида
+// "a1", "c7", "e8" и т.п.
+// Соответственно, "a1" будет указывать на ту же клетку, что 0,
+// "e1" - на ту же, что 4, и т. д., вплоть до "h8" - 63.
+func Sq[S int | string](s S) square {
+	if ss, ok := any(s).(string); ok {
+		if len(ss) != 2 {
+			return -1
+		}
+		if ss[0] < 'a' || ss[0] > 'h' {
+			return -1
+		}
+		if ss[1] < '1' || ss[1] > '8' {
+			return -1
+		}
+		return square(int(ss[1]-'1')*8 + int(ss[0]-'a'))
 	}
-	return int(s[1]-'1')*8 + int(s[0]-'a'), nil
+	i := any(s).(int)
+	if i < 0 || i > 63 {
+		return -1
+	}
+	return square(i)
 }
