@@ -67,7 +67,9 @@ func FromFEN(fen string) (*Board, error) {
 	b.hm = hm
 	b.fm = fm
 
-	b.SetCastlingString(ss[2])
+	if err := b.SetCastlingString(ss[2]); err != nil {
+		return nil, er
+	}
 
 	ss = strings.Split(ss[0], "/")
 	if len(ss) != 8 {
@@ -75,6 +77,9 @@ func FromFEN(fen string) (*Board, error) {
 	}
 	for row := 0; row < 8; row++ {
 		c := 0
+		if len(ss[7-row]) == 0 {
+			return nil, er
+		}
 		for _, r := range ss[7-row] {
 			switch r {
 			case 'K':
@@ -109,6 +114,9 @@ func FromFEN(fen string) (*Board, error) {
 				c += v - 1
 			}
 			c++
+		}
+		if c != 8 {
+			return nil, er
 		}
 	}
 	return b, nil
@@ -273,25 +281,57 @@ func (b *Board) NextToMove() bool {
 }
 
 // SetCastlingString устанавливает, какие рокировки доступны, по строке
-// K, Q - королевская и ферзевая ладья для белых, k, q - для чёрных
-// TODO: проверять, что в строке нет лишних символов
-func (b *Board) SetCastlingString(s string) {
-	if strings.Contains(s, "K") {
-		b.SetCastling(CastlingWhiteKingside)
+// K, Q - королевская и ферзевая ладья для белых, k, q - для чёрных,
+// "-" - рокировки недоступны.
+func (b *Board) SetCastlingString(s string) error {
+	err := fmt.Errorf("malformed castling string")
+	have := b.cas
+	b.cas = 0
+	if s == "" {
+		return err
 	}
-	if strings.Contains(s, "k") {
-		b.SetCastling(CastlingBlackKingside)
+	if s == "-" {
+		return nil
 	}
-	if strings.Contains(s, "Q") {
-		b.SetCastling(CastlingWhiteQueenside)
+	for _, c := range s {
+		switch c {
+		case 'K':
+			if b.HaveCastling(CastlingWhiteKingside) {
+				b.cas = have
+				return err
+			}
+			b.SetCastling(CastlingWhiteKingside)
+		case 'k':
+			if b.HaveCastling(CastlingBlackKingside) {
+				b.cas = have
+				return err
+			}
+			b.SetCastling(CastlingBlackKingside)
+		case 'Q':
+			if b.HaveCastling(CastlingWhiteQueenside) {
+				b.cas = have
+				return err
+			}
+			b.SetCastling(CastlingWhiteQueenside)
+		case 'q':
+			if b.HaveCastling(CastlingBlackQueenside) {
+				b.cas = have
+				return err
+			}
+			b.SetCastling(CastlingBlackQueenside)
+		default:
+			b.cas = have
+			return err
+		}
 	}
-	if strings.Contains(s, "q") {
-		b.SetCastling(CastlingBlackQueenside)
-	}
+	return nil
 }
 
 // CastlingString возвращает строку с перечислением возможных рокировок.
 func (b *Board) CastlingString() string {
+	if b.cas == 0 {
+		return "-"
+	}
 	sb := strings.Builder{}
 	if b.HaveCastling(CastlingWhiteKingside) {
 		sb.WriteByte('K')

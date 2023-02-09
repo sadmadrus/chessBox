@@ -22,14 +22,17 @@ import (
 
 func TestPackage(t *testing.T) {
 	b := board.Classical()
-	b.Move(board.Sq("e2"), board.Sq("e4"))
+	err := b.Move(board.Sq("e2"), board.Sq("e4"))
+	if err != nil {
+		t.Fatal(err)
+	}
 	if b.Equals(board.Classical()) {
 		t.Fatal("can not be equal")
 	}
 	if !b.IsEnPassant(board.Sq("e3")) {
 		t.Fatal("want e3 to be en passant")
 	}
-	b.Move(board.Sq("c7"), board.Sq("c5"))
+	_ = b.Move(board.Sq("c7"), board.Sq("c5"))
 	if b.IsEnPassant(board.Sq("e3")) {
 		t.Fatal("en passant should have changed")
 	}
@@ -45,7 +48,7 @@ func TestPackage(t *testing.T) {
 	if e != "c6" {
 		t.Fatalf("want c6, got %s", e)
 	}
-	b.Move(board.Sq(6), board.Sq("f3"))
+	_ = b.Move(board.Sq(6), board.Sq("f3"))
 	want := "rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2"
 	got := b.FEN()
 	if got != want {
@@ -96,4 +99,64 @@ func TestFromFENErrors(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCastlingString(t *testing.T) {
+	tests := map[string]struct {
+		str string
+		err bool
+	}{
+		"KQkq":  {"KQkq", false},
+		"Qk":    {"Qk", false},
+		"extra": {"KKQQkkqq", true},
+		"empty": {"-", false},
+		"nil":   {"", true},
+		"error": {"42", true},
+	}
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			var b board.Board
+			err := b.SetCastlingString(tc.str)
+			if err != nil && !tc.err {
+				t.Fatal(err)
+			}
+			if tc.err && err == nil {
+				t.Fatalf("want error, have none")
+			}
+			if err == nil {
+				got := b.CastlingString()
+				if got != tc.str {
+					t.Fatalf("want %s, got %s", tc.str, got)
+				}
+			}
+		})
+	}
+}
+
+func FuzzFEN(f *testing.F) {
+	tests := []string{
+		"rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w c6 0 2",
+		"rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQkq c6 0 2",
+		"rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2",
+		"rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQkq c6 0 two",
+	}
+	for _, tc := range tests {
+		f.Add(tc)
+	}
+	f.Fuzz(func(t *testing.T, fen string) {
+		b, err := board.FromFEN(fen)
+		if b == nil && err == nil {
+			t.Fatal("nil Board and no error")
+		}
+		if err != nil {
+			if b != nil {
+				t.Fatal("have error but Board not nil")
+			}
+			return
+		}
+		got := b.FEN()
+		if got != fen {
+			t.Errorf("input:  %s\noutput: %s", fen, got)
+		}
+	})
 }
