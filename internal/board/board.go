@@ -412,6 +412,23 @@ func (b *Board) FEN() string {
 	return sb.String()
 }
 
+// Equals указывает, одинаковая ли позиция на досках, с точностью до хода.
+func (b *Board) Equals(that *Board) bool {
+	return b.SamePosition(that) && b.hm == that.hm && b.fm == that.fm
+}
+
+// SamePosition возвращает true, если на обеих досках одинаковые позиции
+// и очерёдность хода (номер хода может не совпадать - например, позиция
+// возникла в той же партии повторно).
+func (b *Board) SamePosition(that *Board) bool {
+	for i := range b.brd {
+		if b.brd[i] != that.brd[i] {
+			return false
+		}
+	}
+	return b.blk == that.blk && b.ep == that.ep && b.cas == that.cas
+}
+
 // square - представление для клетки на доске.
 type square int8
 
