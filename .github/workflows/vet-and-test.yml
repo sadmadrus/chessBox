@@ -1,7 +1,7 @@
 name: vet&test
 on: [push, pull_request]
 jobs:
-  pre_release:
+  check_correctness:
     runs-on: ubuntu-latest
     env:
       GOPROXY: direct
