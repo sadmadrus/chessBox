@@ -225,11 +225,11 @@ func (b *Board) Move(from, to square) error {
 		b.RemoveCastling(CastlingWhiteQueenside)
 	case BlackPawn:
 		if from >= 8*6 && from < 8*7 && to >= 8*4 && to < 8*5 {
-			b.ep = 8*5 + to%8
+			b.ep = from - 8
 		}
 	case WhitePawn:
 		if from >= 8*1 && from < 8*2 && to >= 8*3 && to < 8*4 {
-			b.ep = 8*2 + to%8
+			b.ep = from + 8
 		}
 	}
 	b.brd[from] = 0
@@ -338,7 +338,7 @@ func (b *Board) GetEnPassant() square {
 // IsEnPassant возвращает true, если заданная клетка была перепрыгнута
 // пешкой в прошлом ходу.
 func (b *Board) IsEnPassant(s square) bool {
-	if s == 0 {
+	if s == 0 { // эта проверка нужна, потому что Board{} — валидная доска
 		return false
 	}
 	return s == b.ep
@@ -375,6 +375,12 @@ func (b *Board) FEN() string {
 			sb.WriteByte('/')
 		}
 	}
+
+	// strings.Replacer:
+	// "--------" -> "8"
+	// "-------" -> "7"
+	// ...
+	// "-" -> "1"
 	rr := make([]string, 16)
 	for i := 8; i > 0; i-- {
 		rr[(8-i)*2] = strings.Repeat("-", i)
