@@ -37,7 +37,7 @@ func FromFEN(fen string) (*Board, error) {
 	default:
 		return nil, er
 	}
-	if ss[2] != "-" {
+	if ss[3] != "-" {
 		if ok := b.SetEnPassant(Sq(ss[3])); !ok {
 			return nil, er
 		}
@@ -240,7 +240,7 @@ func (b *Board) WhiteToMove() {
 	b.blk = false
 }
 
-// BlackToMove устанавливает следующих ход белых.
+// BlackToMove устанавливает следующих ход чёрных.
 func (b *Board) BlackToMove() {
 	b.blk = true
 }
