@@ -118,6 +118,39 @@ const (
 	BlackKing
 )
 
+// String возвращает строковое значение для фигуры, заглавные
+// для белых и строчные для чёрных.
+func (p piece) String() string {
+	switch p {
+	case WhitePawn:
+		return "P"
+	case BlackPawn:
+		return "p"
+	case WhiteKnight:
+		return "N"
+	case BlackKnight:
+		return "n"
+	case WhiteBishop:
+		return "B"
+	case BlackBishop:
+		return "b"
+	case WhiteRook:
+		return "R"
+	case BlackRook:
+		return "r"
+	case WhiteQueen:
+		return "Q"
+	case BlackQueen:
+		return "q"
+	case WhiteKing:
+		return "K"
+	case BlackKing:
+		return "k"
+	default:
+		return "-"
+	}
+}
+
 // castling обозначает возможность рокировки.
 type castling byte
 
@@ -236,6 +269,24 @@ func (b *Board) SetCastlingString(s string) {
 	}
 }
 
+// CastlingString возвращает строку с перечислением возможных рокировок.
+func (b *Board) CastlingString() string {
+	sb := strings.Builder{}
+	if b.HaveCastling(CastlingWhiteKingside) {
+		sb.WriteByte('K')
+	}
+	if b.HaveCastling(CastlingWhiteQueenside) {
+		sb.WriteByte('Q')
+	}
+	if b.HaveCastling(CastlingBlackKingside) {
+		sb.WriteByte('k')
+	}
+	if b.HaveCastling(CastlingBlackQueenside) {
+		sb.WriteByte('q')
+	}
+	return sb.String()
+}
+
 // SetCastling устанавливает доступность рокировки.
 func (b *Board) SetCastling(c castling) {
 	b.cas = b.cas | c
@@ -297,6 +348,41 @@ func (b *Board) HalfMoves() int {
 // SetHalfMoves устанавливает количество полуходов без взятия фигур и движения пешек.
 func (b *Board) SetHalfMoves(n int) {
 	b.hm = n
+}
+
+// FEN возвращает FEN-нотацию доски.
+func (b *Board) FEN() string {
+	sb := strings.Builder{}
+	for row := 7; row >= 0; row-- {
+		for col := 0; col < 8; col++ {
+			sb.WriteString(b.brd[8*row+col].String())
+		}
+		if row != 0 {
+			sb.WriteByte('/')
+		}
+	}
+	rr := make([]string, 16)
+	for i := 8; i > 0; i-- {
+		rr[(8-i)*2] = strings.Repeat("-", i)
+		rr[(8-i)*2+1] = strconv.Itoa(i)
+	}
+	r := strings.NewReplacer(rr...)
+	s := r.Replace(sb.String())
+	sb.Reset()
+	sb.WriteString(s)
+	if b.blk {
+		sb.WriteString(" b ")
+	} else {
+		sb.WriteString(" w ")
+	}
+	sb.WriteString(b.CastlingString())
+	sb.WriteRune(' ')
+	sb.WriteString(b.GetEnPassant().String())
+	sb.WriteRune(' ')
+	sb.WriteString(strconv.Itoa(b.hm))
+	sb.WriteRune(' ')
+	sb.WriteString(strconv.Itoa(b.fm))
+	return sb.String()
 }
 
 // square - представление для клетки на доске.
