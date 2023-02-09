@@ -114,6 +114,13 @@ func FromFEN(fen string) (*Board, error) {
 	return b, nil
 }
 
+// Classical возвращает доску, готовую к игре в классический
+// вариант шахмат.
+func Classical() *Board {
+	b, _ := FromFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+	return b
+}
+
 // piece обозначает фигуру в клетке доски.
 type piece int
 
