@@ -87,8 +87,12 @@ func TestFromFENErrors(t *testing.T) {
 	}
 	for name, fen := range tests {
 		t.Run(name, func(t *testing.T) {
-			if _, err := board.FromFEN(fen); err == nil {
+			b, err := board.FromFEN(fen)
+			if err == nil {
 				t.Fatal("no error")
+			}
+			if b != nil {
+				t.Fatal("board not nil")
 			}
 		})
 	}
