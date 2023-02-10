@@ -56,12 +56,12 @@ func FromFEN(fen string) (*Board, error) {
 			return nil, er
 		}
 	}
-	hm, err := strconv.Atoi(ss[4])
-	if err != nil {
+	hm, _ := strconv.Atoi(ss[4])
+	if ss[4] != strconv.Itoa(hm) {
 		return nil, er
 	}
-	fm, err := strconv.Atoi(ss[5])
-	if err != nil {
+	fm, _ := strconv.Atoi(ss[5])
+	if ss[5] != strconv.Itoa(fm) {
 		return nil, er
 	}
 	b.hm = hm
@@ -80,7 +80,11 @@ func FromFEN(fen string) (*Board, error) {
 		if len(ss[7-row]) == 0 {
 			return nil, er
 		}
+		digit := false
 		for _, r := range ss[7-row] {
+			if c > 7 {
+				return nil, er
+			}
 			switch r {
 			case 'K':
 				b.brd[row*8+c] = WhiteKing
@@ -107,13 +111,20 @@ func FromFEN(fen string) (*Board, error) {
 			case 'p':
 				b.brd[row*8+c] = BlackPawn
 			default:
+				if digit {
+					return nil, er
+				}
 				v := int(r - '0')
 				if v < 1 || v > 8 {
 					return nil, er
 				}
 				c += v - 1
+				digit = true
 			}
 			c++
+			if r > '8' {
+				digit = false
+			}
 		}
 		if c != 8 {
 			return nil, er
@@ -288,41 +299,27 @@ func (b *Board) SetCastlingString(s string) error {
 	have := b.cas
 	b.cas = 0
 	if s == "" {
+		b.cas = have
 		return err
 	}
 	if s == "-" {
 		return nil
 	}
-	for _, c := range s {
-		switch c {
-		case 'K':
-			if b.HaveCastling(CastlingWhiteKingside) {
-				b.cas = have
-				return err
-			}
-			b.SetCastling(CastlingWhiteKingside)
-		case 'k':
-			if b.HaveCastling(CastlingBlackKingside) {
-				b.cas = have
-				return err
-			}
-			b.SetCastling(CastlingBlackKingside)
-		case 'Q':
-			if b.HaveCastling(CastlingWhiteQueenside) {
-				b.cas = have
-				return err
-			}
-			b.SetCastling(CastlingWhiteQueenside)
-		case 'q':
-			if b.HaveCastling(CastlingBlackQueenside) {
-				b.cas = have
-				return err
-			}
-			b.SetCastling(CastlingBlackQueenside)
-		default:
-			b.cas = have
-			return err
-		}
+	if strings.Contains(s, "K") {
+		b.SetCastling(CastlingWhiteKingside)
+	}
+	if strings.Contains(s, "k") {
+		b.SetCastling(CastlingBlackKingside)
+	}
+	if strings.Contains(s, "Q") {
+		b.SetCastling(CastlingWhiteQueenside)
+	}
+	if strings.Contains(s, "q") {
+		b.SetCastling(CastlingBlackQueenside)
+	}
+	if s != b.CastlingString() {
+		b.cas = have
+		return err
 	}
 	return nil
 }

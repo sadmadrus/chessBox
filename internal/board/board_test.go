@@ -156,7 +156,7 @@ func FuzzFEN(f *testing.F) {
 		}
 		got := b.FEN()
 		if got != fen {
-			t.Errorf("input:  %s\noutput: %s", fen, got)
+			t.Errorf("input: %s\noutput: %s", fen, got)
 		}
 	})
 }
