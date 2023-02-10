@@ -138,7 +138,7 @@ func FromFEN(fen string) (*Board, error) {
 // FromUsFEN возвращает доску из UsFEN-нотации. Валидность позиции не
 // проверяется.
 func FromUsFEN(s string) (*Board, error) {
-	return FromFEN(usfen.UsfenToFen(s))
+	return FromFEN(usfen.ToFen(s))
 }
 
 // Classical возвращает доску, готовую к игре в классический
@@ -459,7 +459,7 @@ func (b *Board) FEN() string {
 
 // UsFEN возвращает UsFEN-нотацию доски.
 func (b *Board) UsFEN() string {
-	return usfen.FenToUsfen(b.FEN())
+	return usfen.FromFen(b.FEN())
 }
 
 // Equals указывает, одинаковая ли позиция на досках, с точностью до хода.

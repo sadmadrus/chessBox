@@ -12,12 +12,12 @@ const (
 )
 
 func TestFenToUsfen(t *testing.T) {
-	got := usfen.FenToUsfen(classicFen)
+	got := usfen.FromFen(classicFen)
 	assert(t, classicUsfen, got)
 }
 
 func TestUsfenToFen(t *testing.T) {
-	assert(t, classicFen, usfen.UsfenToFen(classicUsfen))
+	assert(t, classicFen, usfen.ToFen(classicUsfen))
 }
 
 func assert[C comparable](t *testing.T, want, got C) {

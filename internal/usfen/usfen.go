@@ -20,14 +20,14 @@ package usfen
 
 import "strings"
 
-// FenToUsfen конвертирует FEN в UsFEN (без валидации).
-func FenToUsfen(fen string) string {
+// FromFen конвертирует FEN в UsFEN (без валидации).
+func FromFen(fen string) string {
 	r := strings.NewReplacer(" ", "+", "/", "~")
 	return r.Replace(fen)
 }
 
-// UsfenToFen конвертирует UsFEN в FEN (без валидации).
-func UsfenToFen(usfen string) string {
+// ToFen конвертирует UsFEN в FEN (без валидации).
+func ToFen(usfen string) string {
 	r := strings.NewReplacer("+", " ", "~", "/")
 	return r.Replace(usfen)
 }
