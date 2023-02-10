@@ -133,6 +133,20 @@ func TestCastlingString(t *testing.T) {
 	}
 }
 
+func TestUsfen(t *testing.T) {
+	u := "rnbqkbnr~pppppppp~8~8~8~8~PPPPPPPP~RNBQKBNR+w+KQkq+-+0+1"
+	b, err := board.FromUsFEN(u)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !b.Equals(board.Classical()) {
+		t.Fatal("should match exactly")
+	}
+	if u != board.Classical().UsFEN() {
+		t.Fatal("should match")
+	}
+}
+
 func FuzzFEN(f *testing.F) {
 	tests := []string{
 		"rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w c6 0 2",

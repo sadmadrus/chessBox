@@ -19,6 +19,8 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+
+	"github.com/sadmadrus/chessBox/internal/usfen"
 )
 
 // Board представляет доску с позицией. Инициализация необязательна,
@@ -131,6 +133,12 @@ func FromFEN(fen string) (*Board, error) {
 		}
 	}
 	return b, nil
+}
+
+// FromUsFEN возвращает доску из UsFEN-нотации. Валидность позиции не
+// проверяется.
+func FromUsFEN(s string) (*Board, error) {
+	return FromFEN(usfen.UsfenToFen(s))
 }
 
 // Classical возвращает доску, готовую к игре в классический
@@ -447,6 +455,11 @@ func (b *Board) FEN() string {
 	sb.WriteRune(' ')
 	sb.WriteString(strconv.Itoa(b.fm))
 	return sb.String()
+}
+
+// UsFEN возвращает UsFEN-нотацию доски.
+func (b *Board) UsFEN() string {
+	return usfen.FenToUsfen(b.FEN())
 }
 
 // Equals указывает, одинаковая ли позиция на досках, с точностью до хода.
