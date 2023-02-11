@@ -73,7 +73,7 @@ func TestPackage(t *testing.T) {
 	if err = b.Move(board.Sq("e8"), board.Sq("f8")); err != nil {
 		t.Fatal(err)
 	}
-	if b.HaveCastling(board.CastlingBlackKingside) || b.HaveCastling(board.CastlingBlackQueenside) {
+	if b.HaveCastling(board.BlackKingside) || b.HaveCastling(board.BlackQueenside) {
 		t.Fatal("black castlings should have been revoked")
 	}
 }
@@ -202,6 +202,40 @@ func TestMove(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			b, _ := board.FromFEN(tc.pos)
 			if err := b.Move(board.Sq(tc.from), board.Sq(tc.to)); err != nil {
+				t.Fatal(err)
+			}
+			got := b.FEN()
+			if got != tc.want {
+				t.Fatalf("want %s\ngot %s", tc.want, got)
+			}
+		})
+	}
+}
+
+func TestCastling(t *testing.T) {
+	tests := map[string]struct {
+		pos  string
+		cst  board.Castling
+		want string
+	}{
+		"WhiteKS": {
+			"r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 0",
+			board.WhiteKingside,
+			"r3k2r/8/8/8/8/8/8/R4RK1 b kq - 1 0",
+		},
+		"BlackQS": {
+			"r3k2r/8/8/8/8/8/8/R3K2R b KQkq - 1 0",
+			board.BlackQueenside,
+			"2kr3r/8/8/8/8/8/8/R3K2R w KQ - 2 1",
+		},
+	}
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			b, err := board.FromFEN(tc.pos)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := b.Castle(tc.cst); err != nil {
 				t.Fatal(err)
 			}
 			got := b.FEN()
