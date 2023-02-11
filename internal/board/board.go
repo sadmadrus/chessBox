@@ -151,6 +151,7 @@ func Classical() *Board {
 // piece обозначает фигуру в клетке доски.
 type piece int
 
+// Фигуры.
 const (
 	WhitePawn piece = iota + 1
 	BlackPawn
@@ -231,12 +232,24 @@ func (b *Board) Move(from, to square) error {
 	if to < 0 {
 		return fmt.Errorf("%w: %v", errSquareNotExist, to)
 	}
+	pc := b.brd[from]
+	if to == b.ep && pc < 3 { // может оказаться en passant
+		switch pc {
+		case WhitePawn:
+			if b.ep >= 5*8 && b.brd[to-8] == BlackPawn {
+				b.brd[to-8] = 0
+			}
+		case BlackPawn:
+			if b.ep < 3*8 && b.brd[to+8] == WhitePawn {
+				b.brd[to+8] = 0
+			}
+		}
+	}
 	b.ep = 0
 	if b.blk {
 		b.fm++
 	}
 	b.blk = !b.blk
-	pc := b.brd[from]
 	if pc != BlackPawn && pc != WhitePawn && b.brd[to] == 0 {
 		b.hm++
 	}

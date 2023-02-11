@@ -174,3 +174,40 @@ func FuzzFEN(f *testing.F) {
 		}
 	})
 }
+
+func TestMove(t *testing.T) {
+	tests := map[string]struct {
+		pos  string
+		from string
+		to   string
+		want string
+	}{
+		"simple": {
+			"rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQkq c6 0 2",
+			"g1", "f3",
+			"rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2",
+		},
+		"en passant White": {
+			"rnbqkbnr/ppp2ppp/4p3/3pP3/8/8/PPPP1PPP/RNBQKBNR w KQkq d6 0 3",
+			"e5", "d6",
+			"rnbqkbnr/ppp2ppp/3Pp3/8/8/8/PPPP1PPP/RNBQKBNR b KQkq - 0 3",
+		},
+		"en passant Black": {
+			"B4n2/3ppp2/1Np1k2N/2P1P3/2pPp2p/6B1/5P2/Q3R1K1 b - d3 0 1",
+			"c4", "d3",
+			"B4n2/3ppp2/1Np1k2N/2P1P3/4p2p/3p2B1/5P2/Q3R1K1 w - - 0 2",
+		},
+	}
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			b, _ := board.FromFEN(tc.pos)
+			if err := b.Move(board.Sq(tc.from), board.Sq(tc.to)); err != nil {
+				t.Fatal(err)
+			}
+			got := b.FEN()
+			if got != tc.want {
+				t.Fatalf("want %s\ngot %s", tc.want, got)
+			}
+		})
+	}
+}
