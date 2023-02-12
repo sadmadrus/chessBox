@@ -27,7 +27,7 @@ import (
 // пустой Board готов к употреблению, как пустая доска (без фигур,
 // следующий ход первый).
 type Board struct {
-	brd [64]piece // доска из 64 клеток
+	brd [64]Piece // доска из 64 клеток
 	blk bool      // false - ход белых, true - чёрных
 	cas Castling  // битовая маска возможных рокировок
 	ep  square    // клетка, которая в прошлом ходу перепрыгнута пешкой
@@ -148,12 +148,12 @@ func Classical() *Board {
 	return b
 }
 
-// piece обозначает фигуру в клетке доски.
-type piece int
+// Piece обозначает фигуру в клетке доски.
+type Piece int
 
 // Фигуры.
 const (
-	WhitePawn piece = iota + 1
+	WhitePawn Piece = iota + 1
 	BlackPawn
 	WhiteKnight
 	BlackKnight
@@ -169,7 +169,7 @@ const (
 
 // String возвращает строковое значение для фигуры, заглавные
 // для белых и строчные для чёрных.
-func (p piece) String() string {
+func (p Piece) String() string {
 	switch p {
 	case WhitePawn:
 		return "P"
@@ -211,7 +211,7 @@ const (
 )
 
 // Get возвращает фигуру, стоящую в заданной клетке.
-func (b *Board) Get(s square) (piece, error) {
+func (b *Board) Get(s square) (Piece, error) {
 	if s == -1 {
 		return 0, fmt.Errorf("%w: %v", errSquareNotExist, s)
 	}
@@ -220,7 +220,7 @@ func (b *Board) Get(s square) (piece, error) {
 
 // Put ставит фигуру на заданную клетку; возвращает ошибку,
 // если клетка не пуста.
-func (b *Board) Put(s square, p piece) error {
+func (b *Board) Put(s square, p Piece) error {
 	if s == -1 {
 		return fmt.Errorf("%w: %v", errSquareNotExist, s)
 	}
@@ -247,7 +247,10 @@ func (b *Board) Move(from, to square) error {
 		return fmt.Errorf("%w: %v", errSquareNotExist, to)
 	}
 	pc := b.brd[from]
-	if to == b.ep && pc < 3 { // может оказаться en passant
+	if (pc%2 == 1 && b.blk) || (pc%2 == 0 && !b.blk) {
+		return fmt.Errorf("out of turn")
+	}
+	if b.ep > 0 && to == b.ep && pc < 3 { // может оказаться en passant
 		switch pc {
 		case WhitePawn:
 			if b.ep >= 5*8 && b.brd[to-8] == BlackPawn {
@@ -354,6 +357,30 @@ func (b *Board) Castle(c Castling) error {
 	if err := b.Put(Sq(row*8+kingTo), k); err != nil {
 		panic("this can not happen")
 	}
+	return nil
+}
+
+// Promote проводит пешку.
+func (b *Board) Promote(from square, to square, p Piece) error {
+	if from == -1 {
+		return fmt.Errorf("%w: %v", errSquareNotExist, from)
+	}
+	if to == -1 {
+		return fmt.Errorf("%w: %v", errSquareNotExist, to)
+	}
+	if p <= BlackPawn || p >= WhiteKing {
+		return fmt.Errorf("can not promote to this piece")
+	}
+	if !(b.brd[from] == WhitePawn && from >= 6*8) && !(b.brd[from] == BlackPawn && from < 2*8) {
+		return fmt.Errorf("promotion not possible")
+	}
+	if b.brd[from]%2 != p%2 {
+		return fmt.Errorf("can not promote to wrong color")
+	}
+	if err := b.Move(from, to); err != nil {
+		return err
+	}
+	b.brd[to] = p
 	return nil
 }
 

@@ -197,6 +197,11 @@ func TestMove(t *testing.T) {
 			"c4", "d3",
 			"B4n2/3ppp2/1Np1k2N/2P1P3/4p2p/3p2B1/5P2/Q3R1K1 w - - 0 2",
 		},
+		"pseudo-ep": {
+			"8/8/8/8/8/8/Pp6/R7 b - - 0 0",
+			"b2", "a1",
+			"8/8/8/8/8/8/P7/p7 w - - 0 1",
+		},
 	}
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
@@ -237,6 +242,86 @@ func TestCastling(t *testing.T) {
 			}
 			if err := b.Castle(tc.cst); err != nil {
 				t.Fatal(err)
+			}
+			got := b.FEN()
+			if got != tc.want {
+				t.Fatalf("want %s\ngot %s", tc.want, got)
+			}
+		})
+	}
+}
+
+func TestCastlingErrors(t *testing.T) {
+	tests := map[string]struct {
+		pos string
+		cst board.Castling
+	}{
+		"forbidden": {
+			"r3k2r/8/8/8/8/8/8/R3K2R w Qkq - 0 0",
+			board.WhiteKingside,
+		},
+		"wrong move": {
+			"r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 1 0",
+			board.BlackQueenside,
+		},
+	}
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			b, err := board.FromFEN(tc.pos)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := b.Castle(tc.cst); err == nil {
+				t.Fatal("want error")
+			}
+		})
+	}
+}
+
+func TestPromote(t *testing.T) {
+	tests := map[string]struct {
+		pos      string
+		from, to string
+		piece    board.Piece
+		err      bool
+		want     string
+	}{
+		"White": {
+			"8/3P4/8/8/8/8/8/8 w - - 0 0",
+			"d7", "d8", board.WhiteQueen,
+			false, "3Q4/8/8/8/8/8/8/8 b - - 0 0",
+		},
+		"Black": {
+			"8/8/8/8/8/8/7p/8 b - - 0 0",
+			"h2", "h1", board.BlackKnight, false,
+			"8/8/8/8/8/8/8/7n w - - 0 1",
+		},
+		"wrong piece": {
+			"8/3P4/8/8/8/8/8/8 w - - 0 0",
+			"d7", "d8", board.BlackQueen,
+			true, "",
+		},
+		"not a pawn": {
+			"8/3K4/8/8/8/8/8/8 w - - 0 0",
+			"d7", "d8", board.WhiteQueen,
+			true, "",
+		},
+	}
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			b, err := board.FromFEN(tc.pos)
+			if err != nil {
+				t.Fatal(err)
+			}
+			err = b.Promote(board.Sq(tc.from), board.Sq(tc.to), tc.piece)
+			if err != nil {
+				if tc.err {
+					return
+				}
+				t.Fatal(err)
+			}
+			if tc.err {
+				t.Fatal("want error")
 			}
 			got := b.FEN()
 			if got != tc.want {
