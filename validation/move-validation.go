@@ -1,12 +1,14 @@
 // пакет validation валидирует ходы по текущему состоянию доски, начальной и конечной клеткам, и фигуре.
 
-package chessBox
+package validation
 
 import (
 	"fmt"
+	"github.com/sadmadrus/chessBox/internal/board"
 	log "github.com/sirupsen/logrus"
 	"math"
 	"net/http"
+	// "github.com/sadmadrus/chessBox/internal/board"
 )
 
 var (
@@ -37,36 +39,36 @@ func SimpleValidation(w http.ResponseWriter, r *http.Request) {
 		// валидация входных данных: фигура piece и клетки from, to существуют
 		pieceParsed := r.URL.Query().Get("piece")
 		// TODO: дописать перевод из k/q/r/b/n/p/K/Q/R/B/N/P в int константу для фигур
-		piece, err := someFunctionThatConvertsPieceLetterToInt(pieceParsed)
+		piece, err := someFunctionThatConvertsPieceLetterToInt(pieceParsed) // TODO описать функцию
 		if err != nil {
-			log.Errorf("%w: %v", errPieceNotExist, pieceParsed)
+			log.Errorf("%v: %v", errPieceNotExist, pieceParsed)
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		if piece < WhitePawn || piece > BlackKing {
-			log.Errorf("%w: %v", errPieceNotExist, piece)
+		if piece < board.WhitePawn || piece > board.BlackKing {
+			log.Errorf("%v: %v", errPieceNotExist, piece)
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
 		fromParsed := r.URL.Query().Get("from")
-		from := Sq(fromParsed)
+		from := board.Sq(fromParsed)
 		if from == -1 {
-			log.Errorf("%w: %v (from)", errSquareNotExist, fromParsed)
+			log.Errorf("ошибка при указании клетки: %s", fromParsed)
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
 		toParsed := r.URL.Query().Get("to")
-		to := Sq(toParsed)
+		to := board.Sq(toParsed)
 		if to == -1 {
-			log.Errorf("%w: %v (to)", errSquareNotExist, toParsed)
+			log.Errorf("ошибка при указании клетки: %s", fromParsed)
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
 		if from == to {
-			log.Errorf("%w: %v (from), %v (to)", errFromToSquaresNotDiffer, from, to)
+			log.Errorf("%v: %v (from), %v (to)", errFromToSquaresNotDiffer, from, to)
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
@@ -78,7 +80,7 @@ func SimpleValidation(w http.ResponseWriter, r *http.Request) {
 		toColumn := float64(to % 8)
 
 		switch piece {
-		case WhitePawn, BlackPawn:
+		case board.WhitePawn, board.BlackPawn:
 			err = MovePawn(piece, fromRow, fromColumn, toRow, toColumn)
 			if err != nil {
 				log.Errorf("%w: from %v - to %v", err, from, to)
@@ -86,54 +88,54 @@ func SimpleValidation(w http.ResponseWriter, r *http.Request) {
 			} else {
 				w.WriteHeader(http.StatusOK)
 			}
-		case WhiteKnight, BlackKnight:
+		case board.WhiteKnight, board.BlackKnight:
 			err = MoveKnight(fromRow, fromColumn, toRow, toColumn)
 			if err != nil {
-				log.Errorf("%w: from %v - to %v", err, from, to)
+				log.Errorf("%v: from %v - to %v", err, from, to)
 				w.WriteHeader(http.StatusForbidden)
 			} else {
 				w.WriteHeader(http.StatusOK)
 			}
-		case WhiteBishop, BlackBishop:
+		case board.WhiteBishop, board.BlackBishop:
 			err = MoveBishop(fromRow, fromColumn, toRow, toColumn)
 			if err != nil {
-				log.Errorf("%w: from %v - to %v", err, from, to)
+				log.Errorf("%v: from %v - to %v", err, from, to)
 				w.WriteHeader(http.StatusForbidden)
 			} else {
 				w.WriteHeader(http.StatusOK)
 			}
-		case WhiteRook, BlackRook:
+		case board.WhiteRook, board.BlackRook:
 			err = MoveRook(fromRow, fromColumn, toRow, toColumn)
 			if err != nil {
-				log.Errorf("%w: from %v - to %v", err, from, to)
+				log.Errorf("%v: from %v - to %v", err, from, to)
 				w.WriteHeader(http.StatusForbidden)
 			} else {
 				w.WriteHeader(http.StatusOK)
 			}
-		case WhiteQueen, BlackQueen:
+		case board.WhiteQueen, board.BlackQueen:
 			err = MoveQueen(fromRow, fromColumn, toRow, toColumn)
 			if err != nil {
-				log.Errorf("%w: from %v - to %v", err, from, to)
+				log.Errorf("%v: from %v - to %v", err, from, to)
 				w.WriteHeader(http.StatusForbidden)
 			} else {
 				w.WriteHeader(http.StatusOK)
 			}
-		case WhiteKing, BlackKing:
+		case board.WhiteKing, board.BlackKing:
 			err = MoveKing(piece, fromRow, fromColumn, toRow, toColumn)
 			if err != nil {
-				log.Errorf("%w: from %v - to %v", err, from, to)
+				log.Errorf("%v: from %v - to %v", err, from, to)
 				w.WriteHeader(http.StatusForbidden)
 			} else {
 				w.WriteHeader(http.StatusOK)
 			}
 		default: // если число piece не целое (можно вынести выше в валидацию входных данных)
-			log.Errorf("%w: %v", errPieceNotExist, piece)
+			log.Errorf("%v: %v", errPieceNotExist, piece)
 			w.WriteHeader(http.StatusBadRequest)
 		}
 
 	}
 
-	log.Errorf("inside SimpleValidation %w: %v", errInvalidHttpMethod, r.Method)
+	log.Errorf("inside SimpleValidation %v: %v", errInvalidHttpMethod, r.Method)
 	w.WriteHeader(http.StatusBadRequest)
 }
 
@@ -141,15 +143,16 @@ func SimpleValidation(w http.ResponseWriter, r *http.Request) {
 
 // MovePawn логика движения пешки. Может двигаться вверх (белый) или вниз (черный) на 1 или 2 клетки. Может съедать
 // по диагонали проходные пешки или фигуры соперника. Возвращает ошибку, если движение невалидно.
-func MovePawn(piece int, fromRow, fromColumn, toRow, toColumn float64) error {
+func MovePawn(piece board.Piece, fromRow, fromColumn, toRow, toColumn float64) error {
 	var isVerticalValid, isDiagonalValid bool
 
 	switch piece {
-	case WhitePawn:
+	case board.WhitePawn:
 		isVerticalValid = (fromColumn-toColumn == 0) && (fromRow != 0) && (toRow > 1) &&
 			((toRow-fromRow == 1) || (toRow == 3 && fromRow == 1))
 		isDiagonalValid = (fromRow != 0) && (toRow > 1) && (toRow-fromRow == 1) && (toColumn-fromColumn == 1)
-	case BlackPawn:
+
+	case board.BlackPawn:
 		isVerticalValid = (fromColumn-toColumn == 0) && (fromRow != 7) && (toRow < 6) &&
 			((toRow-fromRow == -1) || (toRow == 4 && fromRow == 6))
 		isDiagonalValid = (fromRow != 7) && (toRow < 6) && (toRow-fromRow == -1) && (toColumn-fromColumn == -1)
@@ -210,18 +213,18 @@ func MoveQueen(fromRow, fromColumn, toRow, toColumn float64) error {
 // MoveKing логика движения короля. Может двигаться вертикально, горизонтально и диагонально только на одну клетку.
 // Также король из своего начального положения на доске (row 0 && column 4 для белого; row 7 && column 4 для черного)
 // может двигаться: на 2 клетки вправо или 2 клетки влево для рокировок.
-func MoveKing(piece int, fromRow, fromColumn, toRow, toColumn float64) error {
+func MoveKing(piece board.Piece, fromRow, fromColumn, toRow, toColumn float64) error {
 	isHorizontalValid := (fromRow-toRow == 0) && (math.Abs(fromColumn-toColumn) == 1)
 	isVerticalValid := (math.Abs(fromRow-toRow) == 1) && (fromColumn-toColumn == 0)
 	isDiagonalValid := (math.Abs(fromRow-toRow) == 1) && (math.Abs(fromColumn-toColumn) == 1)
 	isCastlingValid := false
 
 	switch piece {
-	case WhiteKing:
+	case board.WhiteKing:
 		if fromRow == 0 && fromColumn == 4 && toRow == 0 && (math.Abs(fromColumn-toColumn) == 2) {
 			isCastlingValid = true
 		}
-	case BlackKing:
+	case board.BlackKing:
 		if fromRow == 7 && fromColumn == 4 && toRow == 7 && (math.Abs(fromColumn-toColumn) == 2) {
 			isCastlingValid = true
 		}
@@ -241,7 +244,7 @@ func MoveKing(piece int, fromRow, fromColumn, toRow, toColumn float64) error {
 // пешку при достижении последнего ряда, в формате pieceВозвращает заголовок HttpResponse 200 (ход валиден) или
 // HttpsResponse 403 (ход невалиден). Возвращает в теле JSON с конечной доской board в форате FEN.
 func AdvancedValidation(w http.ResponseWriter, r *http.Request) {
-
+	// TODO написать логику
 }
 
 // GetAvailableMoves сервис отвечает за оплучение всех возможных ходов для данной позиции доски в нотации FEN и начальной клетке.
@@ -249,17 +252,18 @@ func AdvancedValidation(w http.ResponseWriter, r *http.Request) {
 // с фигурой, которой не принадлежит ход или массив клеток пуст). Возвращает в теле
 // JSON массив всех клеток, движение на которые валидно для данной фигуры.
 func GetAvailableMoves(w http.ResponseWriter, r *http.Request) {
-
+	// TODO написать логику
 }
 
 // Вспомогательные функции
 
 // ValidateMove обрабывает общую логику валидации хода
-func ValidateMove(b Board, from, to s) error {
+func ValidateMove(b board.Board, from, to int) error {
+	// TODO написать логику
 	// Логика валидации хода пошагово.
 
 	// 1. получаем фигуру, находящуюся в клетке startCell. Если в этой клетке фигуры нет, возвращаем ошибку
-	figure := b.GetFigure(from)
+	figure := b.GetFigure(from) // TODO описать функцию
 	if figure == nil {
 		return fmt.Errorf("move invalid: startCell %d doesn't have any figures", from)
 	}
@@ -271,7 +275,7 @@ func ValidateMove(b Board, from, to s) error {
 	}
 
 	// 3. Проверяем, что фигура в принципе может двигаться в этом направлении (f.e. диагонально для слона, и т.д.)
-	var cellsToBePassed []square
+	var cellsToBePassed []int
 	cellsToBePassed, err := checkFigureMove(figure, from, to)
 	if err != nil {
 		return fmt.Errorf("move invalid: %w", err)
@@ -287,7 +291,7 @@ func ValidateMove(b Board, from, to s) error {
 	}
 
 	// 5. Проверяем наличие и цвет фигур в клетке endCell.
-	err = checkEndCell(b, to)
+	err = checkEndCell(&b, to)
 	if err != nil {
 		return fmt.Errorf("move invalid: %w", err)
 	}
@@ -295,7 +299,7 @@ func ValidateMove(b Board, from, to s) error {
 	// TODO: проверяем, что пользователь не захотел выставить нового ферзя в неуместном для этого случае.
 
 	// 6. На текущем этапе ход возможен. Генерируем новое положение доски newBoard.
-	newBoard := b.GenerateBoardAfterMove(from, to)
+	newBoard := b.GenerateBoardAfterMove(from, to) // TODO написать функцию
 
 	// 7. Проверяем, что при новой позиции на доске не появился шах для собственного короля оппонента o.
 	err = checkSelfCheck(newBoard)
@@ -314,25 +318,31 @@ func ValidateMove(b Board, from, to s) error {
 
 // checkFigureColor проверяет, что очередь хода и цвет фигуры f, которую хотят передвинуть, совпадают.
 // Возвращает true в случае успеха, false в противном случае.
-func checkFigureColor(b Board) bool {
-
+func checkFigureColor(b board.Board) bool {
+	// TODO написать логику
+	return true
 }
 
 // checkFigureMove проверяет, что фигура f может двигаться в этом направлении с клетки startCell на клетку
 // endCell. Возвращает ошибку, если движение невозможно, или nil в противном случае. Также возвращают массив
 // cellsToBePassed []Cell, в который входят все "промежуточные" клетки, которые "проходит" эта фигура на своем
 // пути с startCell до endCell, если такие есть. В противном случае возвращает nil.
-func checkFigureMove(f Figure, from, to s) (cellsToBePassed []Cell, err error) {
+func checkFigureMove(p board.Piece, from, to int) (cellsToBePassed []int, err error) {
+	// TODO написать логику
+
 	// через цепочку if идет проверка на тип Figure (или на поле name в структуре Figure) и перенаправление на
 	// соответствующий метод Move для этого типа фигуры
+	return cellsToBePassed, nil
 }
 
 // checkCellsToBePassed проверяет, есть ли на клетках из массива cellsToBePassed какие-либо фигуры. Если хотя бы на одной
 // клетке есть фигура, возвращается ошибка. Иначе возвращается nil.
-func checkCellsToBePassed(b Board, cellsToBePassed []Cell) error {
+func checkCellsToBePassed(b board.Board, cellsToBePassed []int) error {
+	// TODO написать логику
+
 	for _, cell := range cellsToBePassed {
-		f := b.GetFigure(cell)
-		if f != nil {
+		_, err := b.Get(board.Sq(cell))
+		if err != nil {
 			return fmt.Errorf("figure present on cell %d", cell)
 		}
 	}
@@ -341,25 +351,29 @@ func checkCellsToBePassed(b Board, cellsToBePassed []Cell) error {
 
 // checkEndCell проверяет наличие фигуры на клетке endCell на предмет совместимости хода. Возвращает ошибку при
 // несовместимости хода или nil в случае успеха.
-func checkEndCell(b *Board, to s) error {
-	// логика пошагово:
+func checkEndCell(b *board.Board, to int) error {
+	// TODO написать логику
 
+	// логика пошагово:
 	// 1. Если в клетке endCell нет фигур, ход возможен:
-	f := b.GetFigure(endCell)
-	if f == nil {
+	_, err := b.Get(board.Sq(to)) // TODO: перевод типов в клетку (square неэкспортируемый)
+	if err == nil {
 		return nil
 	}
 
-	// 2. Если фигура в endCell принадлежит самому участнику o, ход невозможен.
+	// 2. Если фигура в endCell принадлежит самому участнику, ход невозможен.
 	//
 
 	// 3. Если фигура в endCell принадлежит сопернику, проверка, возможно ли взятие
 	// (f.e. пешка e2-e4 не может взять коня на e4).
 	//
+	return nil
 }
 
 // checkSelfCheck проверяет, что при новой позиции на доске нет шаха собственному королю.
-func checkSelfCheck(b Board) error {
+func checkSelfCheck(b board.Board) error {
+	// TODO написать логику
+
 	// Находим клетку с собственным королем.
 	kingCell := getKingCell(b)
 
@@ -388,25 +402,30 @@ func checkSelfCheck(b Board) error {
 }
 
 // getKingCell возвращает клетку, на которой находится свой король оппонента.
-func getKingCell(b Board) s {
-
+func getKingCell(b board.Board) int {
+	// TODO написать логику
+	return 0
 }
 
 // checkEnemyKnightsNearKing проверяет ближайшие клетки в расположении буквой Г к своему королю на наличие на них
 // вражеского коня. Если таких клеток нет, возвращется nil, иначе сообщение об ошибке.
-func checkEnemyKnightsNearKing(b Board, kingCell Cell) error {
-
+func checkEnemyKnightsNearKing(b board.Board, kingCell int) error {
+	// TODO написать логику
+	return nil
 }
 
 // checkEnemiesVerticallyAndHorizontally проверяет ближайшие клетки по вертикали (сверху, снизу) и
 // горизонтали (слева, справа) по отношению к клетке своего короля kingCell, на которых находятся вражеские ладьи и ферзи.
 // Если таких клеток нет, возвращется nil, иначе сообщение об ошибке.
-func checkEnemiesVerticallyAndHorizontally(b Board, kingCell Cell) error {
-
+func checkEnemiesVerticallyAndHorizontally(b board.Board, kingCell int) error {
+	// TODO написать логику
+	return nil
 }
 
 // checkEnemiesDiagonally проверяет ближайшие клетки по всем диагоналям по отношению к клетке своего короля kingCell, на
 // которых находятся вражеские слоны, ферзи и пешки. Если таких клеток нет, возвращется nil, иначе сообщение об ошибке.
-func checkEnemiesDiagonally(b Board, kingCell Cell) error {
+func checkEnemiesDiagonally(b board.Board, kingCell int) error {
 	// должна быть реализована дополнтельная проверка на пешки - их битое поле только по ходу движения!
+	// TODO написать логику
+	return nil
 }
