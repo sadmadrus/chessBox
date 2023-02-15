@@ -8,7 +8,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"math"
 	"net/http"
-	// "github.com/sadmadrus/chessBox/internal/board"
 )
 
 var (
@@ -74,63 +73,37 @@ func SimpleValidation(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// валидация геометрического движения фигуры без привязки к позиции на доске
-		fromRow := float64(from / 8)
-		fromColumn := float64(from % 8)
-		toRow := float64(to / 8)
-		toColumn := float64(to % 8)
-
+		fromSquare := newSquare(int8(from))
+		toSquare := newSquare(int8(from))
 		switch piece {
 		case board.WhitePawn, board.BlackPawn:
-			err = MovePawn(piece, fromRow, fromColumn, toRow, toColumn)
-			if err != nil {
-				log.Errorf("%w: from %v - to %v", err, from, to)
-				w.WriteHeader(http.StatusForbidden)
-			} else {
-				w.WriteHeader(http.StatusOK)
-			}
+			err = MovePawn(piece, fromSquare, toSquare)
+
 		case board.WhiteKnight, board.BlackKnight:
-			err = MoveKnight(fromRow, fromColumn, toRow, toColumn)
-			if err != nil {
-				log.Errorf("%v: from %v - to %v", err, from, to)
-				w.WriteHeader(http.StatusForbidden)
-			} else {
-				w.WriteHeader(http.StatusOK)
-			}
+			err = MoveKnight(fromSquare, toSquare)
+
 		case board.WhiteBishop, board.BlackBishop:
-			err = MoveBishop(fromRow, fromColumn, toRow, toColumn)
-			if err != nil {
-				log.Errorf("%v: from %v - to %v", err, from, to)
-				w.WriteHeader(http.StatusForbidden)
-			} else {
-				w.WriteHeader(http.StatusOK)
-			}
+			err = MoveBishop(fromSquare, toSquare)
+
 		case board.WhiteRook, board.BlackRook:
-			err = MoveRook(fromRow, fromColumn, toRow, toColumn)
-			if err != nil {
-				log.Errorf("%v: from %v - to %v", err, from, to)
-				w.WriteHeader(http.StatusForbidden)
-			} else {
-				w.WriteHeader(http.StatusOK)
-			}
+			err = MoveRook(fromSquare, toSquare)
+
 		case board.WhiteQueen, board.BlackQueen:
-			err = MoveQueen(fromRow, fromColumn, toRow, toColumn)
-			if err != nil {
-				log.Errorf("%v: from %v - to %v", err, from, to)
-				w.WriteHeader(http.StatusForbidden)
-			} else {
-				w.WriteHeader(http.StatusOK)
-			}
+			err = MoveQueen(fromSquare, toSquare)
+
 		case board.WhiteKing, board.BlackKing:
-			err = MoveKing(piece, fromRow, fromColumn, toRow, toColumn)
-			if err != nil {
-				log.Errorf("%v: from %v - to %v", err, from, to)
-				w.WriteHeader(http.StatusForbidden)
-			} else {
-				w.WriteHeader(http.StatusOK)
-			}
+			err = MoveKing(piece, fromSquare, toSquare)
+
 		default: // если число piece не целое (можно вынести выше в валидацию входных данных)
 			log.Errorf("%v: %v", errPieceNotExist, piece)
 			w.WriteHeader(http.StatusBadRequest)
+		}
+
+		if err != nil {
+			log.Errorf("%v: from %v - to %v", err, from, to)
+			w.WriteHeader(http.StatusForbidden)
+		} else {
+			w.WriteHeader(http.StatusOK)
 		}
 
 	}
@@ -139,36 +112,75 @@ func SimpleValidation(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusBadRequest)
 }
 
+// Структуры данных
+
+// square клетка доски, моделирует ряд row и колонку column на шахматной доске в форматах float64
+type square struct {
+	row    float64
+	column float64
+}
+
+// newSquare создает новый экземпляр клетки доски square из представления s int8 пакета board
+func newSquare(s int8) square {
+	return square{
+		row:    float64(s / 8),
+		column: float64(s % 8),
+	}
+}
+
+// diffRow дает разницу в рядах между клетками s1 и s2
+func (s1 *square) diffRow(s2 square) float64 {
+	return s1.row - s2.row
+}
+
+// diffColumn дает разницу в колонках между клетками s1 и s2
+func (s1 *square) diffColumn(s2 square) float64 {
+	return s1.column - s2.column
+}
+
 // Методы Move для каждого типа фигуры. В случае невозможности сделать ход, возвращают ошибку, иначе возвращают nil.
 
 // MovePawn логика движения пешки. Может двигаться вверх (белый) или вниз (черный) на 1 или 2 клетки. Может съедать
 // по диагонали проходные пешки или фигуры соперника. Возвращает ошибку, если движение невалидно.
-func MovePawn(piece board.Piece, fromRow, fromColumn, toRow, toColumn float64) error {
-	var isVerticalValid, isDiagonalValid bool
+func MovePawn(piece board.Piece, from, to square) error {
+	var (
+		isVerticalValid bool // разрешено ли движение пешки по вертикали
+		isDiagonalValid bool // разрешено ли движение пешки по диагонали
+	)
 
 	switch piece {
 	case board.WhitePawn:
-		isVerticalValid = (fromColumn-toColumn == 0) && (fromRow != 0) && (toRow > 1) &&
-			((toRow-fromRow == 1) || (toRow == 3 && fromRow == 1))
-		isDiagonalValid = (fromRow != 0) && (toRow > 1) && (toRow-fromRow == 1) && (toColumn-fromColumn == 1)
+		isVerticalValid = (from.diffColumn(to) == 0) && // верикаль не изменяется
+			(from.row != 0) && // пешка не может стартовать с 0 ряда
+			(to.row > 1) && // пешка не может прийти на 0 или 1 ряд
+			((from.diffRow(to) == -1) || (to.row == 3 && from.row == 1)) // движение вверх на 1 клетку, либо на 2 клетки (с 1 на 3 ряд)
+		isDiagonalValid = (from.row != 0) && // пешка не может стартовать с 0 ряда
+			(to.row > 1) && // пешка не может прийти на 0 или 1 ряд
+			(from.diffRow(to) == -1) && (from.diffColumn(to) == -1) // движение вверх по диагонали на 1 клетку
 
 	case board.BlackPawn:
-		isVerticalValid = (fromColumn-toColumn == 0) && (fromRow != 7) && (toRow < 6) &&
-			((toRow-fromRow == -1) || (toRow == 4 && fromRow == 6))
-		isDiagonalValid = (fromRow != 7) && (toRow < 6) && (toRow-fromRow == -1) && (toColumn-fromColumn == -1)
+		isVerticalValid = (from.diffColumn(to) == 0) && // верикаль не изменяется
+			(from.row != 7) && // пешка не может стартовать с 7 ряда
+			(to.row < 6) && // пешка не может прийти на 7 или 6 ряд
+			((from.diffRow(to) == 1) || (to.row == 4 && from.row == 6)) // движение вниз на 1 клетку, либо на 2 клетки (с 6 на 4 ряд)
+		isDiagonalValid = (from.row != 7) && // пешка не может стартовать с 7 ряда
+			(to.row < 6) && // пешка не может прийти на 7 или 6 ряд
+			(from.diffRow(to) == 1) && (from.diffColumn(to) == 1) // движение вниз по диагонали на 1 клетку
 	}
 
-	if isVerticalValid || isDiagonalValid {
-		return nil
+	if !isVerticalValid && !isDiagonalValid {
+		return fmt.Errorf("%w", errPawnMoveNotValid)
 	}
-	return fmt.Errorf("%w", errPawnMoveNotValid)
+	return nil
 }
 
 // MoveKnight логика движения коня без привязки к позиции на доске. Может двигаться буквой Г. То есть +/- 2 клетки
 // в одном направлении и +/- 1 клетка в перпендикулярном направлении. Возвращает ошибку, если движение невалидно.
-func MoveKnight(fromRow, fromColumn, toRow, toColumn float64) error {
-	isValid := (math.Abs(fromRow-toRow) == 2 && math.Abs(fromColumn-toColumn) == 1) ||
-		(math.Abs(fromRow-toRow) == 1 && math.Abs(fromColumn-toColumn) == 2)
+func MoveKnight(from, to square) error {
+	var isValid bool // разрешено ли движение конем на +/- 2 клетки в одном направлении и +/- 1 клетку в перпендикулярном ему направлении
+
+	isValid = (math.Abs(from.diffRow(to)) == 2 && math.Abs(from.diffColumn(to)) == 1) ||
+		(math.Abs(from.diffRow(to)) == 1 && math.Abs(from.diffColumn(to)) == 2)
 
 	if !isValid {
 		return fmt.Errorf("%w", errKnightMoveNotValid)
@@ -178,8 +190,10 @@ func MoveKnight(fromRow, fromColumn, toRow, toColumn float64) error {
 
 // MoveBishop логика движения слона без привязки к позиции на доске. Может двигаться по всем диагоналям. Возвращает
 // ошибку, если движение невалидно.
-func MoveBishop(fromRow, fromColumn, toRow, toColumn float64) error {
-	isValid := math.Abs(fromRow-toRow) == math.Abs(fromColumn-toColumn)
+func MoveBishop(from, to square) error {
+	var isValid bool // разрешено ли движение слоном по диагоналям
+
+	isValid = math.Abs(from.diffRow(to)) == math.Abs(from.diffColumn(to))
 
 	if !isValid {
 		return fmt.Errorf("%w", errBishopMoveNotValid)
@@ -189,8 +203,11 @@ func MoveBishop(fromRow, fromColumn, toRow, toColumn float64) error {
 
 // MoveRook логика движения ладьи. Может двигаться вверх, вниз, влево, вправо на любое кол-во клеток. Возвращает
 // ошибку, если движение невалидно.
-func MoveRook(fromRow, fromColumn, toRow, toColumn float64) error {
-	isValid := (fromRow-toRow == 0) || (fromColumn-toColumn == 0)
+func MoveRook(from, to square) error {
+	var isValid bool // разрешено ли движение ладьей
+
+	isValid = (from.diffRow(to) == 0) || // по горизонталям
+		(from.diffColumn(to) == 0) // по вертикалям
 
 	if !isValid {
 		return fmt.Errorf("%w", errRookMoveNotValid)
@@ -200,9 +217,9 @@ func MoveRook(fromRow, fromColumn, toRow, toColumn float64) error {
 
 // MoveQueen для ферзя. Может двигаться вверх, вниз, влево, вправо на любое кол-во клеток. Может двигаться диагонально
 // на любое кол-во клеток. Возвращает ошибку, если движение невалидно.
-func MoveQueen(fromRow, fromColumn, toRow, toColumn float64) error {
-	errBishop := MoveBishop(fromRow, fromColumn, toRow, toColumn)
-	errRook := MoveRook(fromRow, fromColumn, toRow, toColumn)
+func MoveQueen(from, to square) error {
+	errBishop := MoveBishop(from, to) // может ли ферзь двигаться как слон по диагонаям
+	errRook := MoveRook(from, to)     // может ли ферзь двигаться как ладья по вертикалям и горизонталям
 
 	if errBishop != nil || errRook != nil {
 		return fmt.Errorf("%w", errQueenMoveNotValid)
@@ -213,28 +230,34 @@ func MoveQueen(fromRow, fromColumn, toRow, toColumn float64) error {
 // MoveKing логика движения короля. Может двигаться вертикально, горизонтально и диагонально только на одну клетку.
 // Также король из своего начального положения на доске (row 0 && column 4 для белого; row 7 && column 4 для черного)
 // может двигаться: на 2 клетки вправо или 2 клетки влево для рокировок.
-func MoveKing(piece board.Piece, fromRow, fromColumn, toRow, toColumn float64) error {
-	isHorizontalValid := (fromRow-toRow == 0) && (math.Abs(fromColumn-toColumn) == 1)
-	isVerticalValid := (math.Abs(fromRow-toRow) == 1) && (fromColumn-toColumn == 0)
-	isDiagonalValid := (math.Abs(fromRow-toRow) == 1) && (math.Abs(fromColumn-toColumn) == 1)
-	isCastlingValid := false
+func MoveKing(piece board.Piece, from, to square) error {
+	var (
+		isHorizontalValid bool // разрешено ли движение короля по горизонтали
+		isVerticalValid   bool // разрешено ли движение короля по вертикали
+		isDiagonalValid   bool // разрешено ли движение короля по диагонали
+		isCastlingValid   bool // разрешена ли рокировка
+	)
 
+	isHorizontalValid = (from.diffRow(to) == 0) && (math.Abs(from.diffColumn(to)) == 1)         // на 1 клетку вправо или влево
+	isVerticalValid = (math.Abs(from.diffRow(to)) == 1) && (from.diffColumn(to) == 0)           // на 1 клетку вверх или вниз
+	isDiagonalValid = (math.Abs(from.diffRow(to)) == 1) && (math.Abs(from.diffColumn(to)) == 1) // на 1 клетку по любой диагонали
+
+	// определение возможности рокировки
 	switch piece {
 	case board.WhiteKing:
-		if fromRow == 0 && fromColumn == 4 && toRow == 0 && (math.Abs(fromColumn-toColumn) == 2) {
+		if from.row == 0 && from.column == 4 && to.row == 0 && (math.Abs(from.diffColumn(to)) == 2) {
 			isCastlingValid = true
 		}
 	case board.BlackKing:
-		if fromRow == 7 && fromColumn == 4 && toRow == 7 && (math.Abs(fromColumn-toColumn) == 2) {
+		if from.row == 7 && from.column == 4 && to.row == 7 && (math.Abs(from.diffColumn(to)) == 2) {
 			isCastlingValid = true
 		}
 	}
 
-	if isHorizontalValid || isVerticalValid || isDiagonalValid || isCastlingValid {
-		return nil
+	if !isHorizontalValid && !isVerticalValid && !isDiagonalValid && !isCastlingValid {
+		return fmt.Errorf("%w", errKingMoveNotValid)
 	}
-
-	return fmt.Errorf("%w", errKingMoveNotValid)
+	return nil
 }
 
 // http хендлеры
