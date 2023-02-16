@@ -4,10 +4,12 @@ package validation
 
 import (
 	"fmt"
-	"github.com/sadmadrus/chessBox/internal/board"
-	log "github.com/sirupsen/logrus"
 	"math"
 	"net/http"
+	"strconv"
+
+	"github.com/sadmadrus/chessBox/internal/board"
+	log "github.com/sirupsen/logrus"
 )
 
 var (
@@ -24,7 +26,7 @@ var (
 
 // http хендлеры
 
-// SimpleValidation сервис отвечает за простую валидацию хода по начальной (from) и конечной (to) клетке
+// Simple сервис отвечает за простую валидацию хода по начальной (from) и конечной (to) клетке
 // и фигуре (piece) (GET, HEAD). Валидирует корректность геометрического перемещения фигуры без привязки к положению
 // на доске. Возвращает заголовок HttpResponse 200 (ход валиден) или HttpsResponse 403 (ход невалиден). Возвращает
 // HttpResponse 400 при некорректном методе запроса и некорректных входных данных.
@@ -32,40 +34,51 @@ var (
 // * фигура piece (k/q/r/b/n/p/K/Q/R/B/N/P)
 // * начальная клетка предполагаемого хода from (число от 0 до 63, либо строка вида a1, c7 и т.п)
 // * конечная клетка предполагаемого хода to (число от 0 до 63, либо строка вида a1, c7 и т.п)
-func SimpleValidation(w http.ResponseWriter, r *http.Request) {
+func Simple(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == "GET" || r.Method == "HEAD" {
-		// валидация входных данных: фигура piece и клетки from, to существуют
+		// валидация входных данных: фигура piece существует
 		pieceParsed := r.URL.Query().Get("piece")
-		// TODO: дописать перевод из k/q/r/b/n/p/K/Q/R/B/N/P в int константу для фигур
-		piece, err := someFunctionThatConvertsPieceLetterToInt(pieceParsed) // TODO описать функцию
+		piece, err := parsePieceFromLetter(pieceParsed)
 		if err != nil {
 			log.Errorf("%v: %v", errPieceNotExist, pieceParsed)
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		if piece < board.WhitePawn || piece > board.BlackKing {
-			log.Errorf("%v: %v", errPieceNotExist, piece)
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
 
+		// валидация входных данных: клетка from существуют
 		fromParsed := r.URL.Query().Get("from")
+		// перевод в тип board.square для цифро-буквенного обозначения клетки (напр., "а1")
 		from := board.Sq(fromParsed)
 		if from == -1 {
-			log.Errorf("ошибка при указании клетки: %s", fromParsed)
-			w.WriteHeader(http.StatusBadRequest)
-			return
+			// перевод в тип board.square для числового значения клетки от 0 до 63
+			var fromParsedNum int
+			fromParsedNum, err = strconv.Atoi(fromParsed)
+			from = board.Sq(fromParsedNum)
+			if from == -1 || err != nil {
+				log.Errorf("ошибка при указании клетки: %s", fromParsed)
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
 		}
 
+		// валидация входных данных: клетка to существуют
 		toParsed := r.URL.Query().Get("to")
+		// перевод в тип board.square для цифро-буквенного обозначения клетки (напр., "а1")
 		to := board.Sq(toParsed)
 		if to == -1 {
-			log.Errorf("ошибка при указании клетки: %s", fromParsed)
-			w.WriteHeader(http.StatusBadRequest)
-			return
+			// перевод в тип board.square для числового значения клетки от 0 до 63
+			var toParsedNum int
+			toParsedNum, err = strconv.Atoi(toParsed)
+			to = board.Sq(toParsedNum)
+			if to == -1 || err != nil {
+				log.Errorf("ошибка при указании клетки: %s", toParsed)
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
 		}
 
+		// валидация входных данных: клетки from и to различны
 		if from == to {
 			log.Errorf("%v: %v (from), %v (to)", errFromToSquaresNotDiffer, from, to)
 			w.WriteHeader(http.StatusBadRequest)
@@ -75,41 +88,50 @@ func SimpleValidation(w http.ResponseWriter, r *http.Request) {
 		// валидация геометрического движения фигуры без привязки к позиции на доске
 		fromSquare := newSquare(int8(from))
 		toSquare := newSquare(int8(from))
-		switch piece {
-		case board.WhitePawn, board.BlackPawn:
-			err = MovePawn(piece, fromSquare, toSquare)
-
-		case board.WhiteKnight, board.BlackKnight:
-			err = MoveKnight(fromSquare, toSquare)
-
-		case board.WhiteBishop, board.BlackBishop:
-			err = MoveBishop(fromSquare, toSquare)
-
-		case board.WhiteRook, board.BlackRook:
-			err = MoveRook(fromSquare, toSquare)
-
-		case board.WhiteQueen, board.BlackQueen:
-			err = MoveQueen(fromSquare, toSquare)
-
-		case board.WhiteKing, board.BlackKing:
-			err = MoveKing(piece, fromSquare, toSquare)
-
-		default: // если число piece не целое (можно вынести выше в валидацию входных данных)
-			log.Errorf("%v: %v", errPieceNotExist, piece)
-			w.WriteHeader(http.StatusBadRequest)
-		}
-
+		err = move(piece, fromSquare, toSquare)
 		if err != nil {
 			log.Errorf("%v: from %v - to %v", err, from, to)
 			w.WriteHeader(http.StatusForbidden)
 		} else {
 			w.WriteHeader(http.StatusOK)
 		}
-
 	}
 
-	log.Errorf("inside SimpleValidation %v: %v", errInvalidHttpMethod, r.Method)
+	log.Errorf("inside Simple %v: %v", errInvalidHttpMethod, r.Method)
 	w.WriteHeader(http.StatusBadRequest)
+}
+
+// parsePieceFromLetter переводит строковое представление фигуры типа k/q/r/b/n/p/K/Q/R/B/N/P в тип board.Piece.  Если
+// преобразование невозможно, возвращает ошибку.
+func parsePieceFromLetter(piece string) (board.Piece, error) {
+	switch piece {
+	case "P":
+		return board.WhitePawn, nil
+	case "p":
+		return board.BlackPawn, nil
+	case "N":
+		return board.WhiteKnight, nil
+	case "n":
+		return board.BlackKnight, nil
+	case "B":
+		return board.WhiteBishop, nil
+	case "b":
+		return board.BlackBishop, nil
+	case "R":
+		return board.WhiteRook, nil
+	case "r":
+		return board.BlackRook, nil
+	case "Q":
+		return board.WhiteQueen, nil
+	case "q":
+		return board.BlackQueen, nil
+	case "K":
+		return board.WhiteKing, nil
+	case "k":
+		return board.BlackKing, nil
+	default:
+		return 0, fmt.Errorf("%w", errPieceNotExist)
+	}
 }
 
 // Структуры данных
@@ -138,11 +160,36 @@ func (s1 *square) diffColumn(s2 square) float64 {
 	return s1.column - s2.column
 }
 
-// Методы Move для каждого типа фигуры. В случае невозможности сделать ход, возвращают ошибку, иначе возвращают nil.
+// методы move
 
-// MovePawn логика движения пешки. Может двигаться вверх (белый) или вниз (черный) на 1 или 2 клетки. Может съедать
+// move для каждого типа фигуры. В случае невозможности сделать ход, возвращают ошибку, иначе возвращают nil.
+func move(piece board.Piece, from, to square) (err error) {
+	switch piece {
+	case board.WhitePawn, board.BlackPawn:
+		err = movePawn(piece, from, to)
+
+	case board.WhiteKnight, board.BlackKnight:
+		err = moveKnight(from, to)
+
+	case board.WhiteBishop, board.BlackBishop:
+		err = moveBishop(from, to)
+
+	case board.WhiteRook, board.BlackRook:
+		err = moveRook(from, to)
+
+	case board.WhiteQueen, board.BlackQueen:
+		err = moveQueen(from, to)
+
+	case board.WhiteKing, board.BlackKing:
+		err = moveKing(piece, from, to)
+	}
+
+	return err
+}
+
+// movePawn логика движения пешки. Может двигаться вверх (белый) или вниз (черный) на 1 или 2 клетки. Может съедать
 // по диагонали проходные пешки или фигуры соперника. Возвращает ошибку, если движение невалидно.
-func MovePawn(piece board.Piece, from, to square) error {
+func movePawn(piece board.Piece, from, to square) error {
 	var (
 		isVerticalValid bool // разрешено ли движение пешки по вертикали
 		isDiagonalValid bool // разрешено ли движение пешки по диагонали
@@ -174,9 +221,9 @@ func MovePawn(piece board.Piece, from, to square) error {
 	return nil
 }
 
-// MoveKnight логика движения коня без привязки к позиции на доске. Может двигаться буквой Г. То есть +/- 2 клетки
+// moveKnight логика движения коня без привязки к позиции на доске. Может двигаться буквой Г. То есть +/- 2 клетки
 // в одном направлении и +/- 1 клетка в перпендикулярном направлении. Возвращает ошибку, если движение невалидно.
-func MoveKnight(from, to square) error {
+func moveKnight(from, to square) error {
 	var isValid bool // разрешено ли движение конем на +/- 2 клетки в одном направлении и +/- 1 клетку в перпендикулярном ему направлении
 
 	isValid = (math.Abs(from.diffRow(to)) == 2 && math.Abs(from.diffColumn(to)) == 1) ||
@@ -188,9 +235,9 @@ func MoveKnight(from, to square) error {
 	return nil
 }
 
-// MoveBishop логика движения слона без привязки к позиции на доске. Может двигаться по всем диагоналям. Возвращает
+// moveBishop логика движения слона без привязки к позиции на доске. Может двигаться по всем диагоналям. Возвращает
 // ошибку, если движение невалидно.
-func MoveBishop(from, to square) error {
+func moveBishop(from, to square) error {
 	var isValid bool // разрешено ли движение слоном по диагоналям
 
 	isValid = math.Abs(from.diffRow(to)) == math.Abs(from.diffColumn(to))
@@ -201,9 +248,9 @@ func MoveBishop(from, to square) error {
 	return nil
 }
 
-// MoveRook логика движения ладьи. Может двигаться вверх, вниз, влево, вправо на любое кол-во клеток. Возвращает
+// moveRook логика движения ладьи. Может двигаться вверх, вниз, влево, вправо на любое кол-во клеток. Возвращает
 // ошибку, если движение невалидно.
-func MoveRook(from, to square) error {
+func moveRook(from, to square) error {
 	var isValid bool // разрешено ли движение ладьей
 
 	isValid = (from.diffRow(to) == 0) || // по горизонталям
@@ -215,11 +262,11 @@ func MoveRook(from, to square) error {
 	return nil
 }
 
-// MoveQueen для ферзя. Может двигаться вверх, вниз, влево, вправо на любое кол-во клеток. Может двигаться диагонально
+// moveQueen для ферзя. Может двигаться вверх, вниз, влево, вправо на любое кол-во клеток. Может двигаться диагонально
 // на любое кол-во клеток. Возвращает ошибку, если движение невалидно.
-func MoveQueen(from, to square) error {
-	errBishop := MoveBishop(from, to) // может ли ферзь двигаться как слон по диагонаям
-	errRook := MoveRook(from, to)     // может ли ферзь двигаться как ладья по вертикалям и горизонталям
+func moveQueen(from, to square) error {
+	errBishop := moveBishop(from, to) // может ли ферзь двигаться как слон по диагонаям
+	errRook := moveRook(from, to)     // может ли ферзь двигаться как ладья по вертикалям и горизонталям
 
 	if errBishop != nil || errRook != nil {
 		return fmt.Errorf("%w", errQueenMoveNotValid)
@@ -227,10 +274,10 @@ func MoveQueen(from, to square) error {
 	return nil
 }
 
-// MoveKing логика движения короля. Может двигаться вертикально, горизонтально и диагонально только на одну клетку.
+// moveKing логика движения короля. Может двигаться вертикально, горизонтально и диагонально только на одну клетку.
 // Также король из своего начального положения на доске (row 0 && column 4 для белого; row 7 && column 4 для черного)
 // может двигаться: на 2 клетки вправо или 2 клетки влево для рокировок.
-func MoveKing(piece board.Piece, from, to square) error {
+func moveKing(piece board.Piece, from, to square) error {
 	var (
 		isHorizontalValid bool // разрешено ли движение короля по горизонтали
 		isVerticalValid   bool // разрешено ли движение короля по вертикали
@@ -262,19 +309,19 @@ func MoveKing(piece board.Piece, from, to square) error {
 
 // http хендлеры
 
-// AdvancedValidation сервис отвечает за сложную валидацию хода по начальной и конечной клетке, а также по текущему состоянию
+// Advanced сервис отвечает за сложную валидацию хода по начальной и конечной клетке, а также по текущему состоянию
 // доски в нотации FEN. Также принимает на вход URL-параметр newpiece (это новая фигура, в которую нужно превратить
 // пешку при достижении последнего ряда, в формате pieceВозвращает заголовок HttpResponse 200 (ход валиден) или
 // HttpsResponse 403 (ход невалиден). Возвращает в теле JSON с конечной доской board в форате FEN.
-func AdvancedValidation(w http.ResponseWriter, r *http.Request) {
+func Advanced(w http.ResponseWriter, r *http.Request) {
 	// TODO написать логику
 }
 
-// GetAvailableMoves сервис отвечает за оплучение всех возможных ходов для данной позиции доски в нотации FEN и начальной клетке.
+// AvailableMoves сервис отвечает за оплучение всех возможных ходов для данной позиции доски в нотации FEN и начальной клетке.
 // Возвращает заголовок HttpResponse 200 (в случае непустого массива клеток) или HttpsResponse 403 (клетка пустая или
 // с фигурой, которой не принадлежит ход или массив клеток пуст). Возвращает в теле
 // JSON массив всех клеток, движение на которые валидно для данной фигуры.
-func GetAvailableMoves(w http.ResponseWriter, r *http.Request) {
+func AvailableMoves(w http.ResponseWriter, r *http.Request) {
 	// TODO написать логику
 }
 
@@ -286,20 +333,20 @@ func ValidateMove(b board.Board, from, to int) error {
 	// Логика валидации хода пошагово.
 
 	// 1. получаем фигуру, находящуюся в клетке startCell. Если в этой клетке фигуры нет, возвращаем ошибку
-	figure := b.GetFigure(from) // TODO описать функцию
-	if figure == nil {
+	figure, err := b.Get(board.Sq(from))
+	if err != nil {
 		return fmt.Errorf("move invalid: startCell %d doesn't have any figures", from)
 	}
 
 	// 2. проверяем, что фигура принадлежит той стороне, чья очередь хода
-	isFigureRightColor := checkFigureColor(figure)
+	isFigureRightColor := checkFigureColor(b)
 	if !isFigureRightColor {
 		return fmt.Errorf("move invalid: startCell %d has figure of wrong color", from)
 	}
 
 	// 3. Проверяем, что фигура в принципе может двигаться в этом направлении (f.e. диагонально для слона, и т.д.)
 	var cellsToBePassed []int
-	cellsToBePassed, err := checkFigureMove(figure, from, to)
+	cellsToBePassed, err = checkFigureMove(figure, from, to)
 	if err != nil {
 		return fmt.Errorf("move invalid: %w", err)
 	}
@@ -322,10 +369,10 @@ func ValidateMove(b board.Board, from, to int) error {
 	// TODO: проверяем, что пользователь не захотел выставить нового ферзя в неуместном для этого случае.
 
 	// 6. На текущем этапе ход возможен. Генерируем новое положение доски newBoard.
-	newBoard := b.GenerateBoardAfterMove(from, to) // TODO написать функцию
+	err = b.Move(board.Sq(from), board.Sq(to)) // TODO учесть промоушен пешки
 
 	// 7. Проверяем, что при новой позиции на доске не появился шах для собственного короля оппонента o.
-	err = checkSelfCheck(newBoard)
+	err = checkSelfCheck(b)
 	if err != nil {
 		return fmt.Errorf("move invalid: %w", err)
 	}
