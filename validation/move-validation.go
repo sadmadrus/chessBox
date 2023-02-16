@@ -224,9 +224,8 @@ func movePawn(piece board.Piece, from, to square) error {
 // moveKnight логика движения коня без привязки к позиции на доске. Может двигаться буквой Г. То есть +/- 2 клетки
 // в одном направлении и +/- 1 клетка в перпендикулярном направлении. Возвращает ошибку, если движение невалидно.
 func moveKnight(from, to square) error {
-	var isValid bool // разрешено ли движение конем на +/- 2 клетки в одном направлении и +/- 1 клетку в перпендикулярном ему направлении
-
-	isValid = (math.Abs(from.diffRow(to)) == 2 && math.Abs(from.diffColumn(to)) == 1) ||
+	// разрешено ли движение конем на +/- 2 клетки в одном направлении и +/- 1 клетку в перпендикулярном ему направлении
+	isValid := (math.Abs(from.diffRow(to)) == 2 && math.Abs(from.diffColumn(to)) == 1) ||
 		(math.Abs(from.diffRow(to)) == 1 && math.Abs(from.diffColumn(to)) == 2)
 
 	if !isValid {
@@ -238,9 +237,8 @@ func moveKnight(from, to square) error {
 // moveBishop логика движения слона без привязки к позиции на доске. Может двигаться по всем диагоналям. Возвращает
 // ошибку, если движение невалидно.
 func moveBishop(from, to square) error {
-	var isValid bool // разрешено ли движение слоном по диагоналям
-
-	isValid = math.Abs(from.diffRow(to)) == math.Abs(from.diffColumn(to))
+	// разрешено ли движение слоном по диагоналям
+	isValid := math.Abs(from.diffRow(to)) == math.Abs(from.diffColumn(to))
 
 	if !isValid {
 		return fmt.Errorf("%w", errBishopMoveNotValid)
@@ -251,9 +249,8 @@ func moveBishop(from, to square) error {
 // moveRook логика движения ладьи. Может двигаться вверх, вниз, влево, вправо на любое кол-во клеток. Возвращает
 // ошибку, если движение невалидно.
 func moveRook(from, to square) error {
-	var isValid bool // разрешено ли движение ладьей
-
-	isValid = (from.diffRow(to) == 0) || // по горизонталям
+	// разрешено ли движение ладьей
+	isValid := (from.diffRow(to) == 0) || // по горизонталям
 		(from.diffColumn(to) == 0) // по вертикалям
 
 	if !isValid {
@@ -370,6 +367,9 @@ func ValidateMove(b board.Board, from, to int) error {
 
 	// 6. На текущем этапе ход возможен. Генерируем новое положение доски newBoard.
 	err = b.Move(board.Sq(from), board.Sq(to)) // TODO учесть промоушен пешки
+	if err != nil {
+		return fmt.Errorf("move invalid: %w", err)
+	}
 
 	// 7. Проверяем, что при новой позиции на доске не появился шах для собственного короля оппонента o.
 	err = checkSelfCheck(b)
