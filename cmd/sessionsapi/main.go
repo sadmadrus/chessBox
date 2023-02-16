@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-
-	"github.com/sadmadrus/chessBox/pkg/session"
 )
 
 func validateRequestMethod(r *http.Request, allowedMethod string) error {
@@ -24,16 +22,7 @@ func home(w http.ResponseWriter, r *http.Request) {
 }
 
 func find(w http.ResponseWriter, r *http.Request) {
-	err := validateRequestMethod(r, http.MethodGet)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusForbidden)
-		return
-	}
-	params := r.URL.Query()
-	for k, v := range params {
-		log.Println(k, v)
-	}
-
+	//
 }
 
 func add(w http.ResponseWriter, r *http.Request) {
