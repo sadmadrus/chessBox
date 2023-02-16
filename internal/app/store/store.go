@@ -8,13 +8,13 @@ import (
 )
 
 type Store struct {
-	cfg         *Config
+	cfg         *StoreConfig
 	database    *sql.DB
 	sessionRepo *SessionRepository
 	userRepo    *UserRepository
 }
 
-func CreateNewStore(c *Config) *Store {
+func CreateNewStore(c *StoreConfig) *Store {
 	return &Store{
 		cfg: c,
 	}
