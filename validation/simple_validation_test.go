@@ -21,7 +21,7 @@ func TestMoveBishop(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			err := MoveBishop(tc.from, tc.to)
+			err := moveBishop(tc.from, tc.to)
 			if tc.isOk && err != nil {
 				t.Fatalf("want nil, got error: %s", err)
 			}
