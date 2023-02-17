@@ -83,7 +83,7 @@ func movePawn(piece board.Piece, from, to square) error {
 			((from.diffRow(to) == -1) || (to.row == 3 && from.row == 1)) // движение вверх на 1 клетку, либо на 2 клетки (с 1 на 3 ряд)
 		isDiagonalValid = (from.row != 0) && // пешка не может стартовать с 0 ряда
 			(to.row > 1) && // пешка не может прийти на 0 или 1 ряд
-			(from.diffRow(to) == -1) && (from.diffColumn(to) == -1) // движение вверх по диагонали на 1 клетку
+			(from.diffRow(to) == -1) && (abs(from.diffColumn(to)) == 1) // движение вверх по диагонали на 1 клетку
 
 	case board.BlackPawn:
 		isVerticalValid = (from.diffColumn(to) == 0) && // верикаль не изменяется
@@ -92,7 +92,7 @@ func movePawn(piece board.Piece, from, to square) error {
 			((from.diffRow(to) == 1) || (to.row == 4 && from.row == 6)) // движение вниз на 1 клетку, либо на 2 клетки (с 6 на 4 ряд)
 		isDiagonalValid = (from.row != 7) && // пешка не может стартовать с 7 ряда
 			(to.row < 6) && // пешка не может прийти на 7 или 6 ряд
-			(from.diffRow(to) == 1) && (from.diffColumn(to) == 1) // движение вниз по диагонали на 1 клетку
+			(from.diffRow(to) == 1) && (abs(from.diffColumn(to)) == 1) // движение вниз по диагонали на 1 клетку
 	}
 
 	if !isVerticalValid && !isDiagonalValid {
@@ -145,7 +145,7 @@ func moveQueen(from, to square) error {
 	errBishop := moveBishop(from, to) // может ли ферзь двигаться как слон по диагонаям
 	errRook := moveRook(from, to)     // может ли ферзь двигаться как ладья по вертикалям и горизонталям
 
-	if errBishop != nil || errRook != nil {
+	if errBishop != nil && errRook != nil {
 		return fmt.Errorf("%w", errQueenMoveNotValid)
 	}
 	return nil
