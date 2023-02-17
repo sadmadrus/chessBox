@@ -1,8 +1,9 @@
 package validation
 
 import (
-	"github.com/sadmadrus/chessBox/internal/board"
 	"testing"
+
+	"github.com/sadmadrus/chessBox/internal/board"
 )
 
 func TestMovePawn(t *testing.T) {
