@@ -12,15 +12,21 @@ import (
 )
 
 var (
-	errPieceNotExist          = fmt.Errorf("piece does not exist")
-	errInvalidHttpMethod      = fmt.Errorf("method is not supported")
-	errFromToSquaresNotDiffer = fmt.Errorf("from and to squares are not different")
-	errPawnMoveNotValid       = fmt.Errorf("pawn move is not valid")
-	errKnightMoveNotValid     = fmt.Errorf("knight move is not valid")
-	errBishopMoveNotValid     = fmt.Errorf("bishop move is not valid")
-	errRookMoveNotValid       = fmt.Errorf("rook move is not valid")
-	errQueenMoveNotValid      = fmt.Errorf("queen move is not valid")
-	errKingMoveNotValid       = fmt.Errorf("king move is not valid")
+	errPieceNotExist             = fmt.Errorf("piece does not exist")
+	errInvalidHttpMethod         = fmt.Errorf("method is not supported")
+	errFromToSquaresNotDiffer    = fmt.Errorf("from and to squares are not different")
+	errPawnMoveNotValid          = fmt.Errorf("pawn move is not valid")
+	errKnightMoveNotValid        = fmt.Errorf("knight move is not valid")
+	errBishopMoveNotValid        = fmt.Errorf("bishop move is not valid")
+	errRookMoveNotValid          = fmt.Errorf("rook move is not valid")
+	errQueenMoveNotValid         = fmt.Errorf("queen move is not valid")
+	errKingMoveNotValid          = fmt.Errorf("king move is not valid")
+	errNoPieceOnFromSquare       = fmt.Errorf("no piece on from square")
+	errPieceWrongColor           = fmt.Errorf("piece has wrong color")
+	errPieceFound                = fmt.Errorf("piece found on the square")
+	errClashWithPieceOfSameColor = fmt.Errorf("clash with piece of the same color")
+	errClashWithKing             = fmt.Errorf("clash with king")
+	errClashWithPawn             = fmt.Errorf("pawn can not clash with another piece when moving vertically")
 )
 
 // http хендлеры
@@ -155,49 +161,52 @@ func parsePieceFromLetter(piece string) (board.Piece, error) {
 	}
 }
 
-// ValidateMove обрабывает общую логику валидации хода.
-func ValidateMove(b board.Board, from, to int) error {
+// advancedMoveValidation обрабывает общую логику валидации хода.
+func advancedMoveValidation(b board.Board, from, to int8) error {
 	// TODO написать логику
 	// Логика валидации хода пошагово.
-
-	// 1. получаем фигуру, находящуюся в клетке startCell. Если в этой клетке фигуры нет, возвращаем ошибку
-	figure, err := b.Get(board.Sq(from))
+	// 1. получаем фигуру, находящуюся в клетке from. Если в этой клетке фигуры нет, возвращаем ошибку
+	piece, err := b.Get(board.Sq(int(from)))
 	if err != nil {
-		return fmt.Errorf("move invalid: startCell %d doesn't have any figures", from)
+		return err
+	}
+	if piece == 0 {
+		return fmt.Errorf("%v: %v", errNoPieceOnFromSquare, from)
 	}
 
 	// 2. проверяем, что фигура принадлежит той стороне, чья очередь хода
-	isFigureRightColor := checkFigureColor(b)
+	isFigureRightColor := checkFigureColor(b, piece)
 	if !isFigureRightColor {
-		return fmt.Errorf("move invalid: startCell %d has figure of wrong color", from)
+		return fmt.Errorf("%v: %v", errPieceWrongColor, from)
 	}
 
 	// 3. Проверяем, что фигура в принципе может двигаться в этом направлении (f.e. диагонально для слона, и т.д.)
-	var cellsToBePassed []int
-	cellsToBePassed, err = checkFigureMove(figure, from, to)
+	err = move(piece, newSquare(from), newSquare(to))
 	if err != nil {
-		return fmt.Errorf("move invalid: %w", err)
+		return err
 	}
 
-	// 4. Проверяем, что по пути фигуры с клетки startCell до endCell (не включительно) нет других фигур
+	// 4. Проверяем, что по пути фигуры с клетки from до to (не включительно) нет других фигур
 	// (f.e. слон а1-h8, но на b2 стоит конь - так запрещено).
-	if len(cellsToBePassed) > 0 {
-		err = checkCellsToBePassed(b, cellsToBePassed)
+	squaresToBePassed := getSquaresToBePassed(piece, newSquare(from), newSquare(to))
+	if len(squaresToBePassed) > 0 {
+		err = checkSquaresToBePassed(b, squaresToBePassed)
 		if err != nil {
-			return fmt.Errorf("move invalid: %w", err)
+			return err
 		}
 	}
 
-	// 5. Проверяем наличие и цвет фигур в клетке endCell.
-	err = checkEndCell(&b, to)
+	// 5. Проверяем наличие и цвет фигур в клетке to.
+	err = checkToSquare(&b, piece, newSquare(from), newSquare(to))
 	if err != nil {
-		return fmt.Errorf("move invalid: %w", err)
+		return err
 	}
 
+	// TODO: остановилась здесь
 	// TODO: проверяем, что пользователь не захотел выставить нового ферзя в неуместном для этого случае.
 
 	// 6. На текущем этапе ход возможен. Генерируем новое положение доски newBoard.
-	err = b.Move(board.Sq(from), board.Sq(to)) // TODO учесть промоушен пешки
+	err = b.Move(board.Sq(int(from)), board.Sq(int(to))) // TODO учесть промоушен пешки
 	if err != nil {
 		return fmt.Errorf("move invalid: %w", err)
 	}
@@ -212,62 +221,111 @@ func ValidateMove(b board.Board, from, to int) error {
 	// будет запрещен.
 
 	// 9. В случае если ход делается пешкой, проверяем, попала ли пешка на последнюю линию и потребуется ли
-	// трансформация в другую фигуру. Если да, выставляем pawnTransformation = true
+	// трансформация в другую фигуру.
 
 	return nil
 }
 
-// checkFigureColor проверяет, что очередь хода и цвет фигуры f, которую хотят передвинуть, совпадают.
+// checkFigureColor проверяет, что очередь хода и цвет фигуры p, которую хотят передвинуть, совпадают.
 // Возвращает true в случае успеха, false в противном случае.
-func checkFigureColor(b board.Board) bool {
-	// TODO написать логику
-	return true
+func checkFigureColor(b board.Board, p board.Piece) bool {
+	var pieceIsWhite bool
+
+	switch p {
+	case board.WhitePawn, board.WhiteKnight, board.WhiteBishop, board.WhiteRook, board.WhiteKing, board.WhiteQueen:
+		pieceIsWhite = true
+	case board.BlackPawn, board.BlackKnight, board.BlackBishop, board.BlackRook, board.BlackKing, board.BlackQueen:
+		pieceIsWhite = false
+	}
+
+	if (b.NextToMove() && pieceIsWhite) || (!b.NextToMove() && !pieceIsWhite) {
+		return true
+	}
+
+	return false
 }
 
-// checkFigureMove проверяет, что фигура f может двигаться в этом направлении с клетки startCell на клетку
-// endCell. Возвращает ошибку, если движение невозможно, или nil в противном случае. Также возвращают массив
-// cellsToBePassed []Cell, в который входят все "промежуточные" клетки, которые "проходит" эта фигура на своем
-// пути с startCell до endCell, если такие есть. В противном случае возвращает nil.
-func checkFigureMove(p board.Piece, from, to int) (cellsToBePassed []int, err error) {
-	// TODO написать логику
+// getSquaresToBePassed возвращает массив клеток, через которые проходит фигура p при движении из клетки from на клетку
+// to. Если таких клеток нет, то возвращаемый массив пуст.
+func getSquaresToBePassed(p board.Piece, from, to square) (squaresToBePassed []square) {
+	var movingUp, movingRight int8
 
-	// через цепочку if идет проверка на тип Figure (или на поле name в структуре Figure) и перенаправление на
-	// соответствующий метод Move для этого типа фигуры
-	return cellsToBePassed, nil
+	if from.diffRow(to) < 0 {
+		movingUp = 1
+	} else if from.diffRow(to) > 0 {
+		movingUp = -1
+	} else {
+		movingUp = 0
+	}
+
+	if from.diffColumn(to) < 0 {
+		movingRight = 1
+	} else if from.diffColumn(to) > 0 {
+		movingRight = -1
+	} else {
+		movingRight = 0
+	}
+
+	squaresToBePassedAmount := abs(from.diffRow(to))
+	if abs(from.diffColumn(to)) > abs(from.diffRow(to)) {
+		squaresToBePassedAmount = abs(from.diffColumn(to))
+	}
+
+	switch p {
+	case board.WhitePawn, board.BlackPawn, board.WhiteBishop, board.BlackBishop, board.WhiteRook, board.BlackRook, board.WhiteKing, board.BlackKing, board.WhiteQueen, board.BlackQueen:
+		for squaresToBePassedAmount > 1 {
+			squareToBeAdded := newSquare(from.toInt8() + (movingUp * 8) + movingRight)
+			squaresToBePassed = append(squaresToBePassed, squareToBeAdded)
+			squaresToBePassedAmount--
+		}
+	}
+
+	return squaresToBePassed
 }
 
-// checkCellsToBePassed проверяет, есть ли на клетках из массива cellsToBePassed какие-либо фигуры. Если хотя бы на одной
+// checkSquaresToBePassed проверяет, есть ли на клетках из массива squaresToBePassed какие-либо фигуры. Если хотя бы на одной
 // клетке есть фигура, возвращается ошибка. Иначе возвращается nil.
-func checkCellsToBePassed(b board.Board, cellsToBePassed []int) error {
-	// TODO написать логику
-
-	for _, cell := range cellsToBePassed {
-		_, err := b.Get(board.Sq(cell))
-		if err != nil {
-			return fmt.Errorf("figure present on cell %d", cell)
+func checkSquaresToBePassed(b board.Board, squaresToBePassed []square) error {
+	for _, sq := range squaresToBePassed {
+		piece, _ := b.Get(board.Sq(sq.toInt()))
+		if piece == 0 {
+			return fmt.Errorf("%v: %v", errPieceFound, sq)
 		}
 	}
 	return nil
 }
 
-// checkEndCell проверяет наличие фигуры на клетке endCell на предмет совместимости хода. Возвращает ошибку при
+// checkToSquare проверяет наличие фигуры на клетке to на предмет совместимости хода. Возвращает ошибку при
 // несовместимости хода или nil в случае успеха.
-func checkEndCell(b *board.Board, to int) error {
-	// TODO написать логику
+func checkToSquare(b *board.Board, pieceFrom board.Piece, from, to square) error {
+	pieceTo, _ := b.Get(board.Sq(to.toInt()))
 
-	// логика пошагово:
-	// 1. Если в клетке endCell нет фигур, ход возможен:
-	_, err := b.Get(board.Sq(to)) // TODO: перевод типов в клетку (square неэкспортируемый)
-	if err == nil {
+	// Если в клетке to нет фигур, ход возможен.
+	if pieceTo == 0 {
 		return nil
 	}
 
-	// 2. Если фигура в endCell принадлежит самому участнику, ход невозможен.
-	//
+	// Если фигура в to принадлежит самому участнику, ход невозможен.
+	if checkFigureColor(*b, pieceTo) {
+		return fmt.Errorf("%v", errClashWithPieceOfSameColor)
 
-	// 3. Если фигура в endCell принадлежит сопернику, проверка, возможно ли взятие
-	// (f.e. пешка e2-e4 не может взять коня на e4).
-	//
+		// Если фигура в to принадлежит сопернику, проверка, возможно ли взятие
+	} else {
+		// ни одна фигура не может взять короля
+		switch pieceTo {
+		case board.WhiteKing, board.BlackKing:
+			return fmt.Errorf("%v", errClashWithKing)
+		}
+
+		// пешка не может взять ни одну фигуру при движении вертикально
+		switch pieceFrom {
+		case board.WhitePawn, board.BlackPawn:
+			if from.diffColumn(to) == 0 {
+				return fmt.Errorf("%v", errClashWithPawn)
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -276,24 +334,24 @@ func checkSelfCheck(b board.Board) error {
 	// TODO написать логику
 
 	// Находим клетку с собственным королем.
-	kingCell := getKingCell(b)
+	kingSquare := getKingSquare(b)
 
 	// проверяем, есть ли на расстоянии буквы Г от этой клетки вражеские кони. Если да, выдаем ошибку.
-	err := checkEnemyKnightsNearKing(b, kingCell)
+	err := checkEnemyKnightsNearKing(b, kingSquare)
 	if err != nil {
 		return fmt.Errorf("self-check by enemy knight")
 	}
 
 	// проверяем, есть ли по вертикали или горизонтали в качестве ближайших фигур вражеские ладьи и ферзи.
 	// Если да, выдаем ошибку.
-	err = checkEnemiesVerticallyAndHorizontally(b, kingCell)
+	err = checkEnemiesVerticallyAndHorizontally(b, kingSquare)
 	if err != nil {
 		return fmt.Errorf("self-check by enemy rook or queen")
 	}
 
 	// проверяем, есть ли по диагоналям в качестве ближайших фигур вражеские ферзи, слоны и пешки.
 	// Если да, выдаем ошибку.
-	err = checkEnemiesDiagonally(b, kingCell)
+	err = checkEnemiesDiagonally(b, kingSquare)
 	if err != nil {
 		return fmt.Errorf("self-check by enemy queen or pawn or bishop")
 	}
@@ -302,30 +360,30 @@ func checkSelfCheck(b board.Board) error {
 
 }
 
-// getKingCell возвращает клетку, на которой находится свой король оппонента.
-func getKingCell(b board.Board) int {
+// getKingSquare возвращает клетку, на которой находится свой король оппонента.
+func getKingSquare(b board.Board) int {
 	// TODO написать логику
 	return 0
 }
 
 // checkEnemyKnightsNearKing проверяет ближайшие клетки в расположении буквой Г к своему королю на наличие на них
 // вражеского коня. Если таких клеток нет, возвращется nil, иначе сообщение об ошибке.
-func checkEnemyKnightsNearKing(b board.Board, kingCell int) error {
+func checkEnemyKnightsNearKing(b board.Board, kingSquare int) error {
 	// TODO написать логику
 	return nil
 }
 
 // checkEnemiesVerticallyAndHorizontally проверяет ближайшие клетки по вертикали (сверху, снизу) и
-// горизонтали (слева, справа) по отношению к клетке своего короля kingCell, на которых находятся вражеские ладьи и ферзи.
+// горизонтали (слева, справа) по отношению к клетке своего короля kingSquare, на которых находятся вражеские ладьи и ферзи.
 // Если таких клеток нет, возвращется nil, иначе сообщение об ошибке.
-func checkEnemiesVerticallyAndHorizontally(b board.Board, kingCell int) error {
+func checkEnemiesVerticallyAndHorizontally(b board.Board, kingSquare int) error {
 	// TODO написать логику
 	return nil
 }
 
-// checkEnemiesDiagonally проверяет ближайшие клетки по всем диагоналям по отношению к клетке своего короля kingCell, на
+// checkEnemiesDiagonally проверяет ближайшие клетки по всем диагоналям по отношению к клетке своего короля kingSquare, на
 // которых находятся вражеские слоны, ферзи и пешки. Если таких клеток нет, возвращется nil, иначе сообщение об ошибке.
-func checkEnemiesDiagonally(b board.Board, kingCell int) error {
+func checkEnemiesDiagonally(b board.Board, kingSquare int) error {
 	// должна быть реализована дополнтельная проверка на пешки - их битое поле только по ходу движения!
 	// TODO написать логику
 	return nil
