@@ -86,13 +86,15 @@ func Simple(w http.ResponseWriter, r *http.Request) {
 
 		// валидация геометрического движения фигуры без привязки к позиции на доске
 		fromSquare := newSquare(int8(from))
-		toSquare := newSquare(int8(from))
+		toSquare := newSquare(int8(to))
 		err = move(piece, fromSquare, toSquare)
 		if err != nil {
 			log.Errorf("%v: from %v - to %v", err, from, to)
 			w.WriteHeader(http.StatusForbidden)
+			return
 		} else {
 			w.WriteHeader(http.StatusOK)
+			return
 		}
 	}
 
