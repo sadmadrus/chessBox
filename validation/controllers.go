@@ -32,7 +32,7 @@ var (
 // Входящие URL параметры:
 // * фигура piece (k/q/r/b/n/p/K/Q/R/B/N/P)
 // * начальная клетка предполагаемого хода from (число от 0 до 63, либо строка вида a1, c7 и т.п)
-// * конечная клетка предполагаемого хода to (число от 0 до 63, либо строка вида a1, c7 и т.п)
+// * конечная клетка предполагаемого хода to (число от 0 до 63, либо строка вида a1, c7 и т.п).
 func Simple(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == "GET" || r.Method == "HEAD" {
@@ -123,6 +123,7 @@ func AvailableMoves(w http.ResponseWriter, r *http.Request) {
 
 // parsePieceFromLetter переводит строковое представление фигуры типа k/q/r/b/n/p/K/Q/R/B/N/P в тип board.Piece.  Если
 // преобразование невозможно, возвращает ошибку.
+// TODO add tests
 func parsePieceFromLetter(piece string) (board.Piece, error) {
 	switch piece {
 	case "P":
@@ -154,7 +155,7 @@ func parsePieceFromLetter(piece string) (board.Piece, error) {
 	}
 }
 
-// ValidateMove обрабывает общую логику валидации хода
+// ValidateMove обрабывает общую логику валидации хода.
 func ValidateMove(b board.Board, from, to int) error {
 	// TODO написать логику
 	// Логика валидации хода пошагово.

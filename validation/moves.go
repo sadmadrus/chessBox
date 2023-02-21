@@ -8,13 +8,13 @@ import (
 
 // Структуры клетки
 
-// square клетка доски, моделирует ряд row и колонку column на шахматной доске в форматах int
+// square клетка доски, моделирует ряд row и колонку column на шахматной доске в форматах int.
 type square struct {
 	row    int
 	column int
 }
 
-// newSquare создает новый экземпляр клетки доски square из представления s int8 пакета board
+// newSquare создает новый экземпляр клетки доски square из представления s int8 пакета board.
 func newSquare(s int8) square {
 	return square{
 		row:    int(s / 8),
@@ -22,7 +22,7 @@ func newSquare(s int8) square {
 	}
 }
 
-// abs возвращает модуль числа n
+// abs возвращает модуль числа n.
 func abs(n int) int {
 	if n < 0 {
 		return -n
@@ -30,12 +30,12 @@ func abs(n int) int {
 	return n
 }
 
-// diffRow дает разницу в рядах между клетками s1 и s2
+// diffRow дает разницу в рядах между клетками s1 и s2.
 func (s1 *square) diffRow(s2 square) int {
 	return s1.row - s2.row
 }
 
-// diffColumn дает разницу в колонках между клетками s1 и s2
+// diffColumn дает разницу в колонках между клетками s1 и s2.
 func (s1 *square) diffColumn(s2 square) int {
 	return s1.column - s2.column
 }
