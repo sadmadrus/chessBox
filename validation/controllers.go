@@ -1,4 +1,4 @@
-// пакет validation валидирует ходы по текущему состоянию доски, начальной и конечной клеткам, и фигуре
+// Пакет validation валидирует ходы по текущему состоянию доски, начальной и конечной клеткам, и фигуре.
 
 package validation
 
@@ -55,7 +55,7 @@ func Simple(w http.ResponseWriter, r *http.Request) {
 			fromParsedNum, err = strconv.Atoi(fromParsed)
 			from = board.Sq(fromParsedNum)
 			if from == -1 || err != nil {
-				log.Errorf("ошибка при указании клетки: %s", fromParsed)
+				log.Errorf("%v: %v", errPieceNotExist, fromParsed)
 				w.WriteHeader(http.StatusBadRequest)
 				return
 			}
@@ -71,7 +71,7 @@ func Simple(w http.ResponseWriter, r *http.Request) {
 			toParsedNum, err = strconv.Atoi(toParsed)
 			to = board.Sq(toParsedNum)
 			if to == -1 || err != nil {
-				log.Errorf("ошибка при указании клетки: %s", toParsed)
+				log.Errorf("%v: %s", errPieceNotExist, toParsed)
 				w.WriteHeader(http.StatusBadRequest)
 				return
 			}
@@ -91,8 +91,10 @@ func Simple(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			log.Errorf("%v: from %v - to %v", err, from, to)
 			w.WriteHeader(http.StatusForbidden)
+			return
 		} else {
 			w.WriteHeader(http.StatusOK)
+			return
 		}
 	}
 

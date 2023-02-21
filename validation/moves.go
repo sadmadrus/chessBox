@@ -8,7 +8,7 @@ import (
 
 // Структуры клетки
 
-// square клетка доски, моделирует ряд row и колонку column на шахматной доске в форматах float64
+// square клетка доски, моделирует ряд row и колонку column на шахматной доске в форматах int
 type square struct {
 	row    int
 	column int
