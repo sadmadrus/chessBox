@@ -6,6 +6,41 @@ import (
 	"github.com/sadmadrus/chessBox/internal/board"
 )
 
+func TestMove(t *testing.T) {
+	tests := []struct {
+		name  string
+		piece board.Piece
+		from  square
+		to    square
+		isOk  bool
+	}{
+		{"P 8-24", board.WhitePawn, newSquare(8), newSquare(24), true},
+		{"p 24-8", board.BlackPawn, newSquare(24), newSquare(8), false},
+		{"N 2-34", board.WhiteKnight, newSquare(2), newSquare(34), false},
+		{"n 18-35", board.BlackKnight, newSquare(18), newSquare(35), true},
+		{"B 9-18", board.WhiteBishop, newSquare(9), newSquare(18), true},
+		{"b 9-25", board.BlackBishop, newSquare(9), newSquare(25), false},
+		{"R 9-63", board.WhiteRook, newSquare(9), newSquare(63), false},
+		{"r 63-7", board.BlackRook, newSquare(63), newSquare(7), true},
+		{"Q 19-1", board.WhiteQueen, newSquare(19), newSquare(1), true},
+		{"q 18-28", board.BlackQueen, newSquare(18), newSquare(28), false},
+		{"K 20-30", board.WhiteKing, newSquare(20), newSquare(30), false},
+		{"k 60-58", board.BlackKing, newSquare(60), newSquare(58), true},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			err := move(tc.piece, tc.from, tc.to)
+			if tc.isOk && err != nil {
+				t.Fatalf("want nil, got error: %s", err)
+			}
+			if !tc.isOk && err == nil {
+				t.Fatal("want error, got nil")
+			}
+		})
+	}
+}
+
 func TestMovePawn(t *testing.T) {
 	tests := []struct {
 		name  string
