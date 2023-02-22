@@ -3,10 +3,11 @@
 package validation
 
 import (
+	"encoding/json"
 	"fmt"
-	"github.com/sadmadrus/chessBox/internal/usfen"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/sadmadrus/chessBox/internal/board"
 	log "github.com/sirupsen/logrus"
@@ -29,6 +30,9 @@ var (
 	errClashWithKing             = fmt.Errorf("clash with king")
 	errClashWithPawn             = fmt.Errorf("pawn can not clash with another piece when moving vertically")
 	errPawnPromotionNotValid     = fmt.Errorf("pawn promotion to pawn or king is not valid")
+	errNewpieceExist             = fmt.Errorf("newpiece exists with no pawn promotion")
+	errNewpieceNotExist          = fmt.Errorf("newpiece does not exist but pawn promotion required")
+	errPieceNotExistOnBoard      = fmt.Errorf("piece does not exist on board")
 )
 
 // http хендлеры
@@ -110,6 +114,10 @@ func Simple(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusBadRequest)
 }
 
+type advancedResponse struct {
+	Board string `json:"board"`
+}
+
 // Advanced сервис отвечает за сложную валидацию хода по начальной и конечной клетке, а также по текущему состоянию
 // доски в нотации FEN. Также принимает на вход URL-параметр newpiece (это новая фигура, в которую нужно превратить
 // пешку при достижении последнего ряда), в формате pieceВозвращает заголовок HttpResponse 200 (ход валиден) или
@@ -121,13 +129,11 @@ func Simple(w http.ResponseWriter, r *http.Request) {
 // * конечная клетка предполагаемого хода to (число от 0 до 63, либо строка вида a1, c7 и т.п).
 // * фигура newpiece (q/r/b/n/Q/R/B/N или пустое значение)
 func Advanced(w http.ResponseWriter, r *http.Request) {
-	// TODO написать логику
 	if r.Method == "GET" || r.Method == "HEAD" {
 		// валидация входных данных: доска board существует
-		// TODO board нужно ли проверять валидность позиции?
+		// TODO board нужно ли проверять валидность позиции где-то вообще?
 		boardParsed := r.URL.Query().Get("board")
-		boardFen := usfen.ToFen(boardParsed)
-		b, err := board.FromFEN(boardFen)
+		b, err := board.FromUsFEN(boardParsed)
 		if err != nil {
 			log.Errorf("%v", err)
 			w.WriteHeader(http.StatusBadRequest)
@@ -201,8 +207,11 @@ func Advanced(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusForbidden)
 			return
 		} else {
-			// TODO возвращать в теле новую доску
+			boardUsFEN := newBoard.UsFEN()
+			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
+			data := advancedResponse{boardUsFEN}
+			err = json.NewEncoder(w).Encode(data)
 			return
 		}
 	}
@@ -271,19 +280,29 @@ func advancedMoveValidation(b board.Board, from, to square, newpiece board.Piece
 		return newBoard, fmt.Errorf("%v: %v", errNoPieceOnFromSquare, from)
 	}
 
-	// 2. проверяем, что фигура принадлежит той стороне, чья очередь хода
+	// 2a. проверяем, что пользователь указал, какую новую фигуру выставить в случае проведения пешки.
+	if newpiece == 0 && ((piece == board.WhitePawn && to.row == 7) || (piece == board.BlackPawn && to.row == 0)) {
+		return newBoard, fmt.Errorf("%v", errNewpieceNotExist)
+	}
+
+	// 2b. проверяем, что пользователь не захотел выставить нового фигуру в неуместном для этого случае.
+	if newpiece != 0 && ((piece != board.WhitePawn && to.row != 7) || (piece != board.BlackPawn && to.row != 0)) {
+		return newBoard, fmt.Errorf("%v", errNewpieceExist)
+	}
+
+	// 3. проверяем, что фигура принадлежит той стороне, чья очередь хода
 	isFigureRightColor := checkFigureColor(b, piece)
 	if !isFigureRightColor {
 		return newBoard, fmt.Errorf("%v: %v", errPieceWrongColor, from)
 	}
 
-	// 3. Проверяем, что фигура в принципе может двигаться в этом направлении (f.e. диагонально для слона, и т.д.)
+	// 4. Проверяем, что фигура в принципе может двигаться в этом направлении (f.e. диагонально для слона, и т.д.)
 	err = move(piece, from, to)
 	if err != nil {
 		return newBoard, err
 	}
 
-	// 4. Проверяем, что по пути фигуры с клетки from до to (не включительно) нет других фигур
+	// 5. Проверяем, что по пути фигуры с клетки from до to (не включительно) нет других фигур
 	// (f.e. слон а1-h8, но на b2 стоит конь - так запрещено).
 	squaresToBePassed := getSquaresToBePassed(piece, from, to)
 	if len(squaresToBePassed) > 0 {
@@ -293,31 +312,32 @@ func advancedMoveValidation(b board.Board, from, to square, newpiece board.Piece
 		}
 	}
 
-	// 5. Проверяем наличие и цвет фигур в клетке to.
+	// 6. Проверяем наличие и цвет фигур в клетке to.
 	err = checkToSquare(&b, piece, from, to)
 	if err != nil {
 		return newBoard, err
 	}
+	// TODO: проверка, что при рокировке король не проходит через битое поле
 
-	// TODO: остановилась здесь
-	// TODO: проверяем, что пользователь не захотел выставить нового ферзя в неуместном для этого случае.
-
-	// 6. На текущем этапе ход возможен. Генерируем новое положение доски newBoard.
+	// 7. На текущем этапе ход возможен. Генерируем новое положение доски newBoard. Выдается ошибка при некорректном
+	// проведении пешки, некорректной рокировке, некорректном взятии на проходе по логике из пакета board.
 	newBoard, err = getNewBoard(b, piece, from, to, newpiece)
 	if err != nil {
-		return newBoard, fmt.Errorf("move invalid: %w", err)
+		return newBoard, fmt.Errorf("%w", err)
 	}
 
-	// 7. Проверяем, что при новой позиции на доске не появился шах для собственного короля оппонента o.
+	// TODO: остановилась здесь
+
+	// 8. Проверяем, что при новой позиции на доске не появился шах для собственного короля.
 	err = checkSelfCheck(b)
 	if err != nil {
 		return newBoard, fmt.Errorf("move invalid: %w", err)
 	}
 
-	// 8. В случае если ход делается королем, проверяем, что он не подступил вплотную к чужому королю - такой ход
+	// 9. В случае если ход делается королем, проверяем, что он не подступил вплотную к чужому королю - такой ход
 	// будет запрещен.
 
-	// 9. В случае если ход делается пешкой, проверяем, попала ли пешка на последнюю линию и потребуется ли
+	// 10. В случае если ход делается пешкой, проверяем, попала ли пешка на последнюю линию и потребуется ли
 	// трансформация в другую фигуру.
 
 	return newBoard, nil
@@ -429,39 +449,75 @@ func checkToSquare(b *board.Board, pieceFrom board.Piece, from, to square) error
 // getNewBoard генерирует новое положение доски с учетом рокировок, взятия на прохоже и проведения пешки. Возвращает
 // ошибку при некорректных входных данных.
 func getNewBoard(b board.Board, piece board.Piece, from, to square, newpiece board.Piece) (board.Board, error) {
-	switch piece {
-	case board.WhitePawn:
-		if to.row == 7 {
-			err := b.Promote(board.Sq(from.toInt()), board.Sq(to.toInt()), newpiece)
-			if err != nil {
-				return b, err
-			}
+	// обработка проведения белой и черной пешки
+	if (piece == board.WhitePawn && to.row == 7) || (piece == board.BlackPawn && to.row == 0) {
+		err := b.Promote(board.Sq(from.toInt()), board.Sq(to.toInt()), newpiece)
+		if err != nil {
+			return b, err
 		}
-
-	case board.BlackPawn:
-		if to.row == 0 {
-			err := b.Promote(board.Sq(from.toInt()), board.Sq(to.toInt()), newpiece)
-			if err != nil {
-				return b, err
-			}
-		}
-
-		// TODO рокировка
-	case board.WhiteKing:
-
+		return b, nil
 	}
 
+	// обработка рокировки белого и черного короля
+	if (piece == board.WhiteKing || piece == board.BlackKing) && (abs(from.diffColumn(to)) == 2) {
+		// сторона короля
+		if to.column == 6 {
+			var castling board.Castling
+			switch piece {
+			case board.WhiteKing:
+				castling = board.WhiteKingside
+			case board.BlackKing:
+				castling = board.BlackKingside
+			}
+
+			err := b.Castle(castling)
+			if err != nil {
+				return b, err
+			}
+
+			// сторона королевы
+		} else if to.column == 2 {
+			var castling board.Castling
+			switch piece {
+			case board.WhiteKing:
+				castling = board.WhiteQueenside
+			case board.BlackKing:
+				castling = board.BlackQueenside
+			}
+
+			err := b.Castle(castling)
+			if err != nil {
+				return b, err
+			}
+		}
+	}
+
+	// обработка всех остальных ходов
+	err := b.Move(board.Sq(from.toInt()), board.Sq(to.toInt()))
+	if err != nil {
+		return b, err
+	}
+	return b, nil
 }
 
 // checkSelfCheck проверяет, что при новой позиции на доске нет шаха собственному королю.
 func checkSelfCheck(b board.Board) error {
 	// TODO написать логику
-
 	// Находим клетку с собственным королем.
-	kingSquare := getKingSquare(b)
+	var piece board.Piece
+	if b.NextToMove() {
+		piece = board.WhiteKing
+	} else {
+		piece = board.BlackKing
+	}
+	pieceString := piece.String()
+	kingSquare, err := getSquareByPiece(b, pieceString)
+	if err != nil {
+		return err
+	}
 
 	// проверяем, есть ли на расстоянии буквы Г от этой клетки вражеские кони. Если да, выдаем ошибку.
-	err := checkEnemyKnightsNearKing(b, kingSquare)
+	err = checkEnemyKnightsNearKing(b, kingSquare)
 	if err != nil {
 		return fmt.Errorf("self-check by enemy knight")
 	}
@@ -484,16 +540,57 @@ func checkSelfCheck(b board.Board) error {
 
 }
 
-// getKingSquare возвращает клетку, на которой находится свой король оппонента.
-func getKingSquare(b board.Board) int {
-	// TODO написать логику
-	return 0
+// getSquareByPiece возвращает клетку, на которой находится заданная фигура. Если такой фигуры на доске нет,
+// возвращает ошибку.
+func getSquareByPiece(b board.Board, pieceString string) (pieceSquare square, err error) {
+	boardFEN := b.FEN()
+	boardFENArr := strings.Split(boardFEN, " ")
+	boardFEN = boardFENArr[0]
+	index := strings.Index(boardFEN, pieceString)
+	if index == -1 {
+		return pieceSquare, fmt.Errorf("%v", errPieceNotExistOnBoard)
+	}
+
+	rowsCount := strings.Count(boardFEN[:index], "/")
+	var squareRow = 7 - int8(rowsCount)
+
+	var boardRow = boardFEN
+	for rowsCount > 0 {
+		slashIndex := strings.Index(boardRow, "/")
+		boardRow = boardRow[slashIndex:]
+		rowsCount--
+	}
+	slashIndex := strings.Index(boardRow, "/")
+	boardRow = boardRow[:slashIndex]
+
+	var squareColumn int
+	for _, sym := range boardRow {
+		if string(sym) == pieceString {
+			break
+		}
+
+		switch sym {
+		case 'P', 'p', 'K', 'k', 'Q', 'q', 'R', 'r', 'N', 'n', 'B', 'b':
+			squareColumn++
+		default:
+			num, _ := strconv.Atoi(string(sym))
+			squareColumn += num
+		}
+	}
+
+	pieceSquare = newSquare(squareRow*8 + int8(squareColumn))
+	return pieceSquare, nil
 }
 
 // checkEnemyKnightsNearKing проверяет ближайшие клетки в расположении буквой Г к своему королю на наличие на них
 // вражеского коня. Если таких клеток нет, возвращется nil, иначе сообщение об ошибке.
-func checkEnemyKnightsNearKing(b board.Board, kingSquare int) error {
+func checkEnemyKnightsNearKing(b board.Board, kingSquare square) error {
 	// TODO написать логику
+	var squaresToBeChecked []square
+	if kingSquare.row >= 0 && kingSquare.column >= 0 {
+
+	}
+
 	return nil
 }
 
