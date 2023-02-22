@@ -74,3 +74,28 @@ func TestSimple(t *testing.T) {
 		})
 	}
 }
+
+func FuzzSimple(f *testing.F) {
+	srv := httptest.NewServer(http.HandlerFunc(validation.Simple))
+	defer srv.Close()
+	tests := []string{
+		"piece=P&from=e2&to=e4",
+		"from=4&to=2&piece=nil",
+		"from=a7&to=b6&piece=Q",
+	}
+	for _, tc := range tests {
+		f.Add(tc)
+	}
+
+	f.Fuzz(func(t *testing.T, query string) {
+		u, _ := url.Parse(srv.URL)
+		u.RawQuery = query
+		res, err := http.Get(u.String())
+		if err != nil {
+			return
+		}
+		if res.StatusCode != http.StatusOK && res.StatusCode != http.StatusForbidden && res.StatusCode != http.StatusBadRequest {
+			t.Fatalf("unexpected reply: %s", res.Status)
+		}
+	})
+}
