@@ -215,6 +215,9 @@ func Advanced(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 			data := advancedResponse{boardUsFEN}
 			err = json.NewEncoder(w).Encode(data)
+			if err != nil {
+				log.Errorf("error while encoding json: %v", err)
+			}
 			return
 		}
 	}
@@ -810,7 +813,6 @@ func checkEnemiesDiagonally(b board.Board, kingSquare square, enemyQueen, enemyB
 				isEnemyDiagonallyPresent = true
 				return isEnemyDiagonallyPresent, nil
 			}
-			break
 		default:
 			break
 		}
@@ -840,7 +842,6 @@ func checkEnemiesDiagonally(b board.Board, kingSquare square, enemyQueen, enemyB
 				isEnemyDiagonallyPresent = true
 				return isEnemyDiagonallyPresent, nil
 			}
-			break
 		default:
 			break
 		}
@@ -870,7 +871,6 @@ func checkEnemiesDiagonally(b board.Board, kingSquare square, enemyQueen, enemyB
 				isEnemyDiagonallyPresent = true
 				return isEnemyDiagonallyPresent, nil
 			}
-			break
 		default:
 			break
 		}
@@ -900,7 +900,6 @@ func checkEnemiesDiagonally(b board.Board, kingSquare square, enemyQueen, enemyB
 				isEnemyDiagonallyPresent = true
 				return isEnemyDiagonallyPresent, nil
 			}
-			break
 		default:
 			break
 		}
