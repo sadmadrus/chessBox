@@ -5,12 +5,12 @@ package validation
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
 
 	"github.com/sadmadrus/chessBox/internal/board"
-	log "github.com/sirupsen/logrus"
 )
 
 var (
@@ -55,7 +55,7 @@ func Simple(w http.ResponseWriter, r *http.Request) {
 		pieceParsed := r.URL.Query().Get("piece")
 		piece, err := parsePieceFromLetter(pieceParsed)
 		if err != nil {
-			log.Errorf("%v: %v", errPieceNotExist, pieceParsed)
+			log.Printf("%v: %v", errPieceNotExist, pieceParsed)
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
@@ -70,7 +70,7 @@ func Simple(w http.ResponseWriter, r *http.Request) {
 			fromParsedNum, err = strconv.Atoi(fromParsed)
 			from = board.Sq(fromParsedNum)
 			if from == -1 || err != nil {
-				log.Errorf("%v: %v", errPieceNotExist, fromParsed)
+				log.Printf("%v: %v", errPieceNotExist, fromParsed)
 				w.WriteHeader(http.StatusBadRequest)
 				return
 			}
@@ -86,7 +86,7 @@ func Simple(w http.ResponseWriter, r *http.Request) {
 			toParsedNum, err = strconv.Atoi(toParsed)
 			to = board.Sq(toParsedNum)
 			if to == -1 || err != nil {
-				log.Errorf("%v: %s", errPieceNotExist, toParsed)
+				log.Printf("%v: %s", errPieceNotExist, toParsed)
 				w.WriteHeader(http.StatusBadRequest)
 				return
 			}
@@ -94,7 +94,7 @@ func Simple(w http.ResponseWriter, r *http.Request) {
 
 		// валидация входных данных: клетки from и to различны
 		if from == to {
-			log.Errorf("%v: %v (from), %v (to)", errFromToSquaresNotDiffer, from, to)
+			log.Printf("%v: %v (from), %v (to)", errFromToSquaresNotDiffer, from, to)
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
@@ -104,7 +104,7 @@ func Simple(w http.ResponseWriter, r *http.Request) {
 		toSquare := newSquare(int8(to))
 		err = move(piece, fromSquare, toSquare)
 		if err != nil {
-			log.Errorf("%v: from %v - to %v", err, from, to)
+			log.Printf("%v: from %v - to %v", err, from, to)
 			w.WriteHeader(http.StatusForbidden)
 			return
 		} else {
@@ -113,7 +113,7 @@ func Simple(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	log.Errorf("inside Simple %v: %v", errInvalidHttpMethod, r.Method)
+	log.Printf("inside Simple %v: %v", errInvalidHttpMethod, r.Method)
 	w.WriteHeader(http.StatusBadRequest)
 }
 
@@ -138,7 +138,7 @@ func Advanced(w http.ResponseWriter, r *http.Request) {
 		boardParsed := r.URL.Query().Get("board")
 		b, err := board.FromUsFEN(boardParsed)
 		if err != nil {
-			log.Errorf("%v", err)
+			log.Printf("%v", err)
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
@@ -153,7 +153,7 @@ func Advanced(w http.ResponseWriter, r *http.Request) {
 			fromParsedNum, err = strconv.Atoi(fromParsed)
 			from = board.Sq(fromParsedNum)
 			if from == -1 || err != nil {
-				log.Errorf("%v: %v", errPieceNotExist, fromParsed)
+				log.Printf("%v: %v", errPieceNotExist, fromParsed)
 				w.WriteHeader(http.StatusBadRequest)
 				return
 			}
@@ -169,7 +169,7 @@ func Advanced(w http.ResponseWriter, r *http.Request) {
 			toParsedNum, err = strconv.Atoi(toParsed)
 			to = board.Sq(toParsedNum)
 			if to == -1 || err != nil {
-				log.Errorf("%v: %s", errPieceNotExist, toParsed)
+				log.Printf("%v: %s", errPieceNotExist, toParsed)
 				w.WriteHeader(http.StatusBadRequest)
 				return
 			}
@@ -177,7 +177,7 @@ func Advanced(w http.ResponseWriter, r *http.Request) {
 
 		// валидация входных данных: клетки from и to различны
 		if from == to {
-			log.Errorf("%v: %v (from), %v (to)", errFromToSquaresNotDiffer, from, to)
+			log.Printf("%v: %v (from), %v (to)", errFromToSquaresNotDiffer, from, to)
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
@@ -188,13 +188,13 @@ func Advanced(w http.ResponseWriter, r *http.Request) {
 		if newpieceParsed != "" {
 			newpiece, err = parsePieceFromLetter(newpieceParsed)
 			if err != nil {
-				log.Errorf("%v: %v", errPieceNotExist, newpieceParsed)
+				log.Printf("%v: %v", errPieceNotExist, newpieceParsed)
 				w.WriteHeader(http.StatusBadRequest)
 				return
 			}
 			switch newpiece {
 			case board.WhitePawn, board.BlackPawn, board.WhiteKing, board.BlackKing:
-				log.Errorf("%v: %v", errPawnPromotionNotValid, newpieceParsed)
+				log.Printf("%v: %v", errPawnPromotionNotValid, newpieceParsed)
 				w.WriteHeader(http.StatusBadRequest)
 				return
 			}
@@ -206,7 +206,7 @@ func Advanced(w http.ResponseWriter, r *http.Request) {
 		toSquare := newSquare(int8(to))
 		newBoard, err := advancedValidationLogic(*b, fromSquare, toSquare, newpiece)
 		if err != nil {
-			log.Errorf("move invalid: %v", err)
+			log.Printf("move invalid: %v", err)
 			w.WriteHeader(http.StatusForbidden)
 			return
 		} else {
@@ -216,13 +216,13 @@ func Advanced(w http.ResponseWriter, r *http.Request) {
 			data := advancedResponse{boardUsFEN}
 			err = json.NewEncoder(w).Encode(data)
 			if err != nil {
-				log.Errorf("error while encoding json: %v", err)
+				log.Printf("error while encoding json: %v", err)
 			}
 			return
 		}
 	}
 
-	log.Errorf("inside Advanced %v: %v", errInvalidHttpMethod, r.Method)
+	log.Printf("inside Advanced %v: %v", errInvalidHttpMethod, r.Method)
 	w.WriteHeader(http.StatusBadRequest)
 }
 
