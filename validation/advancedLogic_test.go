@@ -57,7 +57,7 @@ func TestGetSquaresToBePassed(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			res := getSquaresToBePassed(tc.piece, tc.from, tc.to)
-			for i, _ := range res {
+			for i := 0; i < len(res); i++ {
 				if res[i] != tc.result[i] {
 					t.Fatalf("want %v, got %v", tc.result, res)
 				}
