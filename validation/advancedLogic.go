@@ -39,8 +39,8 @@ func advancedLogic(b board.Board, from, to square, newpiece board.Piece) (newBoa
 	}
 
 	// 3. проверяем, что фигура принадлежит той стороне, чья очередь хода. Иначе ход невалиден.
-	isFigureRightColor := checkFigureColor(b, piece)
-	if !isFigureRightColor {
+	isOk := checkPieceColor(b, piece)
+	if !isOk {
 		log.Printf("%v", errPieceWrongColor)
 		return newBoard, isValid, nil
 	}
@@ -55,53 +55,43 @@ func advancedLogic(b board.Board, from, to square, newpiece board.Piece) (newBoa
 	// 5. Проверяем, что по пути фигуры с клетки from до to (не включительно) нет других фигур
 	// (f.e. слон а1-h8, но на b2 стоит конь - так запрещено).
 	squaresToBePassed := getSquaresToBePassed(piece, from, to)
-	if len(squaresToBePassed) > 0 {
-		var areSquaresEmpty bool
-		areSquaresEmpty, err = checkSquaresToBePassed(b, squaresToBePassed)
-		if err != nil {
+	var areSquaresEmpty bool
+	areSquaresEmpty, err = checkSquaresToBePassed(b, squaresToBePassed)
+	if err != nil || !areSquaresEmpty {
+		return newBoard, isValid, err
+	}
+
+	// 6. Проверяем наличие и цвет фигур в клетке to.
+	isOk, err = checkToSquare(&b, piece, from, to)
+	if err != nil || !isOk {
+		return newBoard, isValid, err
+	}
+
+	// 7. Валидация рокировки: проверка, что при рокировке король не проходит через битое поле, рокировка разрешена
+	// (король и ладья еще не двигались, между ними все клетки пустые).
+	if (piece == board.WhiteKing || piece == board.BlackKing) && (abs(from.diffColumn(to)) == 2) {
+		isOk, err = checkCastling(&b, piece, from, to)
+		if err != nil || !isOk {
 			return newBoard, isValid, err
-		}
-		if !areSquaresEmpty {
-			log.Printf("%v", errPiecesStayInTheWay)
-			return newBoard, isValid, nil
 		}
 	}
 
-	// TODO: остановилась здесь
-
-	// 6. Проверяем наличие и цвет фигур в клетке to.
-	err = checkToSquare(&b, piece, from, to)
+	// 8. На текущем этапе ход возможен. Генерируем новое положение доски newBoard. Так как до текущего положения ход
+	// валидирован, ошибок не ожидаем.
+	newBoard, err = getNewBoard(b, piece, from, to, newpiece)
 	if err != nil {
 		return newBoard, isValid, err
 	}
 
-	// 7. Проверка, что при рокировке король не проходит через битое поле.
+	// TODO: остановилась здесь
+
+	// 9. Проверяем, что при новой позиции на доске не появился шах для собственного короля.
 	var king board.Piece
 	if b.NextToMove() {
 		king = board.WhiteKing
 	} else {
 		king = board.BlackKing
 	}
-	if (piece == board.WhiteKing || piece == board.BlackKing) && (abs(from.diffColumn(to)) == 2) {
-		squareToBePassed := newSquare(from.toInt8() + ((to.toInt8() - from.toInt8()) / 2))
-		var squareChecked bool
-		squareChecked, err = isSquareChecked(b, squareToBePassed, king)
-		if err != nil {
-			return newBoard, isValid, err
-		}
-		if squareChecked {
-			return newBoard, isValid, fmt.Errorf("%v", errCastlingThroughCheckedSquare)
-		}
-	}
-
-	// 8. На текущем этапе ход возможен. Генерируем новое положение доски newBoard. Выдается ошибка при некорректном
-	// проведении пешки, некорректной рокировке, некорректном взятии на проходе по логике из пакета board.
-	newBoard, err = getNewBoard(b, piece, from, to, newpiece)
-	if err != nil {
-		return newBoard, isValid, fmt.Errorf("%w", err)
-	}
-
-	// 9. Проверяем, что при новой позиции на доске не появился шах для собственного короля.
 	var kingChecked bool
 	kingChecked, err = isKingChecked(b, king)
 	if err != nil {
@@ -128,9 +118,9 @@ func advancedLogic(b board.Board, from, to square, newpiece board.Piece) (newBoa
 	return newBoard, isValid, nil
 }
 
-// checkFigureColor проверяет, что очередь хода и цвет фигуры p, которую хотят передвинуть, совпадают.
+// checkPieceColor проверяет, что очередь хода и цвет фигуры p, которую хотят передвинуть, совпадают.
 // Возвращает true в случае успеха, false в противном случае.
-func checkFigureColor(b board.Board, p board.Piece) bool {
+func checkPieceColor(b board.Board, p board.Piece) (isOk bool) {
 	var pieceIsWhite bool
 
 	switch p {
@@ -141,10 +131,10 @@ func checkFigureColor(b board.Board, p board.Piece) bool {
 	}
 
 	if (b.NextToMove() && pieceIsWhite) || (!b.NextToMove() && !pieceIsWhite) {
-		return true
+		isOk = true
 	}
 
-	return false
+	return isOk
 }
 
 // getSquaresToBePassed возвращает массив клеток, через которые проходит фигура p при движении из клетки from на клетку
@@ -192,15 +182,19 @@ func getSquaresToBePassed(p board.Piece, from, to square) (squaresToBePassed []s
 // клетке есть фигура, возвращается флаг false (иначе true). Если при обработке запроса возникает ошибка, она также
 // возвращается (иначе nil).
 func checkSquaresToBePassed(b board.Board, squaresToBePassed []square) (areSquaresEmpty bool, err error) {
+	if len(squaresToBePassed) == 0 {
+		areSquaresEmpty = true
+		return areSquaresEmpty, nil
+	}
+
 	for _, sq := range squaresToBePassed {
 		var piece board.Piece
 		piece, err = b.Get(board.Sq(sq.toInt()))
 		if err != nil {
-			log.Printf("%v", err)
 			return areSquaresEmpty, err
 		}
 		if piece != 0 {
-			log.Printf("%v: %v", errPieceFound, sq)
+			log.Printf("%v: %v", errPiecesStayInTheWay, sq)
 			return areSquaresEmpty, nil
 		}
 	}
@@ -209,40 +203,114 @@ func checkSquaresToBePassed(b board.Board, squaresToBePassed []square) (areSquar
 	return areSquaresEmpty, nil
 }
 
-//TODO: остановилась здесь
-
-// checkToSquare проверяет наличие фигуры на клетке to на предмет совместимости хода. Возвращает ошибку при
-// несовместимости хода или nil в случае успеха.
-func checkToSquare(b *board.Board, pieceFrom board.Piece, from, to square) error {
-	pieceTo, _ := b.Get(board.Sq(to.toInt()))
+// checkToSquare проверяет наличие фигуры на клетке to на предмет совместимости хода. Возвращает флаг (true если фигура
+// в клетке to совместима с цветом и типом фигуры pieceFrom, false в противном случае. Если при обработке возникает
+// ошибка, возвращает ее (иначе nil).
+func checkToSquare(b *board.Board, pieceFrom board.Piece, from, to square) (isOk bool, err error) {
+	var pieceTo board.Piece
+	pieceTo, err = b.Get(board.Sq(to.toInt()))
+	if err != nil {
+		return isOk, err
+	}
 
 	// Если в клетке to нет фигур, ход возможен.
 	if pieceTo == 0 {
-		return nil
+		isOk = true
+		return isOk, nil
 	}
 
 	// Если фигура в to принадлежит самому участнику, ход невозможен.
-	if checkFigureColor(*b, pieceTo) {
-		return fmt.Errorf("%v", errClashWithPieceOfSameColor)
+	if checkPieceColor(*b, pieceTo) {
+		log.Printf("%v", errClashWithPieceOfSameColor)
+		return isOk, nil
 
 		// Если фигура в to принадлежит сопернику, проверка, возможно ли взятие
 	} else {
 		// ни одна фигура не может взять короля
 		switch pieceTo {
 		case board.WhiteKing, board.BlackKing:
-			return fmt.Errorf("%v", errClashWithKing)
+			log.Printf("%v", errClashWithKing)
+			return isOk, nil
 		}
 
 		// пешка не может взять ни одну фигуру при движении вертикально
 		switch pieceFrom {
 		case board.WhitePawn, board.BlackPawn:
 			if from.diffColumn(to) == 0 {
-				return fmt.Errorf("%v", errClashWithPawn)
+				log.Printf("%v", errClashWithPawn)
+				return isOk, nil
 			}
 		}
 	}
 
-	return nil
+	isOk = true
+	return isOk, nil
+}
+
+// TODO: check tests later
+// checkCastling валидирует рокировку: проверка, что при рокировке король не проходит через битое поле, рокировка
+// разрешена (король и ладья еще не двигались, между ними все клетки пустые). НО: Поле, на котором королль оказывается
+// после рокировки проверяется на наличие шаха в другой функции. Если при обработке возникает ошибка, возвращает ее
+// (иначе nil).
+func checkCastling(b *board.Board, piece board.Piece, from, to square) (isOk bool, err error) {
+	var rookSquare square
+	var castling board.Castling
+	switch piece {
+	case board.WhiteKing:
+		switch to.column {
+		case 2:
+			rookSquare = newSquare(0)
+			castling = board.WhiteQueenside
+		case 6:
+			rookSquare = newSquare(7)
+			castling = board.WhiteKingside
+		}
+	case board.BlackKing:
+		switch to.column {
+		case 2:
+			rookSquare = newSquare(56)
+			castling = board.BlackQueenside
+		case 6:
+			rookSquare = newSquare(63)
+			castling = board.BlackKingside
+		}
+	}
+
+	// 1. проверка, что король не проходит через битое поле (под шахом).
+	squareToBePassed := newSquare(from.toInt8() + ((to.toInt8() - from.toInt8()) / 2))
+	var squareChecked bool
+	squareChecked, err = isSquareChecked(*b, squareToBePassed, piece)
+	if err != nil {
+		return isOk, err
+	}
+	if squareChecked {
+		log.Printf("%v", errCastlingThroughCheckedSquare)
+		return isOk, nil
+	}
+
+	log.Println(rookSquare, "rookSquare")
+
+	// 2. проверка, что между клеткой короля (from) и клеткой ладьи (rookSquare) все клетки пустые
+	squaresBetweenKingAndRook := getSquaresToBePassed(board.WhiteRook, from, rookSquare)
+	log.Println(squaresBetweenKingAndRook, "squaresBetweenKingAndRook")
+	for _, sq := range squaresBetweenKingAndRook {
+		var pc board.Piece
+		pc, err = b.Get(board.Sq(sq.toInt()))
+		if err != nil {
+			return isOk, err
+		}
+		if pc != 0 {
+			log.Printf("%v", errCastlingThroughOccupiedSquare)
+			return isOk, nil
+		}
+	}
+
+	// 3. Проверка, что указанная рокировка (castling) валидна (ни король, ни ладья еще не двигались).
+	if b.HaveCastling(castling) {
+		isOk = true
+	}
+
+	return isOk, nil
 }
 
 // getNewBoard генерирует новое положение доски с учетом рокировок, взятия на прохоже и проведения пешки. Возвращает
@@ -260,8 +328,8 @@ func getNewBoard(b board.Board, piece board.Piece, from, to square, newpiece boa
 	// обработка рокировки белого и черного короля
 	if (piece == board.WhiteKing || piece == board.BlackKing) && (abs(from.diffColumn(to)) == 2) {
 		// сторона короля
+		var castling board.Castling
 		if to.column == 6 {
-			var castling board.Castling
 			switch piece {
 			case board.WhiteKing:
 				castling = board.WhiteKingside
@@ -269,26 +337,21 @@ func getNewBoard(b board.Board, piece board.Piece, from, to square, newpiece boa
 				castling = board.BlackKingside
 			}
 
-			err := b.Castle(castling)
-			if err != nil {
-				return b, err
-			}
-
 			// сторона королевы
 		} else if to.column == 2 {
-			var castling board.Castling
 			switch piece {
 			case board.WhiteKing:
 				castling = board.WhiteQueenside
 			case board.BlackKing:
 				castling = board.BlackQueenside
 			}
-
-			err := b.Castle(castling)
-			if err != nil {
-				return b, err
-			}
 		}
+
+		err := b.Castle(castling)
+		if err != nil {
+			return b, err
+		}
+		return b, nil
 	}
 
 	// обработка всех остальных ходов
@@ -364,7 +427,8 @@ func isSquareChecked(b board.Board, sq square, king board.Piece) (isSquareChecke
 }
 
 // getSquareByPiece возвращает клетку, на которой находится заданная фигура. Если такой фигуры на доске нет,
-// возвращает ошибку.
+// возвращает ошибку. Если таких фигур несколько, возвращает первую встретившуюся по пути с верхнего ряда к первому,
+// слево направо.
 func getSquareByPiece(b board.Board, pieceString string) (pieceSquare square, err error) {
 	boardFEN := b.FEN()
 	boardFENArr := strings.Split(boardFEN, " ")
@@ -410,6 +474,7 @@ func getSquareByPiece(b board.Board, pieceString string) (pieceSquare square, er
 // возникает ошибка, она также возвращается, иначе возвращется nil.
 func checkEnemyKnightsNearKing(b board.Board, kingSquare square, enemyKnight board.Piece) (isEnemyKnightPresent bool, err error) {
 	var squaresToBeChecked []square
+
 	// +2 клетки вверх, +1 клетка вправо
 	if kingSquare.row <= 5 && kingSquare.column <= 6 {
 		squaresToBeChecked = append(squaresToBeChecked, newSquare(kingSquare.toInt8()+int8(17)))
@@ -459,95 +524,66 @@ func checkEnemyKnightsNearKing(b board.Board, kingSquare square, enemyKnight boa
 
 // checkEnemiesVerticallyAndHorizontally проверяет ближайшие клетки по вертикали (сверху, снизу) и
 // горизонтали (слева, справа) по отношению к клетке своего короля kingSquare, на которых находятся вражеские ладьи и ферзи.
-// Если таких клеток нет, возвращется nil, иначе сообщение об ошибке.
+// Если при проверке клеток возникает ошибка, она также возвращается, иначе возвращется nil.
 func checkEnemiesVerticallyAndHorizontally(b board.Board, kingSquare square, enemyRook, enemyQueen board.Piece) (isEnemyVerticallyOrHorizontallyPresent bool, err error) {
+	var (
+		squaresToBeChecked [][]square
+		squaresUp          []square
+		squaresDown        []square
+		squaresRight       []square
+		squaresLeft        []square
+		piece              board.Piece
+	)
+
 	// проверка вертикали вверх
 	var row = kingSquare.row
-	var squareToBeChecked = kingSquare.toInt()
 	for row < 7 {
-		var piece board.Piece
-		piece, err = b.Get(board.Sq(squareToBeChecked + 8))
-		if err != nil {
-			return isEnemyVerticallyOrHorizontallyPresent, err
-		}
-
-		switch piece {
-		case 0:
-			continue
-		case enemyRook, enemyQueen:
-			isEnemyVerticallyOrHorizontallyPresent = true
-			return isEnemyVerticallyOrHorizontallyPresent, nil
-		default:
-			break
-		}
-
+		squaresUp = append(squaresUp, newSquare(kingSquare.toInt8()+int8(8*(row-kingSquare.row))))
 		row++
 	}
+	squaresToBeChecked = append(squaresToBeChecked, squaresUp)
 
 	// проверка вертикали вниз
 	row = kingSquare.row
 	for row > 0 {
-		var piece board.Piece
-		piece, err = b.Get(board.Sq(squareToBeChecked - 8))
-		if err != nil {
-			return isEnemyVerticallyOrHorizontallyPresent, err
-		}
-
-		switch piece {
-		case 0:
-			continue
-		case enemyRook, enemyQueen:
-			isEnemyVerticallyOrHorizontallyPresent = true
-			return isEnemyVerticallyOrHorizontallyPresent, nil
-		default:
-			break
-		}
-
+		squaresDown = append(squaresDown, newSquare(kingSquare.toInt8()-int8(8*(kingSquare.row-row))))
 		row--
 	}
+	squaresToBeChecked = append(squaresToBeChecked, squaresDown)
 
-	var column = kingSquare.column
 	// проверка горизонтали вправо
+	var column = kingSquare.column
 	for column < 7 {
-		var piece board.Piece
-		piece, err = b.Get(board.Sq(squareToBeChecked + 1))
-		if err != nil {
-			return isEnemyVerticallyOrHorizontallyPresent, err
-		}
-
-		switch piece {
-		case 0:
-			continue
-		case enemyRook, enemyQueen:
-			isEnemyVerticallyOrHorizontallyPresent = true
-			return isEnemyVerticallyOrHorizontallyPresent, nil
-		default:
-			break
-		}
-
+		squaresRight = append(squaresRight, newSquare(kingSquare.toInt8()+int8(column-kingSquare.column)))
 		column++
 	}
+	squaresToBeChecked = append(squaresToBeChecked, squaresRight)
 
-	column = kingSquare.column
 	// проверка горизонтали влево
+	column = kingSquare.column
 	for column > 0 {
-		var piece board.Piece
-		piece, err = b.Get(board.Sq(squareToBeChecked - 1))
-		if err != nil {
-			return isEnemyVerticallyOrHorizontallyPresent, err
-		}
-
-		switch piece {
-		case 0:
-			continue
-		case enemyRook, enemyQueen:
-			isEnemyVerticallyOrHorizontallyPresent = true
-			return isEnemyVerticallyOrHorizontallyPresent, nil
-		default:
-			break
-		}
-
+		squaresLeft = append(squaresLeft, newSquare(kingSquare.toInt8()+int8(kingSquare.column-column)))
 		column--
+	}
+	squaresToBeChecked = append(squaresToBeChecked, squaresLeft)
+
+	for _, direction := range squaresToBeChecked {
+		for _, sq := range direction {
+			piece, err = b.Get(board.Sq(sq.toInt()))
+			if err != nil {
+				return isEnemyVerticallyOrHorizontallyPresent, err
+			}
+
+			switch piece {
+			case 0:
+				continue
+			case enemyRook, enemyQueen:
+				isEnemyVerticallyOrHorizontallyPresent = true
+				return isEnemyVerticallyOrHorizontallyPresent, nil
+			default:
+				break
+			}
+		}
 	}
 
 	return isEnemyVerticallyOrHorizontallyPresent, nil
@@ -557,128 +593,85 @@ func checkEnemiesVerticallyAndHorizontally(b board.Board, kingSquare square, ene
 // которых находятся вражеские слоны, ферзи и пешки. Если есть хотя бы одна такая клетка, возвращает true, иначе false.
 // Если при проверке клеток возникает ошибка, она также возвращается, иначе возвращется nil.
 func checkEnemiesDiagonally(b board.Board, kingSquare square, enemyQueen, enemyBishop, enemyPawn board.Piece) (isEnemyDiagonallyPresent bool, err error) {
-	var row = kingSquare.row
-	var column = kingSquare.column
+	var (
+		squaresToBeChecked [][]square
+		squaresUpRight     []square
+		squaresDownRight   []square
+		squaresDownLeft    []square
+		squaresUpLeft      []square
+		piece              board.Piece
+	)
 
 	// проверка диагонали вправо-вверх
-	var squareToBeChecked = kingSquare.toInt()
+	var row = kingSquare.row
+	var column = kingSquare.column
 	for row < 7 && column < 7 {
-		var piece board.Piece
-		piece, err = b.Get(board.Sq(squareToBeChecked + 9))
-		if err != nil {
-			return isEnemyDiagonallyPresent, err
-		}
-
-		switch piece {
-		case 0:
-			continue
-		case enemyQueen, enemyBishop:
-			isEnemyDiagonallyPresent = true
-			return isEnemyDiagonallyPresent, nil
-		case enemyPawn:
-			if enemyPawn == board.BlackPawn && (abs(row-kingSquare.row) == 1) {
-				isEnemyDiagonallyPresent = true
-				return isEnemyDiagonallyPresent, nil
-			}
-		default:
-			break
-		}
-
+		squaresUpRight = append(squaresUpRight, newSquare(kingSquare.toInt8()+int8(9)))
 		row++
 		column++
 	}
+	squaresToBeChecked = append(squaresToBeChecked, squaresUpRight)
 
 	// проверка диагонали вправо-вниз
 	row = kingSquare.row
 	column = kingSquare.column
 	for row > 1 && column < 7 {
-		var piece board.Piece
-		piece, err = b.Get(board.Sq(squareToBeChecked - 7))
-		if err != nil {
-			return isEnemyDiagonallyPresent, err
-		}
-
-		switch piece {
-		case 0:
-			continue
-		case enemyQueen, enemyBishop:
-			isEnemyDiagonallyPresent = true
-			return isEnemyDiagonallyPresent, nil
-		case enemyPawn:
-			if enemyPawn == board.WhitePawn && (abs(row-kingSquare.row) == 1) {
-				isEnemyDiagonallyPresent = true
-				return isEnemyDiagonallyPresent, nil
-			}
-		default:
-			break
-		}
-
+		squaresDownRight = append(squaresDownRight, newSquare(kingSquare.toInt8()-int8(7)))
 		row--
 		column++
 	}
+	squaresToBeChecked = append(squaresToBeChecked, squaresDownRight)
 
 	// проверка диагонали влево-вниз
 	row = kingSquare.row
 	column = kingSquare.column
 	for row > 1 && column > 1 {
-		var piece board.Piece
-		piece, err = b.Get(board.Sq(squareToBeChecked - 9))
-		if err != nil {
-			return isEnemyDiagonallyPresent, err
-		}
-
-		switch piece {
-		case 0:
-			continue
-		case enemyQueen, enemyBishop:
-			isEnemyDiagonallyPresent = true
-			return isEnemyDiagonallyPresent, nil
-		case enemyPawn:
-			if enemyPawn == board.WhitePawn && (abs(row-kingSquare.row) == 1) {
-				isEnemyDiagonallyPresent = true
-				return isEnemyDiagonallyPresent, nil
-			}
-		default:
-			break
-		}
-
+		squaresDownLeft = append(squaresDownLeft, newSquare(kingSquare.toInt8()-int8(9)))
 		row--
 		column--
 	}
+	squaresToBeChecked = append(squaresToBeChecked, squaresDownLeft)
 
 	// проверка диагонали влево-вверх
 	row = kingSquare.row
 	column = kingSquare.column
 	for row < 7 && column > 1 {
-		var piece board.Piece
-		piece, err = b.Get(board.Sq(squareToBeChecked + 7))
-		if err != nil {
-			return isEnemyDiagonallyPresent, err
-		}
-
-		switch piece {
-		case 0:
-			continue
-		case enemyQueen, enemyBishop:
-			isEnemyDiagonallyPresent = true
-			return isEnemyDiagonallyPresent, nil
-		case enemyPawn:
-			if enemyPawn == board.BlackPawn && (abs(row-kingSquare.row) == 1) {
-				isEnemyDiagonallyPresent = true
-				return isEnemyDiagonallyPresent, nil
-			}
-		default:
-			break
-		}
-
+		squaresUpLeft = append(squaresUpLeft, newSquare(kingSquare.toInt8()+int8(7)))
 		row++
 		column--
+	}
+	squaresToBeChecked = append(squaresToBeChecked, squaresUpLeft)
+
+	for _, direction := range squaresToBeChecked {
+		for _, sq := range direction {
+			piece, err = b.Get(board.Sq(sq.toInt()))
+			if err != nil {
+				return isEnemyDiagonallyPresent, err
+			}
+
+			switch piece {
+			case 0:
+				continue
+			case enemyQueen, enemyBishop:
+				isEnemyDiagonallyPresent = true
+				return isEnemyDiagonallyPresent, nil
+			case enemyPawn:
+				if enemyPawn == board.BlackPawn && (sq.row-kingSquare.row == 1) {
+					isEnemyDiagonallyPresent = true
+				} else if enemyPawn == board.WhitePawn && (sq.row-kingSquare.row == -1) {
+					isEnemyDiagonallyPresent = true
+				}
+				return isEnemyDiagonallyPresent, nil
+			default:
+				break
+			}
+		}
 	}
 
 	return isEnemyDiagonallyPresent, nil
 }
 
-// checkEnemiesDiagonally проверяет ближайшие клетки (вертикально, горизонтально, диагонально к клетке своего короля
+// checkDistanceToEnemyKing проверяет ближайшие клетки (вертикально, горизонтально, диагонально к клетке своего короля
 // kingSquare на наличие на них вражеского короля. Если вражеский король оказался вплотную к своему королю, возвращает
 // true, иначе false. Если при проверке клеток возникает ошибка, она также возвращается, иначе возвращется nil.
 func checkDistanceToEnemyKing(b board.Board) (isEnemyKingAdjacent bool, err error) {

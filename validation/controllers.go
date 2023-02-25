@@ -13,29 +13,29 @@ import (
 )
 
 var (
-	errPieceNotExist                = fmt.Errorf("piece does not exist")
-	errInvalidHttpMethod            = fmt.Errorf("method is not supported")
-	errFromToSquaresNotDiffer       = fmt.Errorf("from and to squares are not different")
-	errPawnMoveNotValid             = fmt.Errorf("pawn move is not valid")
-	errKnightMoveNotValid           = fmt.Errorf("knight move is not valid")
-	errBishopMoveNotValid           = fmt.Errorf("bishop move is not valid")
-	errRookMoveNotValid             = fmt.Errorf("rook move is not valid")
-	errQueenMoveNotValid            = fmt.Errorf("queen move is not valid")
-	errKingMoveNotValid             = fmt.Errorf("king move is not valid")
-	errNoPieceOnFromSquare          = fmt.Errorf("no piece on from square")
-	errPieceWrongColor              = fmt.Errorf("piece has wrong color")
-	errPieceFound                   = fmt.Errorf("piece found on the square")
-	errClashWithPieceOfSameColor    = fmt.Errorf("clash with piece of the same color")
-	errClashWithKing                = fmt.Errorf("clash with king")
-	errClashWithPawn                = fmt.Errorf("pawn can not clash with another piece when moving vertically")
-	errPawnPromotionNotValid        = fmt.Errorf("pawn promotion to pawn or king is not valid")
-	errNewpieceExist                = fmt.Errorf("newpiece exists with no pawn promotion")
-	errNewpieceNotExist             = fmt.Errorf("newpiece does not exist but pawn promotion required")
-	errPieceNotExistOnBoard         = fmt.Errorf("piece does not exist on board")
-	errKingChecked                  = fmt.Errorf("king checked after move")
-	errKingsAdjacent                = fmt.Errorf("kings are adjacent")
-	errCastlingThroughCheckedSquare = fmt.Errorf("castling is not valid through square under check")
-	errPiecesStayInTheWay           = fmt.Errorf("piece or pieces stay in the way of figure move")
+	errPieceNotExist                 = fmt.Errorf("piece does not exist")
+	errInvalidHttpMethod             = fmt.Errorf("method is not supported")
+	errFromToSquaresNotDiffer        = fmt.Errorf("from and to squares are not different")
+	errPawnMoveNotValid              = fmt.Errorf("pawn move is not valid")
+	errKnightMoveNotValid            = fmt.Errorf("knight move is not valid")
+	errBishopMoveNotValid            = fmt.Errorf("bishop move is not valid")
+	errRookMoveNotValid              = fmt.Errorf("rook move is not valid")
+	errQueenMoveNotValid             = fmt.Errorf("queen move is not valid")
+	errKingMoveNotValid              = fmt.Errorf("king move is not valid")
+	errNoPieceOnFromSquare           = fmt.Errorf("no piece on from square")
+	errPieceWrongColor               = fmt.Errorf("piece has wrong color")
+	errClashWithPieceOfSameColor     = fmt.Errorf("clash with piece of the same color")
+	errClashWithKing                 = fmt.Errorf("clash with king")
+	errClashWithPawn                 = fmt.Errorf("pawn can not clash with another piece when moving vertically")
+	errPawnPromotionNotValid         = fmt.Errorf("pawn promotion to pawn or king is not valid")
+	errNewpieceExist                 = fmt.Errorf("newpiece exists with no pawn promotion")
+	errNewpieceNotExist              = fmt.Errorf("newpiece does not exist but pawn promotion required")
+	errPieceNotExistOnBoard          = fmt.Errorf("piece does not exist on board")
+	errKingChecked                   = fmt.Errorf("king checked after move")
+	errKingsAdjacent                 = fmt.Errorf("kings are adjacent")
+	errCastlingThroughCheckedSquare  = fmt.Errorf("castling is not valid through square under check")
+	errCastlingThroughOccupiedSquare = fmt.Errorf("castling is not valid through square occupied by other pieces")
+	errPiecesStayInTheWay            = fmt.Errorf("piece or pieces stay in the way of figure move")
 )
 
 // http хендлеры
@@ -134,7 +134,7 @@ type advancedResponse struct {
 func Advanced(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" || r.Method == "HEAD" {
 		// валидация входных данных: доска board существует
-		// TODO board нужно ли проверять валидность доски где-то вообще?
+		// TODO: board нужно ли проверять валидность доски где-то вообще?
 		boardParsed := r.URL.Query().Get("board")
 		b, err := board.FromUsFEN(boardParsed)
 		if err != nil {
@@ -142,6 +142,7 @@ func Advanced(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
+
 		// валидация входных данных: клетка from существуют
 		fromParsed := r.URL.Query().Get("from")
 		// перевод в тип board.square для цифро-буквенного обозначения клетки (напр., "а1")
@@ -157,6 +158,7 @@ func Advanced(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
+
 		// валидация входных данных: клетка to существуют
 		toParsed := r.URL.Query().Get("to")
 		// перевод в тип board.square для цифро-буквенного обозначения клетки (напр., "а1")
@@ -172,12 +174,14 @@ func Advanced(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
+
 		// валидация входных данных: клетки from и to различны
 		if from == to {
 			log.Printf("%v: %v (from), %v (to)", errFromToSquaresNotDiffer, from, to)
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
+
 		// валидация входных данных: фигура newpiece принимает q/r/b/n/Q/R/B/N или пустое значение
 		newpieceParsed := r.URL.Query().Get("newpiece")
 		var newpiece board.Piece
