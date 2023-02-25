@@ -40,16 +40,6 @@ func (s1 *square) diffColumn(s2 square) int {
 	return s1.column - s2.column
 }
 
-// toInt8 возвращает представление клетки s1 в формате int8.
-func (s1 *square) toInt8() int8 {
-	return int8(s1.row*8 + s1.column)
-}
-
-// toInt возвращает представление клетки s1 в формате int.
-func (s1 *square) toInt() int {
-	return s1.row*8 + s1.column
-}
-
 // методы move
 
 // move для каждого типа фигуры. В случае невозможности сделать ход, возвращают ошибку, иначе возвращают nil.

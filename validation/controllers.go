@@ -101,10 +101,6 @@ func Simple(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusBadRequest)
 }
 
-type advancedResponse struct {
-	Board string `json:"board"`
-}
-
 // Advanced сервис отвечает за сложную валидацию хода по начальной и конечной клетке, а также по текущему состоянию
 // доски в нотации FEN. Также принимает на вход URL-параметр newpiece (это новая фигура, в которую нужно превратить
 // пешку при достижении последнего ряда), в формате pieceВозвращает заголовок HttpResponse 200 (ход валиден) или
