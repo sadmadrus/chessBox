@@ -427,7 +427,7 @@ func isSquareChecked(b board.Board, sq square, king board.Piece) (isSquareChecke
 }
 
 // getSquareByPiece возвращает клетку, на которой находится заданная фигура. Если такой фигуры на доске нет,
-// возвращает ошибку. Если таких фигур несколько, возвращает первую встретившуюся по пути с верхнего ряда к первому,
+// возвращает ошибку. Если таких фигур несколько, возвращает первую встретившуюся по пути с верхнего ряда к нижнему,
 // слево направо.
 func getSquareByPiece(b board.Board, pieceString string) (pieceSquare square, err error) {
 	boardFEN := b.FEN()
@@ -444,7 +444,7 @@ func getSquareByPiece(b board.Board, pieceString string) (pieceSquare square, er
 	var boardRow = boardFEN
 	for rowsCount > 0 {
 		slashIndex := strings.Index(boardRow, "/")
-		boardRow = boardRow[slashIndex:]
+		boardRow = boardRow[slashIndex+1:]
 		rowsCount--
 	}
 	slashIndex := strings.Index(boardRow, "/")
@@ -643,8 +643,6 @@ func checkEnemiesDiagonally(b board.Board, kingSquare square, enemyQueen, enemyB
 		squaresUpLeft = append(squaresUpLeft, newSquare(kingSquare.toInt8()+int8(7*abs(row-kingSquare.row))))
 	}
 	squaresToBeChecked = append(squaresToBeChecked, squaresUpLeft)
-
-	log.Println(squaresToBeChecked)
 
 	for _, direction := range squaresToBeChecked {
 

@@ -229,6 +229,46 @@ func TestGetNewBoard(t *testing.T) {
 	}
 }
 
+func TestGetSquareByPiece(t *testing.T) {
+	brdFEN := "1nbk2b1/6P1/8/2nN4/8/3N2Q1/2K5/8 w KQkq - 5 6"
+	brd, _ := board.FromFEN(brdFEN)
+
+	tests := []struct {
+		name        string
+		brd         board.Board
+		pieceString string
+		pieceSquare square
+		isErr       bool
+	}{
+		{"n b8(57)", *brd, "n", newSquare(57), false},
+		{"S", *brd, "S", newSquare(0), true},
+		{"b c8(58)", *brd, "b", newSquare(58), false},
+		{"q", *brd, "q", newSquare(0), true},
+		{"k d8(59)", *brd, "k", newSquare(59), false},
+		{"N d5(35)", *brd, "N", newSquare(35), false},
+		{"K c2(10)", *brd, "K", newSquare(10), false},
+		{"Q g3(22)", *brd, "Q", newSquare(22), false},
+		{"-", *brd, "-", newSquare(0), true},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			res, err := getSquareByPiece(tc.brd, tc.pieceString)
+			if err != nil && !tc.isErr {
+				t.Fatalf("want nil, got error: %s", err)
+			}
+
+			if err == nil && tc.isErr {
+				t.Fatal("want error, got nil")
+			}
+
+			if res != tc.pieceSquare {
+				t.Fatalf("want %v, got %v", tc.pieceSquare, res)
+			}
+		})
+	}
+}
+
 func TestCheckEnemyKnightsNearKing(t *testing.T) {
 	brdWhiteFEN := "8/8/8/8/2b5/1k6/3K4/1r3N2 w - - 5 6"
 	brdBlackFEN := "k7/8/1NK5/8/8/8/8/8 b - - 5 6"
@@ -337,6 +377,7 @@ func TestCheckEnemiesDiagonally(t *testing.T) {
 		{"P down-left", *brdBlack1, newSquare(21), board.WhiteQueen, board.WhiteBishop, board.WhitePawn, true},
 		{"B, Q hidden by P, R; P ud-right", *brdBlack2, newSquare(28), board.WhiteQueen, board.WhiteBishop, board.WhitePawn, false},
 	}
+
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			res, err := checkEnemiesDiagonally(tc.brd, tc.kingSquare, tc.enemyQueen, tc.enemyBishop, tc.enemyPawn)
