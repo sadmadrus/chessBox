@@ -259,3 +259,93 @@ func TestCheckEnemyKnightsNearKing(t *testing.T) {
 		})
 	}
 }
+
+func TestCheckEnemiesVerticallyAndHorizontally(t *testing.T) {
+	var (
+		brdWhite1FEN = "3q4/8/8/8/8/8/3K4/8 w - - 5 6"
+		brdWhite2FEN = "3q4/8/3p4/3r4/3b4/8/3K4/8 w - - 5 6"
+		brdWhite3FEN = "8/8/8/8/8/8/3K1RQq/8 w - - 5 6"
+		brdBlack1FEN = "8/8/8/8/8/1q1Q2k1/8/7K b - - 5 6"
+		brdBlack2FEN = "8/8/8/8/8/6kR/8/7K b - - 5 6"
+		brdBlack3FEN = "6k1/8/8/6N1/8/8/8/6R1 b - - 5 6"
+	)
+
+	brdWhite1, _ := board.FromFEN(brdWhite1FEN)
+	brdWhite2, _ := board.FromFEN(brdWhite2FEN)
+	brdWhite3, _ := board.FromFEN(brdWhite3FEN)
+	brdBlack1, _ := board.FromFEN(brdBlack1FEN)
+	brdBlack2, _ := board.FromFEN(brdBlack2FEN)
+	brdBlack3, _ := board.FromFEN(brdBlack3FEN)
+
+	tests := []struct {
+		name           string
+		brd            board.Board
+		kingSquare     square
+		enemyRook      board.Piece
+		enemyQueen     board.Piece
+		isEnemyPresent bool
+	}{
+		{"q far vertically", *brdWhite1, newSquare(11), board.BlackRook, board.BlackQueen, true},
+		{"q, r vertically hidden by b", *brdWhite2, newSquare(11), board.BlackRook, board.BlackQueen, false},
+		{"q horizontally hidden by R, Q", *brdWhite3, newSquare(11), board.BlackRook, board.BlackQueen, false},
+
+		{"Q horizontally", *brdBlack1, newSquare(22), board.WhiteRook, board.WhiteQueen, true},
+		{"R close horizontally", *brdBlack2, newSquare(22), board.WhiteRook, board.WhiteQueen, true},
+		{"R vertically hidden by N, b", *brdBlack3, newSquare(62), board.WhiteRook, board.WhiteQueen, false},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			res, err := checkEnemiesVerticallyAndHorizontally(tc.brd, tc.kingSquare, tc.enemyRook, tc.enemyQueen)
+			if err != nil {
+				t.Fatalf("want nil, got error: %s", err)
+			}
+			if res != tc.isEnemyPresent {
+				t.Fatalf("want %v, got %v", tc.isEnemyPresent, res)
+			}
+		})
+	}
+}
+
+func TestCheckEnemiesDiagonally(t *testing.T) {
+	var (
+		brdWhite1FEN = "7q/8/8/8/8/8/8/K7 w - - 5 6"
+		brdWhite2FEN = "8/1N6/8/3K4/8/1b6/8/7Q w - - 5 6"
+		brdWhite3FEN = "8/8/3K4/2p1p3/8/8/8/8 w - - 5 6"
+		brdBlack1FEN = "8/8/8/3r3q/8/5k2/4P3/8 b - - 5 6"
+		brdBlack2FEN = "8/1B6/2P5/5P2/4k3/5b2/2R5/1Q6 b - - 5 6"
+	)
+
+	brdWhite1, _ := board.FromFEN(brdWhite1FEN)
+	brdWhite2, _ := board.FromFEN(brdWhite2FEN)
+	brdWhite3, _ := board.FromFEN(brdWhite3FEN)
+	brdBlack1, _ := board.FromFEN(brdBlack1FEN)
+	brdBlack2, _ := board.FromFEN(brdBlack2FEN)
+
+	tests := []struct {
+		name           string
+		brd            board.Board
+		kingSquare     square
+		enemyQueen     board.Piece
+		enemyBishop    board.Piece
+		enemyPawn      board.Piece
+		isEnemyPresent bool
+	}{
+		{"q far up-right", *brdWhite1, newSquare(0), board.BlackQueen, board.BlackBishop, board.BlackPawn, true},
+		{"b down-left", *brdWhite2, newSquare(35), board.BlackQueen, board.BlackBishop, board.BlackPawn, true},
+		{"p down-left, down-right", *brdWhite3, newSquare(35), board.BlackQueen, board.BlackBishop, board.BlackPawn, false},
+
+		{"P down-left", *brdBlack1, newSquare(21), board.WhiteQueen, board.WhiteBishop, board.WhitePawn, true},
+		{"B, Q hidden by P, R; P ud-right", *brdBlack2, newSquare(28), board.WhiteQueen, board.WhiteBishop, board.WhitePawn, false},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			res, err := checkEnemiesDiagonally(tc.brd, tc.kingSquare, tc.enemyQueen, tc.enemyBishop, tc.enemyPawn)
+			if err != nil {
+				t.Fatalf("want nil, got error: %s", err)
+			}
+			if res != tc.isEnemyPresent {
+				t.Fatalf("want %v, got %v", tc.isEnemyPresent, res)
+			}
+		})
+	}
+}

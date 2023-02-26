@@ -538,36 +538,38 @@ func checkEnemiesVerticallyAndHorizontally(b board.Board, kingSquare square, ene
 	// проверка вертикали вверх
 	var row = kingSquare.row
 	for row < 7 {
-		squaresUp = append(squaresUp, newSquare(kingSquare.toInt8()+int8(8*(row-kingSquare.row))))
 		row++
+		squaresUp = append(squaresUp, newSquare(kingSquare.toInt8()+int8(8*(row-kingSquare.row))))
 	}
 	squaresToBeChecked = append(squaresToBeChecked, squaresUp)
 
 	// проверка вертикали вниз
 	row = kingSquare.row
 	for row > 0 {
-		squaresDown = append(squaresDown, newSquare(kingSquare.toInt8()-int8(8*(kingSquare.row-row))))
 		row--
+		squaresDown = append(squaresDown, newSquare(kingSquare.toInt8()-int8(8*(kingSquare.row-row))))
 	}
 	squaresToBeChecked = append(squaresToBeChecked, squaresDown)
 
 	// проверка горизонтали вправо
 	var column = kingSquare.column
 	for column < 7 {
-		squaresRight = append(squaresRight, newSquare(kingSquare.toInt8()+int8(column-kingSquare.column)))
 		column++
+		squaresRight = append(squaresRight, newSquare(kingSquare.toInt8()+int8(column-kingSquare.column)))
 	}
 	squaresToBeChecked = append(squaresToBeChecked, squaresRight)
 
 	// проверка горизонтали влево
 	column = kingSquare.column
 	for column > 0 {
-		squaresLeft = append(squaresLeft, newSquare(kingSquare.toInt8()+int8(kingSquare.column-column)))
 		column--
+		squaresLeft = append(squaresLeft, newSquare(kingSquare.toInt8()-int8(kingSquare.column-column)))
 	}
 	squaresToBeChecked = append(squaresToBeChecked, squaresLeft)
 
 	for _, direction := range squaresToBeChecked {
+
+	DirectionLoop:
 		for _, sq := range direction {
 			piece, err = b.Get(board.Sq(sq.toInt()))
 			if err != nil {
@@ -581,7 +583,7 @@ func checkEnemiesVerticallyAndHorizontally(b board.Board, kingSquare square, ene
 				isEnemyVerticallyOrHorizontallyPresent = true
 				return isEnemyVerticallyOrHorizontallyPresent, nil
 			default:
-				break
+				break DirectionLoop
 			}
 		}
 	}
@@ -606,9 +608,9 @@ func checkEnemiesDiagonally(b board.Board, kingSquare square, enemyQueen, enemyB
 	var row = kingSquare.row
 	var column = kingSquare.column
 	for row < 7 && column < 7 {
-		squaresUpRight = append(squaresUpRight, newSquare(kingSquare.toInt8()+int8(9)))
 		row++
 		column++
+		squaresUpRight = append(squaresUpRight, newSquare(kingSquare.toInt8()+int8(9*abs(row-kingSquare.row))))
 	}
 	squaresToBeChecked = append(squaresToBeChecked, squaresUpRight)
 
@@ -616,9 +618,9 @@ func checkEnemiesDiagonally(b board.Board, kingSquare square, enemyQueen, enemyB
 	row = kingSquare.row
 	column = kingSquare.column
 	for row > 1 && column < 7 {
-		squaresDownRight = append(squaresDownRight, newSquare(kingSquare.toInt8()-int8(7)))
 		row--
 		column++
+		squaresDownRight = append(squaresDownRight, newSquare(kingSquare.toInt8()-int8(7*abs(row-kingSquare.row))))
 	}
 	squaresToBeChecked = append(squaresToBeChecked, squaresDownRight)
 
@@ -626,9 +628,9 @@ func checkEnemiesDiagonally(b board.Board, kingSquare square, enemyQueen, enemyB
 	row = kingSquare.row
 	column = kingSquare.column
 	for row > 1 && column > 1 {
-		squaresDownLeft = append(squaresDownLeft, newSquare(kingSquare.toInt8()-int8(9)))
 		row--
 		column--
+		squaresDownLeft = append(squaresDownLeft, newSquare(kingSquare.toInt8()-int8(9*abs(row-kingSquare.row))))
 	}
 	squaresToBeChecked = append(squaresToBeChecked, squaresDownLeft)
 
@@ -636,13 +638,17 @@ func checkEnemiesDiagonally(b board.Board, kingSquare square, enemyQueen, enemyB
 	row = kingSquare.row
 	column = kingSquare.column
 	for row < 7 && column > 1 {
-		squaresUpLeft = append(squaresUpLeft, newSquare(kingSquare.toInt8()+int8(7)))
 		row++
 		column--
+		squaresUpLeft = append(squaresUpLeft, newSquare(kingSquare.toInt8()+int8(7*abs(row-kingSquare.row))))
 	}
 	squaresToBeChecked = append(squaresToBeChecked, squaresUpLeft)
 
+	log.Println(squaresToBeChecked)
+
 	for _, direction := range squaresToBeChecked {
+
+	DirectionLoop:
 		for _, sq := range direction {
 			piece, err = b.Get(board.Sq(sq.toInt()))
 			if err != nil {
@@ -663,7 +669,7 @@ func checkEnemiesDiagonally(b board.Board, kingSquare square, enemyQueen, enemyB
 				}
 				return isEnemyDiagonallyPresent, nil
 			default:
-				break
+				break DirectionLoop
 			}
 		}
 	}
