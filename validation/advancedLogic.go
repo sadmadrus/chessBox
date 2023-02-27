@@ -24,22 +24,14 @@ func advancedLogic(b board.Board, from, to square, newpiece board.Piece) (newBoa
 		return newBoard, isValid, nil
 	}
 
-	// 2a. проверяем, что пользователь указал, какую новую фигуру выставить в случае проведения пешки. Если фигура
-	// не указана, ход невалиден. TODO: или логичнее выдавать ошибку?
-	if newpiece == 0 && ((piece == board.WhitePawn && to.row == 7) || (piece == board.BlackPawn && to.row == 0)) {
-		log.Printf("%v", errNewpieceNotExist)
-		return newBoard, isValid, nil
-	}
-
-	// 2b. проверяем, что пользователь не захотел выставить нового фигуру в неуместном для этого случае. В таком случае
-	// ход будет невалиден. TODO: или логичнее выдавать ошибку?
-	if newpiece != 0 && ((piece != board.WhitePawn && to.row != 7) || (piece != board.BlackPawn && to.row != 0)) {
-		log.Printf("%v", errNewpieceExist)
+	isOk := checkPawnPromotion(piece, to, newpiece)
+	if !isOk {
+		log.Printf("%v or %v: %v %v %v %v (piece, from, to, newpiece)", errNewpieceNotExist, errNewpieceExist, piece, from, to, newpiece)
 		return newBoard, isValid, nil
 	}
 
 	// 3. проверяем, что фигура принадлежит той стороне, чья очередь хода. Иначе ход невалиден.
-	isOk := checkPieceColor(b, piece)
+	isOk = checkPieceColor(b, piece)
 	if !isOk {
 		log.Printf("%v", errPieceWrongColor)
 		return newBoard, isValid, nil
@@ -61,7 +53,8 @@ func advancedLogic(b board.Board, from, to square, newpiece board.Piece) (newBoa
 		return newBoard, isValid, err
 	}
 
-	// 6. Проверяем наличие и цвет фигур в клетке to.
+	// 6. Проверяем наличие и цвет фигур в клетке to. Обработка корректного взятия пешки на проходе (en Passant)
+	// валидирована здесь.
 	isOk, err = checkToSquare(&b, piece, from, to)
 	if err != nil || !isOk {
 		return newBoard, isValid, err
@@ -75,8 +68,6 @@ func advancedLogic(b board.Board, from, to square, newpiece board.Piece) (newBoa
 			return newBoard, isValid, err
 		}
 	}
-
-	// TODO: валидация взятия на проходе?
 
 	// 8. На текущем этапе ход возможен. Генерируем новое положение доски newBoard. Так как до текущего положения ход
 	// валидирован, ошибок не ожидаем.
@@ -116,6 +107,24 @@ func advancedLogic(b board.Board, from, to square, newpiece board.Piece) (newBoa
 
 	isValid = true
 	return newBoard, isValid, nil
+}
+
+// checkPawnPromotion проверяет, что указанная пользователем новая фигура newpiece корректна относительно хода.
+// Возвращает true (фигура указана корректно) или false (некорректно).
+func checkPawnPromotion(piece board.Piece, to square, newpiece board.Piece) (isOk bool) {
+	// Если этим ходом проводится пешка, должна быть указана фигура. Если пешка не проводится, фигура не должна быть
+	// указана.
+	if (piece == board.WhitePawn && to.row == 7) || (piece == board.BlackPawn && to.row == 0) {
+		if newpiece != 0 {
+			isOk = true
+		}
+	} else {
+		if newpiece == 0 {
+			isOk = true
+		}
+	}
+
+	return isOk
 }
 
 // checkPieceColor проверяет, что очередь хода и цвет фигуры p, которую хотят передвинуть, совпадают.
@@ -204,8 +213,8 @@ func checkSquaresToBePassed(b board.Board, squaresToBePassed []square) (areSquar
 }
 
 // checkToSquare проверяет наличие фигуры на клетке to на предмет совместимости хода. Возвращает флаг (true если фигура
-// в клетке to совместима с цветом и типом фигуры pieceFrom, false в противном случае. Если при обработке возникает
-// ошибка, возвращает ее (иначе nil).
+// в клетке to совместима с цветом и типом фигуры pieceFrom, false в противном случае.  Обработка корректного взятия
+// пешки на проходе (en Passant) валидирована здесь. Если при обработке возникает ошибка, возвращает ее (иначе nil).
 func checkToSquare(b *board.Board, pieceFrom board.Piece, from, to square) (isOk bool, err error) {
 	var pieceTo board.Piece
 	pieceTo, err = b.Get(board.Sq(to.toInt()))
@@ -215,6 +224,14 @@ func checkToSquare(b *board.Board, pieceFrom board.Piece, from, to square) (isOk
 
 	// Если в клетке to нет фигур, ход возможен.
 	if pieceTo == 0 {
+
+		// Исключение: взятие пешки на проходе (диагонально) в том случае, если клетка to не указана как en Passant
+		if (pieceFrom == board.WhitePawn || pieceFrom == board.BlackPawn) && abs(from.diffColumn(to)) == 1 {
+			if !b.IsEnPassant(board.Sq(to.toInt())) {
+				return isOk, nil
+			}
+		}
+
 		isOk = true
 		return isOk, nil
 	}
@@ -247,12 +264,11 @@ func checkToSquare(b *board.Board, pieceFrom board.Piece, from, to square) (isOk
 	return isOk, nil
 }
 
-// TODO: check tests later
 // checkCastling валидирует рокировку: проверка, что при рокировке король не проходит через битое поле, рокировка
 // разрешена (король и ладья еще не двигались, между ними все клетки пустые). НО: Поле, на котором королль оказывается
 // после рокировки проверяется на наличие шаха в другой функции. Если при обработке возникает ошибка, возвращает ее
 // (иначе nil).
-func checkCastling(b *board.Board, piece board.Piece, from, to square) (isOk bool, err error) {
+func checkCastling(b *board.Board, piece board.Piece, from, to square) (isValid bool, err error) {
 	var rookSquare square
 	var castling board.Castling
 	switch piece {
@@ -281,36 +297,33 @@ func checkCastling(b *board.Board, piece board.Piece, from, to square) (isOk boo
 	var squareChecked bool
 	squareChecked, err = isSquareChecked(*b, squareToBePassed, piece)
 	if err != nil {
-		return isOk, err
+		return isValid, err
 	}
 	if squareChecked {
 		log.Printf("%v", errCastlingThroughCheckedSquare)
-		return isOk, nil
+		return isValid, nil
 	}
-
-	log.Println(rookSquare, "rookSquare")
 
 	// 2. проверка, что между клеткой короля (from) и клеткой ладьи (rookSquare) все клетки пустые
 	squaresBetweenKingAndRook := getSquaresToBePassed(board.WhiteRook, from, rookSquare)
-	log.Println(squaresBetweenKingAndRook, "squaresBetweenKingAndRook")
 	for _, sq := range squaresBetweenKingAndRook {
 		var pc board.Piece
 		pc, err = b.Get(board.Sq(sq.toInt()))
 		if err != nil {
-			return isOk, err
+			return isValid, err
 		}
 		if pc != 0 {
 			log.Printf("%v", errCastlingThroughOccupiedSquare)
-			return isOk, nil
+			return isValid, nil
 		}
 	}
 
 	// 3. Проверка, что указанная рокировка (castling) валидна (ни король, ни ладья еще не двигались).
 	if b.HaveCastling(castling) {
-		isOk = true
+		isValid = true
 	}
 
-	return isOk, nil
+	return isValid, nil
 }
 
 // getNewBoard генерирует новое положение доски с учетом рокировок, взятия на прохоже и проведения пешки. Возвращает
@@ -640,8 +653,6 @@ func isSquareCheckedDiagonally(b board.Board, kingSquare square, enemyQueen, ene
 	}
 	squaresToBeChecked = append(squaresToBeChecked, squaresUpLeft)
 
-	log.Println(squaresToBeChecked)
-
 	for _, direction := range squaresToBeChecked {
 
 	DirectionLoop:
@@ -650,8 +661,6 @@ func isSquareCheckedDiagonally(b board.Board, kingSquare square, enemyQueen, ene
 			if err != nil {
 				return isChecked, err
 			}
-
-			log.Println(piece, "piece")
 
 			switch piece {
 			case 0:

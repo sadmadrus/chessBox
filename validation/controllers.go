@@ -90,6 +90,7 @@ func Simple(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusBadRequest)
 }
 
+// advancedResponse структура для возвражения тела ответа на запрос сложной валидации хода
 type advancedResponse struct {
 	Board string `json:"board"`
 }

@@ -6,6 +6,31 @@ import (
 	"github.com/sadmadrus/chessBox/internal/board"
 )
 
+func TestCheckPromotion(t *testing.T) {
+	tests := []struct {
+		name     string
+		piece    board.Piece
+		to       square
+		newpiece board.Piece
+		isOk     bool
+	}{
+		{"p a1 to b", board.BlackPawn, newSquare(0), board.BlackBishop, true},
+		{"P h8 to 0", board.WhitePawn, newSquare(63), 0, false},
+		{"b b8 to 0", board.BlackBishop, newSquare(57), 0, true},
+		{"n c8 to q", board.BlackKnight, newSquare(58), board.BlackQueen, false},
+		{"P e4 to N", board.WhitePawn, newSquare(28), board.WhiteKnight, false},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			res := checkPawnPromotion(tc.piece, tc.to, tc.newpiece)
+			if res != tc.isOk {
+				t.Fatalf("want %v, got %v", tc.isOk, res)
+			}
+		})
+	}
+}
+
 func TestCheckFigureColor(t *testing.T) {
 	tests := []struct {
 		name  string
@@ -124,6 +149,9 @@ func TestCheckToSquare(t *testing.T) {
 		{"n c6-e5 to Queen", brdBlack, board.BlackKnight, newSquare(42), newSquare(36), true},
 		{"n c6-b4 to pawn", brdBlack, board.BlackKnight, newSquare(42), newSquare(25), false},
 		{"p b4-b3 to Pawn", brdBlack, board.BlackPawn, newSquare(25), newSquare(17), false},
+
+		{"p b4-a3 en Passant", brdBlack, board.BlackPawn, newSquare(25), newSquare(16), true},
+		{"p b4-c3 en Passant not allowed", brdBlack, board.BlackPawn, newSquare(25), newSquare(18), false},
 	}
 
 	for _, tc := range tests {
@@ -139,35 +167,36 @@ func TestCheckToSquare(t *testing.T) {
 	}
 }
 
-// TODO: тест не работает предположительно из-за isSQuareCHecked вызываемой внути. Проверить позже
-//func TestCheckCastling(t *testing.T) {
-//	brdWhiteFENCasltingsNotAllowed := "r3k3/1qpb1prp/2np2pb/p3QB2/Pp2P3/1P1PBPnN/2PN2PP/R3K2R w Kq - 5 6"
-//	brdWhiteNotAllowed, _ := board.FromFEN(brdWhiteFENCasltingsNotAllowed)
-//
-//	tests := []struct {
-//		name  string
-//		brd   *board.Board
-//		piece board.Piece
-//		from  square
-//		to    square
-//		isOk  bool
-//	}{
-//		{"K e1-g1 O-O", brdWhiteNotAllowed, board.WhiteKing, newSquare(4), newSquare(6), false},
-//		{"K e1-c1 O-O-O", brdWhiteNotAllowed, board.WhiteKing, newSquare(4), newSquare(2), false},
-//	}
-//
-//	for _, tc := range tests {
-//		t.Run(tc.name, func(t *testing.T) {
-//			res, err := checkCastling(tc.brd, tc.piece, tc.from, tc.to)
-//			if err != nil {
-//				t.Fatalf("want nil, got err: %v", err)
-//			}
-//			if res != tc.isOk {
-//				t.Fatalf("want %v, got %v", tc.isOk, res)
-//			}
-//		})
-//	}
-//}
+func TestCheckCastling(t *testing.T) {
+	brdWhiteFENCasltingsNotAllowed := "r3k3/1qpb1prp/2np2pb/p3QB2/Pp2P3/1P1PBPnN/2PN2PP/R3K2R w Kq - 5 6"
+	brdWhiteNotAllowed, _ := board.FromFEN(brdWhiteFENCasltingsNotAllowed)
+
+	tests := []struct {
+		name    string
+		brd     *board.Board
+		piece   board.Piece
+		from    square
+		to      square
+		isValid bool
+	}{
+		{"K e1-g1 O-O", brdWhiteNotAllowed, board.WhiteKing, newSquare(4), newSquare(6), false},
+		{"K e1-c1 O-O-O", brdWhiteNotAllowed, board.WhiteKing, newSquare(4), newSquare(2), false},
+		{"k e8-g8 O-O", brdWhiteNotAllowed, board.BlackKing, newSquare(60), newSquare(62), false},
+		{"k e8-c8 O-O-O", brdWhiteNotAllowed, board.BlackKing, newSquare(60), newSquare(58), true},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			res, err := checkCastling(tc.brd, tc.piece, tc.from, tc.to)
+			if err != nil {
+				t.Fatalf("want nil, got err: %v", err)
+			}
+			if res != tc.isValid {
+				t.Fatalf("want %v, got %v", tc.isValid, res)
+			}
+		})
+	}
+}
 
 func TestGetNewBoard(t *testing.T) {
 	var (
