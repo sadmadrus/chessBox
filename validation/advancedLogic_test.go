@@ -269,7 +269,49 @@ func TestGetSquareByPiece(t *testing.T) {
 	}
 }
 
-func TestCheckEnemyKnightsNearKing(t *testing.T) {
+func TestIsSquareChecked(t *testing.T) {
+	brdWhiteFEN := "r3k2r/7P/2N5/7B/5b2/1q1Qp1n1/2P5/R3K2R w - - 5 6"
+	brdWhite, _ := board.FromFEN(brdWhiteFEN)
+
+	tests := []struct {
+		name      string
+		brd       board.Board
+		sq        square
+		king      board.Piece
+		isChecked bool
+	}{
+		{"b1 by q", *brdWhite, newSquare(1), board.WhiteKing, true},
+		{"c1 none", *brdWhite, newSquare(2), board.WhiteKing, false},
+		{"d1 none", *brdWhite, newSquare(3), board.WhiteKing, false},
+		{"f1 by n", *brdWhite, newSquare(5), board.WhiteKing, true},
+		{"g1 none", *brdWhite, newSquare(6), board.WhiteKing, false},
+		{"e5 by b", *brdWhite, newSquare(36), board.WhiteKing, true},
+		{"d4 none", *brdWhite, newSquare(27), board.WhiteKing, false},
+		{"d2 by p", *brdWhite, newSquare(11), board.WhiteKing, true},
+
+		{"b8 by N", *brdWhite, newSquare(57), board.BlackKing, true},
+		{"c8 none", *brdWhite, newSquare(58), board.BlackKing, false},
+		{"d8 by N", *brdWhite, newSquare(59), board.BlackKing, true},
+		{"e8 by B", *brdWhite, newSquare(60), board.BlackKing, true},
+		{"f8 none", *brdWhite, newSquare(61), board.BlackKing, false},
+		{"g8 by P", *brdWhite, newSquare(62), board.BlackKing, true},
+		{"a8 by R", *brdWhite, newSquare(24), board.BlackKing, true},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			res, err := isSquareChecked(tc.brd, tc.sq, tc.king)
+			if err != nil {
+				t.Fatalf("want nil, got error: %s", err)
+			}
+			if res != tc.isChecked {
+				t.Fatalf("want %v, got %v", tc.isChecked, res)
+			}
+		})
+	}
+}
+
+func TestIsSquareCheckedByKnights(t *testing.T) {
 	brdWhiteFEN := "8/8/8/8/2b5/1k6/3K4/1r3N2 w - - 5 6"
 	brdBlackFEN := "k7/8/1NK5/8/8/8/8/8 b - - 5 6"
 
@@ -277,11 +319,11 @@ func TestCheckEnemyKnightsNearKing(t *testing.T) {
 	brdBlack, _ := board.FromFEN(brdBlackFEN)
 
 	tests := []struct {
-		name                 string
-		brd                  board.Board
-		kingSquare           square
-		enemyKnight          board.Piece
-		isEnemyKnightPresent bool
+		name        string
+		brd         board.Board
+		kingSquare  square
+		enemyKnight board.Piece
+		isChecked   bool
 	}{
 		{"no black knights for white king", *brdWhite, newSquare(11), board.BlackKnight, false},
 		{"white knight for black king", *brdBlack, newSquare(56), board.WhiteKnight, true},
@@ -289,18 +331,18 @@ func TestCheckEnemyKnightsNearKing(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			res, err := checkEnemyKnightsNearKing(tc.brd, tc.kingSquare, tc.enemyKnight)
+			res, err := isSquareCheckedByKnights(tc.brd, tc.kingSquare, tc.enemyKnight)
 			if err != nil {
 				t.Fatalf("want nil, got error: %s", err)
 			}
-			if res != tc.isEnemyKnightPresent {
-				t.Fatalf("want %v, got %v", tc.isEnemyKnightPresent, res)
+			if res != tc.isChecked {
+				t.Fatalf("want %v, got %v", tc.isChecked, res)
 			}
 		})
 	}
 }
 
-func TestCheckEnemiesVerticallyAndHorizontally(t *testing.T) {
+func TestIsSquareCheckedVerticallyOrHorizontally(t *testing.T) {
 	var (
 		brdWhite1FEN = "3q4/8/8/8/8/8/3K4/8 w - - 5 6"
 		brdWhite2FEN = "3q4/8/3p4/3r4/3b4/8/3K4/8 w - - 5 6"
@@ -318,12 +360,12 @@ func TestCheckEnemiesVerticallyAndHorizontally(t *testing.T) {
 	brdBlack3, _ := board.FromFEN(brdBlack3FEN)
 
 	tests := []struct {
-		name           string
-		brd            board.Board
-		kingSquare     square
-		enemyRook      board.Piece
-		enemyQueen     board.Piece
-		isEnemyPresent bool
+		name       string
+		brd        board.Board
+		kingSquare square
+		enemyRook  board.Piece
+		enemyQueen board.Piece
+		isChecked  bool
 	}{
 		{"q far vertically", *brdWhite1, newSquare(11), board.BlackRook, board.BlackQueen, true},
 		{"q, r vertically hidden by b", *brdWhite2, newSquare(11), board.BlackRook, board.BlackQueen, false},
@@ -335,18 +377,18 @@ func TestCheckEnemiesVerticallyAndHorizontally(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			res, err := checkEnemiesVerticallyAndHorizontally(tc.brd, tc.kingSquare, tc.enemyRook, tc.enemyQueen)
+			res, err := isSquareCheckedVerticallyOrHorizontally(tc.brd, tc.kingSquare, tc.enemyRook, tc.enemyQueen)
 			if err != nil {
 				t.Fatalf("want nil, got error: %s", err)
 			}
-			if res != tc.isEnemyPresent {
-				t.Fatalf("want %v, got %v", tc.isEnemyPresent, res)
+			if res != tc.isChecked {
+				t.Fatalf("want %v, got %v", tc.isChecked, res)
 			}
 		})
 	}
 }
 
-func TestCheckEnemiesDiagonally(t *testing.T) {
+func TestIsSquareCheckedDiagonally(t *testing.T) {
 	var (
 		brdWhite1FEN = "7q/8/8/8/8/8/8/K7 w - - 5 6"
 		brdWhite2FEN = "8/1N6/8/3K4/8/1b6/8/7Q w - - 5 6"
@@ -362,13 +404,13 @@ func TestCheckEnemiesDiagonally(t *testing.T) {
 	brdBlack2, _ := board.FromFEN(brdBlack2FEN)
 
 	tests := []struct {
-		name           string
-		brd            board.Board
-		kingSquare     square
-		enemyQueen     board.Piece
-		enemyBishop    board.Piece
-		enemyPawn      board.Piece
-		isEnemyPresent bool
+		name        string
+		brd         board.Board
+		kingSquare  square
+		enemyQueen  board.Piece
+		enemyBishop board.Piece
+		enemyPawn   board.Piece
+		isChecked   bool
 	}{
 		{"q far up-right", *brdWhite1, newSquare(0), board.BlackQueen, board.BlackBishop, board.BlackPawn, true},
 		{"b down-left", *brdWhite2, newSquare(35), board.BlackQueen, board.BlackBishop, board.BlackPawn, true},
@@ -380,12 +422,12 @@ func TestCheckEnemiesDiagonally(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			res, err := checkEnemiesDiagonally(tc.brd, tc.kingSquare, tc.enemyQueen, tc.enemyBishop, tc.enemyPawn)
+			res, err := isSquareCheckedDiagonally(tc.brd, tc.kingSquare, tc.enemyQueen, tc.enemyBishop, tc.enemyPawn)
 			if err != nil {
 				t.Fatalf("want nil, got error: %s", err)
 			}
-			if res != tc.isEnemyPresent {
-				t.Fatalf("want %v, got %v", tc.isEnemyPresent, res)
+			if res != tc.isChecked {
+				t.Fatalf("want %v, got %v", tc.isChecked, res)
 			}
 		})
 	}

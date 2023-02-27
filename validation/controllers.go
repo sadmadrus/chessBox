@@ -4,38 +4,11 @@ package validation
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"strconv"
 
 	"github.com/sadmadrus/chessBox/internal/board"
-)
-
-var (
-	errPieceNotExist                 = fmt.Errorf("piece does not exist")
-	errInvalidHttpMethod             = fmt.Errorf("method is not supported")
-	errFromToSquaresNotDiffer        = fmt.Errorf("from and to squares are not different")
-	errPawnMoveNotValid              = fmt.Errorf("pawn move is not valid")
-	errKnightMoveNotValid            = fmt.Errorf("knight move is not valid")
-	errBishopMoveNotValid            = fmt.Errorf("bishop move is not valid")
-	errRookMoveNotValid              = fmt.Errorf("rook move is not valid")
-	errQueenMoveNotValid             = fmt.Errorf("queen move is not valid")
-	errKingMoveNotValid              = fmt.Errorf("king move is not valid")
-	errNoPieceOnFromSquare           = fmt.Errorf("no piece on from square")
-	errPieceWrongColor               = fmt.Errorf("piece has wrong color")
-	errClashWithPieceOfSameColor     = fmt.Errorf("clash with piece of the same color")
-	errClashWithKing                 = fmt.Errorf("clash with king")
-	errClashWithPawn                 = fmt.Errorf("pawn can not clash with another piece when moving vertically")
-	errPawnPromotionNotValid         = fmt.Errorf("pawn promotion to pawn or king is not valid")
-	errNewpieceExist                 = fmt.Errorf("newpiece exists with no pawn promotion")
-	errNewpieceNotExist              = fmt.Errorf("newpiece does not exist but pawn promotion required")
-	errPieceNotExistOnBoard          = fmt.Errorf("piece does not exist on board")
-	errKingChecked                   = fmt.Errorf("king checked after move")
-	errKingsAdjacent                 = fmt.Errorf("kings are adjacent")
-	errCastlingThroughCheckedSquare  = fmt.Errorf("castling is not valid through square under check")
-	errCastlingThroughOccupiedSquare = fmt.Errorf("castling is not valid through square occupied by other pieces")
-	errPiecesStayInTheWay            = fmt.Errorf("piece or pieces stay in the way of figure move")
 )
 
 // http хендлеры
@@ -53,7 +26,7 @@ func Simple(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" || r.Method == "HEAD" {
 		// валидация входных данных: фигура piece существует
 		pieceParsed := r.URL.Query().Get("piece")
-		piece, err := parsePieceFromLetter(pieceParsed)
+		piece, err := parsePiece(pieceParsed)
 		if err != nil {
 			log.Printf("%v: %v", errPieceNotExist, pieceParsed)
 			w.WriteHeader(http.StatusBadRequest)
@@ -145,39 +118,27 @@ func Advanced(w http.ResponseWriter, r *http.Request) {
 
 		// валидация входных данных: клетка from существуют
 		fromParsed := r.URL.Query().Get("from")
-		// перевод в тип board.square для цифро-буквенного обозначения клетки (напр., "а1")
-		from := board.Sq(fromParsed)
-		if from == -1 {
-			// перевод в тип board.square для числового значения клетки от 0 до 63
-			var fromParsedNum int
-			fromParsedNum, err = strconv.Atoi(fromParsed)
-			from = board.Sq(fromParsedNum)
-			if from == -1 || err != nil {
-				log.Printf("%v: %v", errPieceNotExist, fromParsed)
-				w.WriteHeader(http.StatusBadRequest)
-				return
-			}
+		var fromSquare square
+		fromSquare, err = parseSquare(fromParsed)
+		if err != nil {
+			log.Printf("%v", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
 		}
 
 		// валидация входных данных: клетка to существуют
 		toParsed := r.URL.Query().Get("to")
-		// перевод в тип board.square для цифро-буквенного обозначения клетки (напр., "а1")
-		to := board.Sq(toParsed)
-		if to == -1 {
-			// перевод в тип board.square для числового значения клетки от 0 до 63
-			var toParsedNum int
-			toParsedNum, err = strconv.Atoi(toParsed)
-			to = board.Sq(toParsedNum)
-			if to == -1 || err != nil {
-				log.Printf("%v: %s", errPieceNotExist, toParsed)
-				w.WriteHeader(http.StatusBadRequest)
-				return
-			}
+		var toSquare square
+		toSquare, err = parseSquare(toParsed)
+		if err != nil {
+			log.Printf("%v", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
 		}
 
 		// валидация входных данных: клетки from и to различны
-		if from == to {
-			log.Printf("%v: %v (from), %v (to)", errFromToSquaresNotDiffer, from, to)
+		if !fromSquare.isEqual(toSquare) {
+			log.Printf("%v: %v (from), %v (to)", errFromToSquaresNotDiffer, fromSquare, toSquare)
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
@@ -185,24 +146,15 @@ func Advanced(w http.ResponseWriter, r *http.Request) {
 		// валидация входных данных: фигура newpiece принимает q/r/b/n/Q/R/B/N или пустое значение
 		newpieceParsed := r.URL.Query().Get("newpiece")
 		var newpiece board.Piece
-		if newpieceParsed != "" {
-			newpiece, err = parsePieceFromLetter(newpieceParsed)
-			if err != nil {
-				log.Printf("%v: %v", errPieceNotExist, newpieceParsed)
-				w.WriteHeader(http.StatusBadRequest)
-				return
-			}
-			switch newpiece {
-			case board.WhitePawn, board.BlackPawn, board.WhiteKing, board.BlackKing:
-				log.Printf("%v: %v", errPawnPromotionNotValid, newpieceParsed)
-				w.WriteHeader(http.StatusBadRequest)
-				return
-			}
+		newpiece, err = parseNewpiece(newpieceParsed)
+		if err != nil {
+			log.Printf("%v: %v", errNewpieceNotValid, newpieceParsed)
+			w.WriteHeader(http.StatusBadRequest)
+			return
 		}
+
 		// полная валидация хода с учетом положения на доске, а также возможных рокировок, взятия на проходе и
 		// проведения пешки
-		fromSquare := newSquare(int8(from))
-		toSquare := newSquare(int8(to))
 		newBoard, isValid, err := advancedLogic(*b, fromSquare, toSquare, newpiece)
 		if err != nil {
 			log.Printf("error occured when trying to validate move: %v", err)
@@ -226,6 +178,7 @@ func Advanced(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+
 	log.Printf("inside Advanced %v: %v", errInvalidHttpMethod, r.Method)
 	w.WriteHeader(http.StatusBadRequest)
 }
@@ -237,41 +190,4 @@ func Advanced(w http.ResponseWriter, r *http.Request) {
 // для данной фигуры.
 func AvailableMoves(w http.ResponseWriter, r *http.Request) {
 	// TODO написать логику
-}
-
-// Вспомогательные функции
-// TODO по мере написания сервисов вспомогательные функции могут быть реорганизованы в другие файлы этого пакета для удобства!
-
-// parsePieceFromLetter переводит строковое представление фигуры типа k/q/r/b/n/p/K/Q/R/B/N/P в тип board.Piece.  Если
-// преобразование невозможно, возвращает ошибку.
-// TODO add tests to all functions below
-func parsePieceFromLetter(piece string) (board.Piece, error) {
-	switch piece {
-	case "P":
-		return board.WhitePawn, nil
-	case "p":
-		return board.BlackPawn, nil
-	case "N":
-		return board.WhiteKnight, nil
-	case "n":
-		return board.BlackKnight, nil
-	case "B":
-		return board.WhiteBishop, nil
-	case "b":
-		return board.BlackBishop, nil
-	case "R":
-		return board.WhiteRook, nil
-	case "r":
-		return board.BlackRook, nil
-	case "Q":
-		return board.WhiteQueen, nil
-	case "q":
-		return board.BlackQueen, nil
-	case "K":
-		return board.WhiteKing, nil
-	case "k":
-		return board.BlackKing, nil
-	default:
-		return 0, fmt.Errorf("%w", errPieceNotExist)
-	}
 }
