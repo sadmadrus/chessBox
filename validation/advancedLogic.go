@@ -85,14 +85,12 @@ func advancedLogic(b board.Board, from, to square, newpiece board.Piece) (newBoa
 		return newBoard, isValid, err
 	}
 
-	// TODO: остановилась здесь
-
 	// 9. Проверяем, что при новой позиции на доске не появился шах для собственного короля.
 	var king board.Piece
 	if b.NextToMove() {
-		king = board.WhiteKing
+		king = board.BlackKing // после генерации нового положения доски, очередь хода перешла на другой цвет
 	} else {
-		king = board.BlackKing
+		king = board.WhiteKing // после генерации нового положения доски, очередь хода перешла на другой цвет
 	}
 	var kingChecked bool
 	kingChecked, err = isKingChecked(b, king)
@@ -444,7 +442,9 @@ func getSquareByPiece(b board.Board, pieceString string) (pieceSquare square, er
 		rowsCount--
 	}
 	slashIndex := strings.Index(boardRow, "/")
-	boardRow = boardRow[:slashIndex]
+	if slashIndex != -1 {
+		boardRow = boardRow[:slashIndex]
+	}
 
 	var squareColumn int
 	for _, sym := range boardRow {
@@ -613,7 +613,7 @@ func isSquareCheckedDiagonally(b board.Board, kingSquare square, enemyQueen, ene
 	// проверка диагонали вправо-вниз
 	row = kingSquare.row
 	column = kingSquare.column
-	for row > 1 && column < 7 {
+	for row > 0 && column < 7 {
 		row--
 		column++
 		squaresDownRight = append(squaresDownRight, newSquare(kingSquare.toInt8()-int8(7*abs(row-kingSquare.row))))
@@ -623,7 +623,7 @@ func isSquareCheckedDiagonally(b board.Board, kingSquare square, enemyQueen, ene
 	// проверка диагонали влево-вниз
 	row = kingSquare.row
 	column = kingSquare.column
-	for row > 1 && column > 1 {
+	for row > 0 && column > 0 {
 		row--
 		column--
 		squaresDownLeft = append(squaresDownLeft, newSquare(kingSquare.toInt8()-int8(9*abs(row-kingSquare.row))))
@@ -633,12 +633,14 @@ func isSquareCheckedDiagonally(b board.Board, kingSquare square, enemyQueen, ene
 	// проверка диагонали влево-вверх
 	row = kingSquare.row
 	column = kingSquare.column
-	for row < 7 && column > 1 {
+	for row < 7 && column > 0 {
 		row++
 		column--
 		squaresUpLeft = append(squaresUpLeft, newSquare(kingSquare.toInt8()+int8(7*abs(row-kingSquare.row))))
 	}
 	squaresToBeChecked = append(squaresToBeChecked, squaresUpLeft)
+
+	log.Println(squaresToBeChecked)
 
 	for _, direction := range squaresToBeChecked {
 
@@ -648,6 +650,8 @@ func isSquareCheckedDiagonally(b board.Board, kingSquare square, enemyQueen, ene
 			if err != nil {
 				return isChecked, err
 			}
+
+			log.Println(piece, "piece")
 
 			switch piece {
 			case 0:
@@ -660,11 +664,17 @@ func isSquareCheckedDiagonally(b board.Board, kingSquare square, enemyQueen, ene
 					isChecked = true
 				} else if enemyPawn == board.WhitePawn && (sq.row-kingSquare.row == -1) {
 					isChecked = true
+				} else {
+					break DirectionLoop
 				}
-				return isChecked, nil
+
+				if isChecked {
+					return isChecked, nil
+				}
 			default:
 				break DirectionLoop
 			}
+
 		}
 	}
 

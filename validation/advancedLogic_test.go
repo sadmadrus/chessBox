@@ -230,8 +230,14 @@ func TestGetNewBoard(t *testing.T) {
 }
 
 func TestGetSquareByPiece(t *testing.T) {
-	brdFEN := "1nbk2b1/6P1/8/2nN4/8/3N2Q1/2K5/8 w KQkq - 5 6"
+	var (
+		brdFEN  = "1nbk2b1/6P1/8/2nN4/8/3N2Q1/2K5/8 w KQkq - 5 6"
+		brd1FEN = "8/5P2/1QN1k3/8/1b1q2R1/2np3B/2r5/4K3 w - - 5 6"
+		brd2FEN = "8/5P2/1QN1k3/8/1b1q4/3p3B/2r5/4K3 w - - 5 6"
+	)
 	brd, _ := board.FromFEN(brdFEN)
+	brd1, _ := board.FromFEN(brd1FEN)
+	brd2, _ := board.FromFEN(brd2FEN)
 
 	tests := []struct {
 		name        string
@@ -249,6 +255,11 @@ func TestGetSquareByPiece(t *testing.T) {
 		{"K c2(10)", *brd, "K", newSquare(10), false},
 		{"Q g3(22)", *brd, "Q", newSquare(22), false},
 		{"-", *brd, "-", newSquare(0), true},
+
+		{"k", *brd1, "k", newSquare(44), false},
+		{"K", *brd1, "K", newSquare(4), false},
+		{"k", *brd2, "k", newSquare(44), false},
+		{"B", *brd2, "B", newSquare(23), false},
 	}
 
 	for _, tc := range tests {
@@ -264,6 +275,51 @@ func TestGetSquareByPiece(t *testing.T) {
 
 			if res != tc.pieceSquare {
 				t.Fatalf("want %v, got %v", tc.pieceSquare, res)
+			}
+		})
+	}
+}
+
+func TestIsKingChecked(t *testing.T) {
+	var (
+		brd1FEN = "8/5P2/1QN1k3/8/1b1q2R1/2np3B/2r5/4K3 w - - 5 6"
+		brd2FEN = "8/5P2/1QN1k3/8/1b1q4/3p3B/2r5/4K3 w - - 5 6"
+		brd3FEN = "8/5P2/1Q2k3/8/1b1q2R1/2np3B/8/2r1K3 w - - 5 6"
+		brd4FEN = "8/2N5/4k3/8/3K4/8/2n5/8 w - - 5 6"
+		brd5FEN = "2B5/1P6/k7/8/6p1/7K/8/8 w - - 5 6"
+	)
+	brd1, _ := board.FromFEN(brd1FEN)
+	brd2, _ := board.FromFEN(brd2FEN)
+	brd3, _ := board.FromFEN(brd3FEN)
+	brd4, _ := board.FromFEN(brd4FEN)
+	brd5, _ := board.FromFEN(brd5FEN)
+
+	tests := []struct {
+		name      string
+		brd       board.Board
+		king      board.Piece
+		isChecked bool
+	}{
+		{"k none", *brd1, board.BlackKing, false},
+		{"K none", *brd1, board.WhiteKing, false},
+		{"k by B", *brd2, board.BlackKing, true},
+		{"K by b", *brd2, board.WhiteKing, true},
+		{"k by Q", *brd3, board.BlackKing, true},
+		{"K by r", *brd3, board.WhiteKing, true},
+		{"k by N", *brd4, board.BlackKing, true},
+		{"K by n", *brd4, board.WhiteKing, true},
+		{"k none", *brd5, board.BlackKing, false},
+		{"K by p", *brd5, board.WhiteKing, true},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			res, err := isKingChecked(tc.brd, tc.king)
+			if err != nil {
+				t.Fatalf("want nil, got error: %s", err)
+			}
+			if res != tc.isChecked {
+				t.Fatalf("want %v, got %v", tc.isChecked, res)
 			}
 		})
 	}
@@ -395,6 +451,7 @@ func TestIsSquareCheckedDiagonally(t *testing.T) {
 		brdWhite3FEN = "8/8/3K4/2p1p3/8/8/8/8 w - - 5 6"
 		brdBlack1FEN = "8/8/8/3r3q/8/5k2/4P3/8 b - - 5 6"
 		brdBlack2FEN = "8/1B6/2P5/5P2/4k3/5b2/2R5/1Q6 b - - 5 6"
+		brdBlack3FEN = "8/5P2/1QN1k3/8/1b1q4/3p3B/2r5/4K3 b - - 5 6"
 	)
 
 	brdWhite1, _ := board.FromFEN(brdWhite1FEN)
@@ -402,6 +459,7 @@ func TestIsSquareCheckedDiagonally(t *testing.T) {
 	brdWhite3, _ := board.FromFEN(brdWhite3FEN)
 	brdBlack1, _ := board.FromFEN(brdBlack1FEN)
 	brdBlack2, _ := board.FromFEN(brdBlack2FEN)
+	brdBlack3, _ := board.FromFEN(brdBlack3FEN)
 
 	tests := []struct {
 		name        string
@@ -418,6 +476,7 @@ func TestIsSquareCheckedDiagonally(t *testing.T) {
 
 		{"P down-left", *brdBlack1, newSquare(21), board.WhiteQueen, board.WhiteBishop, board.WhitePawn, true},
 		{"B, Q hidden by P, R; P ud-right", *brdBlack2, newSquare(28), board.WhiteQueen, board.WhiteBishop, board.WhitePawn, false},
+		{"B down right", *brdBlack3, newSquare(44), board.WhiteQueen, board.WhiteBishop, board.WhitePawn, true},
 	}
 
 	for _, tc := range tests {
@@ -428,6 +487,40 @@ func TestIsSquareCheckedDiagonally(t *testing.T) {
 			}
 			if res != tc.isChecked {
 				t.Fatalf("want %v, got %v", tc.isChecked, res)
+			}
+		})
+	}
+}
+
+func TestCheckDistanceToEnemyKing(t *testing.T) {
+	var (
+		brd1FEN = "8/8/8/8/8/3k4/1K6/8 w - - 5 6"
+		brd2FEN = "8/8/8/8/8/2k5/1K6/8 w - - 5 6"
+		brd3FEN = "8/8/8/8/8/8/1K6/1k6 w - - 5 6"
+	)
+
+	brd1, _ := board.FromFEN(brd1FEN)
+	brd2, _ := board.FromFEN(brd2FEN)
+	brd3, _ := board.FromFEN(brd3FEN)
+
+	tests := []struct {
+		name                string
+		brd                 board.Board
+		isEnemyKingAdjacent bool
+	}{
+		{"knight position", *brd1, false},
+		{"up-right", *brd2, true},
+		{"down", *brd3, true},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			res, err := checkDistanceToEnemyKing(tc.brd)
+			if err != nil {
+				t.Fatalf("want nil, got error: %s", err)
+			}
+			if res != tc.isEnemyKingAdjacent {
+				t.Fatalf("want %v, got %v", tc.isEnemyKingAdjacent, res)
 			}
 		})
 	}
