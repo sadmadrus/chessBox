@@ -6,6 +6,70 @@ import (
 	"github.com/sadmadrus/chessBox/internal/board"
 )
 
+func TestAdvancedLogic(t *testing.T) {
+	var (
+		emptyBrd          board.Board
+		startBrd1WhiteFEN = "rnbq1bnr/ppP5/3p4/4pBBp/3PPPp1/QP2k1P1/P6P/R3K1NR w KQ - 5 6"
+		endBrd1_2WhiteFEN = "rBbq1bnr/pp6/3p4/4pBBp/3PPPp1/QP2k1P1/P6P/R3K1NR b KQ - 5 6"
+		endBrd1_3WhiteFEN = "rnbq1bnr/ppP5/3p4/4pBBp/3PPPp1/QP2k1P1/P6P/2KR2NR b - - 6 6"
+		endBrd1_4WhiteFEN = "rnbq1bnr/ppP5/3Q4/4pBBp/3PPPp1/1P2k1P1/P6P/R3K1NR b KQ - 5 6"
+		endBrd1_5WhiteFEN = "rnbq1bnr/ppP5/3p4/4pBBp/3PPPp1/QP2k1P1/P2K3P/R5NR b - - 6 6"
+	)
+
+	startBrd1White, _ := board.FromFEN(startBrd1WhiteFEN)
+	endBrd1_2White, _ := board.FromFEN(endBrd1_2WhiteFEN)
+	endBrd1_3White, _ := board.FromFEN(endBrd1_3WhiteFEN)
+	endBrd1_4White, _ := board.FromFEN(endBrd1_4WhiteFEN)
+	endBrd1_5White, _ := board.FromFEN(endBrd1_5WhiteFEN)
+
+	tests := []struct {
+		name     string
+		brd      board.Board
+		from     square
+		to       square
+		newpiece board.Piece
+		newBoard board.Board
+		isValid  bool
+		isErr    bool
+	}{
+		{"no piece", *startBrd1White, newSquare(32), newSquare(33), 0, emptyBrd, false, false},
+		{"no promotion, newpiece indicated", *startBrd1White, newSquare(16), newSquare(24), board.WhiteBishop, emptyBrd, false, false},
+		{"promotion, wrong color newpiece", *startBrd1White, newSquare(50), newSquare(57), board.BlackBishop, *startBrd1White, false, true},
+		{"promotion, no newpiece indicated", *startBrd1White, newSquare(50), newSquare(57), 0, emptyBrd, false, false},
+		{"pawn promotion successful", *startBrd1White, newSquare(50), newSquare(57), board.WhiteBishop, *endBrd1_2White, true, false},
+		{"white turn, black move", *startBrd1White, newSquare(57), newSquare(40), 0, emptyBrd, false, false},
+		{"Knight try diagonal move", *startBrd1White, newSquare(6), newSquare(13), 0, emptyBrd, false, false},
+		{"Q turn, P in the way", *startBrd1White, newSquare(16), newSquare(18), 0, emptyBrd, false, false},
+		{"B turn, p in the way", *startBrd1White, newSquare(37), newSquare(23), 0, emptyBrd, false, false},
+		{"P up, clash with p", *startBrd1White, newSquare(22), newSquare(30), 0, emptyBrd, false, false},
+		{"P up, clash with B", *startBrd1White, newSquare(29), newSquare(37), 0, emptyBrd, false, false},
+		// TODO en Passant for Black turn
+		{"R to P", *startBrd1White, newSquare(0), newSquare(8), 0, emptyBrd, false, false},
+		{"Q to p", *startBrd1White, newSquare(16), newSquare(43), 0, *endBrd1_4White, true, false},
+		{"K O-O, N in the way", *startBrd1White, newSquare(4), newSquare(6), 0, emptyBrd, false, false},
+		{"K O-O-O successful", *startBrd1White, newSquare(4), newSquare(2), 0, *endBrd1_3White, true, false},
+		{"K too close to k", *startBrd1White, newSquare(4), newSquare(11), 0, *endBrd1_5White, false, false},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			newBoardRes, isValidRes, err := advancedLogic(tc.brd, tc.from, tc.to, tc.newpiece)
+			if err != nil && !tc.isErr {
+				t.Fatalf("want nil, got err: %v", err)
+			}
+			if err == nil && tc.isErr {
+				t.Fatalf("want err, got nil")
+			}
+			if newBoardRes != tc.newBoard {
+				t.Fatalf("want newBoard %v, got %v", tc.newBoard, newBoardRes)
+			}
+			if isValidRes != tc.isValid {
+				t.Fatalf("want isValid %v, got %v", tc.isValid, isValidRes)
+			}
+		})
+	}
+}
+
 func TestCheckPromotion(t *testing.T) {
 	tests := []struct {
 		name     string

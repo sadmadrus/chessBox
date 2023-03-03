@@ -24,6 +24,7 @@ func advancedLogic(b board.Board, from, to square, newpiece board.Piece) (newBoa
 		return newBoard, isValid, nil
 	}
 
+	// 2. проверяем корректность данных о проходе пешки
 	isOk := checkPawnPromotion(piece, to, newpiece)
 	if !isOk {
 		log.Printf("%v or %v: %v %v %v %v (piece, from, to, newpiece)", errNewpieceNotExist, errNewpieceExist, piece, from, to, newpiece)
