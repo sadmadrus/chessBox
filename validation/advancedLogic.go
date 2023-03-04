@@ -80,29 +80,31 @@ func advancedLogic(b board.Board, from, to square, newpiece board.Piece) (newBoa
 	// 9. Проверяем, что при новой позиции на доске не появился шах для собственного короля.
 	var king board.Piece
 	if b.NextToMove() {
-		king = board.BlackKing // после генерации нового положения доски, очередь хода перешла на другой цвет
+		king = board.WhiteKing
 	} else {
-		king = board.WhiteKing // после генерации нового положения доски, очередь хода перешла на другой цвет
+		king = board.BlackKing
 	}
 	var kingChecked bool
-	kingChecked, err = isKingChecked(b, king)
+	kingChecked, err = isKingChecked(newBoard, king)
 	if err != nil {
 		return newBoard, isValid, err
 	}
 	if kingChecked {
-		return newBoard, isValid, fmt.Errorf("%v", errKingChecked)
+		log.Printf("%v", errKingChecked)
+		return newBoard, isValid, nil
 	}
 
 	// 10. В случае если ход делается королем, проверяем, что он не подступил вплотную к чужому королю - такой ход
 	// будет запрещен.
 	if piece == board.WhiteKing || piece == board.BlackKing {
 		var isEnemyKingAdjacent bool
-		isEnemyKingAdjacent, err = checkDistanceToEnemyKing(b)
+		isEnemyKingAdjacent, err = checkDistanceToEnemyKing(newBoard)
 		if err != nil {
 			return newBoard, isValid, err
 		}
 		if isEnemyKingAdjacent {
-			return newBoard, isValid, fmt.Errorf("%v", errKingsAdjacent)
+			log.Printf("%v", errKingsAdjacent)
+			return newBoard, isValid, nil
 		}
 	}
 

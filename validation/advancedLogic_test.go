@@ -8,12 +8,20 @@ import (
 
 func TestAdvancedLogic(t *testing.T) {
 	var (
-		emptyBrd          board.Board
+		emptyBrd board.Board
+
 		startBrd1WhiteFEN = "rnbq1bnr/ppP5/3p4/4pBBp/3PPPp1/QP2k1P1/P6P/R3K1NR w KQ - 5 6"
 		endBrd1_2WhiteFEN = "rBbq1bnr/pp6/3p4/4pBBp/3PPPp1/QP2k1P1/P6P/R3K1NR b KQ - 5 6"
 		endBrd1_3WhiteFEN = "rnbq1bnr/ppP5/3p4/4pBBp/3PPPp1/QP2k1P1/P6P/2KR2NR b - - 6 6"
 		endBrd1_4WhiteFEN = "rnbq1bnr/ppP5/3Q4/4pBBp/3PPPp1/1P2k1P1/P6P/R3K1NR b KQ - 5 6"
 		endBrd1_5WhiteFEN = "rnbq1bnr/ppP5/3p4/4pBBp/3PPPp1/QP2k1P1/P2K3P/R5NR b - - 6 6"
+
+		startBrd1BlackFEN = "rnbq1bnr/ppP5/3p4/4pB1p/3PPPp1/QP2k1P1/P6P/R3K1NR b KQ f3 5 6"
+		endBrd1_2BlackFEN = "rnbq1bnr/ppP5/3p4/4pB1p/3PP3/QP2kpP1/P6P/R3K1NR w KQ - 5 7"
+		endBrd1_3BlackFEN = "rnbq1bnr/ppP5/3p4/4pB1p/3PPPp1/QP3kP1/P6P/R3K1NR w KQ - 6 7"
+
+		startBrd2BlackFEN = "rn2k2r/8/8/8/3q4/6n1/8/R3K2R b KQq - 5 6"
+		startBrd2WhiteFEN = "rn2k2r/8/8/8/3q4/6n1/8/R3K2R w KQq - 5 6"
 	)
 
 	startBrd1White, _ := board.FromFEN(startBrd1WhiteFEN)
@@ -21,6 +29,13 @@ func TestAdvancedLogic(t *testing.T) {
 	endBrd1_3White, _ := board.FromFEN(endBrd1_3WhiteFEN)
 	endBrd1_4White, _ := board.FromFEN(endBrd1_4WhiteFEN)
 	endBrd1_5White, _ := board.FromFEN(endBrd1_5WhiteFEN)
+
+	startBrd1Black, _ := board.FromFEN(startBrd1BlackFEN)
+	endBrd1_2Black, _ := board.FromFEN(endBrd1_2BlackFEN)
+	endBrd1_3Black, _ := board.FromFEN(endBrd1_3BlackFEN)
+
+	startBrd2Black, _ := board.FromFEN(startBrd2BlackFEN)
+	startBrd2White, _ := board.FromFEN(startBrd2WhiteFEN)
 
 	tests := []struct {
 		name     string
@@ -43,12 +58,19 @@ func TestAdvancedLogic(t *testing.T) {
 		{"B turn, p in the way", *startBrd1White, newSquare(37), newSquare(23), 0, emptyBrd, false, false},
 		{"P up, clash with p", *startBrd1White, newSquare(22), newSquare(30), 0, emptyBrd, false, false},
 		{"P up, clash with B", *startBrd1White, newSquare(29), newSquare(37), 0, emptyBrd, false, false},
-		// TODO en Passant for Black turn
 		{"R to P", *startBrd1White, newSquare(0), newSquare(8), 0, emptyBrd, false, false},
 		{"Q to p", *startBrd1White, newSquare(16), newSquare(43), 0, *endBrd1_4White, true, false},
 		{"K O-O, N in the way", *startBrd1White, newSquare(4), newSquare(6), 0, emptyBrd, false, false},
 		{"K O-O-O successful", *startBrd1White, newSquare(4), newSquare(2), 0, *endBrd1_3White, true, false},
 		{"K too close to k", *startBrd1White, newSquare(4), newSquare(11), 0, *endBrd1_5White, false, false},
+
+		{"p g4-f3 successful enPassant", *startBrd1Black, newSquare(30), newSquare(21), 0, *endBrd1_2Black, true, false},
+		{"p g4-h3 enPassant not allowed", *startBrd1Black, newSquare(30), newSquare(23), 0, emptyBrd, false, false},
+		{"k f3 under self-check", *startBrd1Black, newSquare(20), newSquare(21), 0, *endBrd1_3Black, false, false},
+		{"K O-O through checked cells", *startBrd2White, newSquare(4), newSquare(6), 0, emptyBrd, false, false},
+		{"K O-O-O through checked cells", *startBrd2White, newSquare(4), newSquare(2), 0, emptyBrd, false, false},
+		{"k O-O not allowed", *startBrd2White, newSquare(60), newSquare(62), 0, emptyBrd, false, false},
+		{"k O-O-O through busy cells", *startBrd2Black, newSquare(60), newSquare(58), 0, emptyBrd, false, false},
 	}
 
 	for _, tc := range tests {
@@ -380,12 +402,15 @@ func TestIsKingChecked(t *testing.T) {
 		brd3FEN = "8/5P2/1Q2k3/8/1b1q2R1/2np3B/8/2r1K3 w - - 5 6"
 		brd4FEN = "8/2N5/4k3/8/3K4/8/2n5/8 w - - 5 6"
 		brd5FEN = "2B5/1P6/k7/8/6p1/7K/8/8 w - - 5 6"
+		brd6FEN = "rnbq1bnr/ppP5/3p4/4pBBp/3PPPp1/QP3kP1/P6P/R3K1NR w KQ - 6 7"
 	)
+
 	brd1, _ := board.FromFEN(brd1FEN)
 	brd2, _ := board.FromFEN(brd2FEN)
 	brd3, _ := board.FromFEN(brd3FEN)
 	brd4, _ := board.FromFEN(brd4FEN)
 	brd5, _ := board.FromFEN(brd5FEN)
+	brd6, _ := board.FromFEN(brd6FEN)
 
 	tests := []struct {
 		name      string
@@ -403,6 +428,8 @@ func TestIsKingChecked(t *testing.T) {
 		{"K by n", *brd4, board.WhiteKing, true},
 		{"k none", *brd5, board.BlackKing, false},
 		{"K by p", *brd5, board.WhiteKing, true},
+		{"k by N, wrong turn", *brd6, board.WhiteKing, false},
+		{"k by N", *brd6, board.BlackKing, true},
 	}
 
 	for _, tc := range tests {
@@ -590,11 +617,13 @@ func TestCheckDistanceToEnemyKing(t *testing.T) {
 		brd1FEN = "8/8/8/8/8/3k4/1K6/8 w - - 5 6"
 		brd2FEN = "8/8/8/8/8/2k5/1K6/8 w - - 5 6"
 		brd3FEN = "8/8/8/8/8/8/1K6/1k6 w - - 5 6"
+		brd4FEN = "rnbq1bnr/ppP5/3p4/4pBBp/3PPPp1/QP2k1P1/P2K3P/R5NR b - - 6 6"
 	)
 
 	brd1, _ := board.FromFEN(brd1FEN)
 	brd2, _ := board.FromFEN(brd2FEN)
 	brd3, _ := board.FromFEN(brd3FEN)
+	brd4, _ := board.FromFEN(brd4FEN)
 
 	tests := []struct {
 		name                string
@@ -604,6 +633,7 @@ func TestCheckDistanceToEnemyKing(t *testing.T) {
 		{"knight position", *brd1, false},
 		{"up-right", *brd2, true},
 		{"down", *brd3, true},
+		{"up-right", *brd4, true},
 	}
 
 	for _, tc := range tests {
