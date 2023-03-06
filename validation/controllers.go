@@ -138,7 +138,7 @@ func Advanced(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// валидация входных данных: клетки from и to различны
-		if !fromSquare.isEqual(toSquare) {
+		if fromSquare.isEqual(toSquare) {
 			log.Printf("%v: %v (from), %v (to)", errFromToSquaresNotDiffer, fromSquare, toSquare)
 			w.WriteHeader(http.StatusBadRequest)
 			return
