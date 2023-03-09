@@ -2,7 +2,6 @@ package validation_test
 
 import (
 	"fmt"
-	"github.com/sadmadrus/chessBox/internal/board"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -10,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/sadmadrus/chessBox/internal/board"
 	"github.com/sadmadrus/chessBox/validation"
 )
 

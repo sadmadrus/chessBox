@@ -70,21 +70,21 @@ func (s1 *square) diffColumn(s2 square) int {
 
 // isEqual возвращает true, если клетки s1, s2 одинаковы; в противном случае false.
 func (s1 *square) isEqual(s2 square) bool {
-	if s1.diffRow(s2) == 0 && s1.diffColumn(s2) == 0 {
+	if s1.toInt() == s2.toInt() {
 		return true
 	}
 
 	return false
 }
 
-// toInt8 возвращает представление клетки s1 в формате int8.
-func (s1 *square) toInt8() int8 {
-	return int8(s1.row*8 + s1.column)
-}
-
 // toInt возвращает представление клетки s1 в формате int.
 func (s1 *square) toInt() int {
 	return s1.row*8 + s1.column
+}
+
+// toInt8 возвращает представление клетки s1 в формате int8.
+func (s1 *square) toInt8() int8 {
+	return int8(s1.toInt())
 }
 
 // методы move
