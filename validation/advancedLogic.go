@@ -77,7 +77,8 @@ func advancedLogic(b board.Board, from, to square, newpiece board.Piece) (newBoa
 		return newBoard, isValid, err
 	}
 
-	// 9. Проверяем, что при новой позиции на доске не появился шах для собственного короля.
+	// 9. Проверяем, что при новой позиции на доске не появился шах для собственного короля. На этом шаге также
+	// проверяем, что король не находится вплотную к чужому королю - такой ход будет запрещен.
 	var king board.Piece
 	if b.NextToMove() {
 		king = board.WhiteKing
@@ -92,20 +93,6 @@ func advancedLogic(b board.Board, from, to square, newpiece board.Piece) (newBoa
 	if kingChecked {
 		log.Printf("%v", errKingChecked)
 		return newBoard, isValid, nil
-	}
-
-	// 10. В случае если ход делается королем, проверяем, что он не подступил вплотную к чужому королю - такой ход
-	// будет запрещен.
-	if piece == board.WhiteKing || piece == board.BlackKing {
-		var isEnemyKingAdjacent bool
-		isEnemyKingAdjacent, err = checkDistanceToEnemyKing(newBoard)
-		if err != nil {
-			return newBoard, isValid, err
-		}
-		if isEnemyKingAdjacent {
-			log.Printf("%v", errKingsAdjacent)
-			return newBoard, isValid, nil
-		}
 	}
 
 	isValid = true
@@ -378,22 +365,23 @@ func getNewBoard(b board.Board, piece board.Piece, from, to square, newpiece boa
 	return b, nil
 }
 
-// isKingChecked проверяет, что свой король не под шахом. Если шах есть, возвращает true,
-// иначе false. Возвращает ошибку, если возникла при обработке, иначе nil.
+// isKingChecked проверяет, что свой король не под шахом, а также близость чужого короля. Если шах есть (или чужой король
+// находится вполтную), возвращает true, иначе false. Возвращает ошибку, если возникла при обработке, иначе nil.
 func isKingChecked(b board.Board, king board.Piece) (isChecked bool, err error) {
-	pieceString := king.String()
+	kingString := king.String()
 	var kingSquare square
-	kingSquare, err = getSquareByPiece(b, pieceString)
+	kingSquare, err = getSquareByPiece(b, kingString)
 	if err != nil {
 		return isChecked, err
 	}
 
 	isChecked, err = isSquareChecked(b, kingSquare, king)
-	if err != nil {
+	if err != nil || isChecked {
 		return isChecked, err
 	}
 
-	return isChecked, nil
+	isChecked, err = isCheckedByEnemyKing(b)
+	return isChecked, err
 }
 
 // isSquareChecked проверяет, что на доске b нет шаха королю king, когда он находится в клетке sq. Если шах есть,
@@ -693,23 +681,23 @@ func isSquareCheckedDiagonally(b board.Board, kingSquare square, enemyQueen, ene
 	return isChecked, nil
 }
 
-// checkDistanceToEnemyKing проверяет ближайшие клетки (вертикально, горизонтально, диагонально к клетке своего короля
+// isCheckedByEnemyKing проверяет ближайшие клетки (вертикально, горизонтально, диагонально к клетке своего короля
 // kingSquare на наличие на них вражеского короля. Если вражеский король оказался вплотную к своему королю, возвращает
 // true, иначе false. Если при проверке клеток возникает ошибка, она также возвращается, иначе возвращется nil.
-func checkDistanceToEnemyKing(b board.Board) (isEnemyKingAdjacent bool, err error) {
+func isCheckedByEnemyKing(b board.Board) (isChecked bool, err error) {
 	var whiteKingSquare, blackKingSquare square
 	whiteKingSquare, err = getSquareByPiece(b, "K")
 	if err != nil {
-		return isEnemyKingAdjacent, err
+		return isChecked, err
 	}
 	blackKingSquare, err = getSquareByPiece(b, "k")
 	if err != nil {
-		return isEnemyKingAdjacent, err
+		return isChecked, err
 	}
 
 	if abs(whiteKingSquare.diffRow(blackKingSquare)) <= 1 && abs(whiteKingSquare.diffColumn(blackKingSquare)) <= 1 {
-		isEnemyKingAdjacent = true
+		isChecked = true
 	}
 
-	return isEnemyKingAdjacent, nil
+	return isChecked, nil
 }

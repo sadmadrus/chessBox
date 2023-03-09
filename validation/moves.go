@@ -28,7 +28,6 @@ var (
 	errNewpieceNotExist              = fmt.Errorf("newpiece does not exist but pawn promotion required")
 	errPieceNotExistOnBoard          = fmt.Errorf("piece does not exist on board")
 	errKingChecked                   = fmt.Errorf("king checked after move")
-	errKingsAdjacent                 = fmt.Errorf("kings are adjacent")
 	errCastlingThroughCheckedSquare  = fmt.Errorf("castling is not valid through square under check")
 	errCastlingThroughOccupiedSquare = fmt.Errorf("castling is not valid through square occupied by other pieces")
 	errPiecesStayInTheWay            = fmt.Errorf("piece or pieces stay in the way of figure move")

@@ -612,7 +612,7 @@ func TestIsSquareCheckedDiagonally(t *testing.T) {
 	}
 }
 
-func TestCheckDistanceToEnemyKing(t *testing.T) {
+func TestIsCheckedByEnemyKing(t *testing.T) {
 	var (
 		brd1FEN = "8/8/8/8/8/3k4/1K6/8 w - - 5 6"
 		brd2FEN = "8/8/8/8/8/2k5/1K6/8 w - - 5 6"
@@ -626,9 +626,9 @@ func TestCheckDistanceToEnemyKing(t *testing.T) {
 	brd4, _ := board.FromFEN(brd4FEN)
 
 	tests := []struct {
-		name                string
-		brd                 board.Board
-		isEnemyKingAdjacent bool
+		name      string
+		brd       board.Board
+		isChecked bool
 	}{
 		{"knight position", *brd1, false},
 		{"up-right", *brd2, true},
@@ -638,12 +638,12 @@ func TestCheckDistanceToEnemyKing(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			res, err := checkDistanceToEnemyKing(tc.brd)
+			res, err := isCheckedByEnemyKing(tc.brd)
 			if err != nil {
 				t.Fatalf("want nil, got error: %s", err)
 			}
-			if res != tc.isEnemyKingAdjacent {
-				t.Fatalf("want %v, got %v", tc.isEnemyKingAdjacent, res)
+			if res != tc.isChecked {
+				t.Fatalf("want %v, got %v", tc.isChecked, res)
 			}
 		})
 	}
