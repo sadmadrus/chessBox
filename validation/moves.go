@@ -32,6 +32,7 @@ var (
 	errCastlingThroughCheckedSquare  = fmt.Errorf("castling is not valid through square under check")
 	errCastlingThroughOccupiedSquare = fmt.Errorf("castling is not valid through square occupied by other pieces")
 	errPiecesStayInTheWay            = fmt.Errorf("piece or pieces stay in the way of figure move")
+	errPiecetypeNotExist             = fmt.Errorf("piece type does not exist")
 )
 
 // Структуры клетки

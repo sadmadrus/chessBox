@@ -26,7 +26,7 @@ func Simple(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" || r.Method == "HEAD" {
 		// валидация входных данных: фигура piece существует
 		pieceParsed := r.URL.Query().Get("piece")
-		piece, err := parsePiece(pieceParsed)
+		piece, err := parsePiece(pieceParsed, "piece")
 		if err != nil {
 			log.Printf("%v: %v", errPieceNotExist, pieceParsed)
 			w.WriteHeader(http.StatusBadRequest)
@@ -147,7 +147,7 @@ func Advanced(w http.ResponseWriter, r *http.Request) {
 		// валидация входных данных: фигура newpiece принимает q/r/b/n/Q/R/B/N или пустое значение
 		newpieceParsed := r.URL.Query().Get("newpiece")
 		var newpiece board.Piece
-		newpiece, err = parseNewpiece(newpieceParsed)
+		newpiece, err = parsePiece(newpieceParsed, "newpiece")
 		if err != nil {
 			log.Printf("%v: %v", errNewpieceNotValid, newpieceParsed)
 			w.WriteHeader(http.StatusBadRequest)

@@ -7,14 +7,15 @@ import (
 	"github.com/sadmadrus/chessBox/internal/board"
 )
 
-// parsePiece переводит строковое представление фигуры типа k/q/r/b/n/p/K/Q/R/B/N/P в тип board.Piece.  Если
-// преобразование невозможно, возвращает ошибку.
-func parsePiece(piece string) (board.Piece, error) {
+// parsePiece переводит строковое представление фигуры типа piece (k/q/r/b/n/p/K/Q/R/B/N/P) в тип board.Piece; или фигуры
+// типа newpiece (q/r/b/n/Q/R/B/N или пустое значение) в тип board.Piece. Если преобразование невозможно, возвращает
+// ошибку. Если указаннекорректный тип фигуры pieceType, возвращает ошибку.
+func parsePiece(piece string, pieceType string) (board.Piece, error) {
+	if pieceType != "piece" && pieceType != "newpiece" {
+		return 0, fmt.Errorf("%w: %s", errPiecetypeNotExist, pieceType)
+	}
+
 	switch piece {
-	case "P":
-		return board.WhitePawn, nil
-	case "p":
-		return board.BlackPawn, nil
 	case "N":
 		return board.WhiteKnight, nil
 	case "n":
@@ -31,13 +32,29 @@ func parsePiece(piece string) (board.Piece, error) {
 		return board.WhiteQueen, nil
 	case "q":
 		return board.BlackQueen, nil
-	case "K":
-		return board.WhiteKing, nil
-	case "k":
-		return board.BlackKing, nil
-	default:
-		return 0, fmt.Errorf("%w", errPieceNotExist)
 	}
+
+	switch pieceType {
+	case "piece":
+		switch piece {
+		case "K":
+			return board.WhiteKing, nil
+		case "k":
+			return board.BlackKing, nil
+		case "P":
+			return board.WhitePawn, nil
+		case "p":
+			return board.BlackPawn, nil
+		}
+
+	case "newpiece":
+		switch piece {
+		case "":
+			return 0, nil
+		}
+	}
+
+	return 0, fmt.Errorf("%w: %s", errPieceNotExist, piece)
 }
 
 // parseSquare переводит строковое представление клетки from/to в клетку структуры square. При невалидных входных данных
@@ -57,31 +74,4 @@ func parseSquare(squareString string) (squareSquare square, err error) {
 	}
 
 	return newSquare(int8(sq)), nil
-}
-
-// parseNewpiece переводит строковое представление фигуры типа q/r/b/n/Q/R/B/N или пустое значение в тип board.Piece.
-// Если преобразование невозможно, возвращает ошибку.
-func parseNewpiece(newpiece string) (board.Piece, error) {
-	switch newpiece {
-	case "N":
-		return board.WhiteKnight, nil
-	case "n":
-		return board.BlackKnight, nil
-	case "B":
-		return board.WhiteBishop, nil
-	case "b":
-		return board.BlackBishop, nil
-	case "R":
-		return board.WhiteRook, nil
-	case "r":
-		return board.BlackRook, nil
-	case "Q":
-		return board.WhiteQueen, nil
-	case "q":
-		return board.BlackQueen, nil
-	case "":
-		return 0, nil
-	default:
-		return 0, fmt.Errorf("%w", errNewpieceNotValid)
-	}
 }

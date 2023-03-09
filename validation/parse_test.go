@@ -10,28 +10,52 @@ func TestParsePiece(t *testing.T) {
 	tests := []struct {
 		name        string
 		pieceString string
+		pieceType   string
 		piece       board.Piece
 		isErr       bool
 	}{
-		{"P", "P", board.WhitePawn, false},
-		{"p", "p", board.BlackPawn, false},
-		{"N", "N", board.WhiteKnight, false},
-		{"n", "n", board.BlackKnight, false},
-		{"B", "B", board.WhiteBishop, false},
-		{"b", "b", board.BlackBishop, false},
-		{"R", "R", board.WhiteRook, false},
-		{"r", "r", board.BlackRook, false},
-		{"Q", "Q", board.WhiteQueen, false},
-		{"q", "q", board.BlackQueen, false},
-		{"K", "K", board.WhiteKing, false},
-		{"k", "k", board.BlackKing, false},
-		{"abcd", "abcd", 0, true},
-		{"", "", 0, true},
+		// piece pieceType
+		{"P", "P", "piece", board.WhitePawn, false},
+		{"p", "p", "piece", board.BlackPawn, false},
+		{"N", "N", "piece", board.WhiteKnight, false},
+		{"n", "n", "piece", board.BlackKnight, false},
+		{"B", "B", "piece", board.WhiteBishop, false},
+		{"b", "b", "piece", board.BlackBishop, false},
+		{"R", "R", "piece", board.WhiteRook, false},
+		{"r", "r", "piece", board.BlackRook, false},
+		{"Q", "Q", "piece", board.WhiteQueen, false},
+		{"q", "q", "piece", board.BlackQueen, false},
+		{"K", "K", "piece", board.WhiteKing, false},
+		{"k", "k", "piece", board.BlackKing, false},
+		{"abcd", "abcd", "piece", 0, true},
+		{"", "", "piece", 0, true},
+
+		// newpiece pieceType
+		{"P", "P", "newpiece", 0, true},
+		{"p", "p", "newpiece", 0, true},
+		{"N", "N", "newpiece", board.WhiteKnight, false},
+		{"n", "n", "newpiece", board.BlackKnight, false},
+		{"B", "B", "newpiece", board.WhiteBishop, false},
+		{"b", "b", "newpiece", board.BlackBishop, false},
+		{"R", "R", "newpiece", board.WhiteRook, false},
+		{"r", "r", "newpiece", board.BlackRook, false},
+		{"Q", "Q", "newpiece", board.WhiteQueen, false},
+		{"q", "q", "newpiece", board.BlackQueen, false},
+		{"K", "K", "newpiece", 0, true},
+		{"k", "k", "newpiece", 0, true},
+		{"abcd", "abcd", "newpiece", 0, true},
+		{"", "", "newpiece", 0, false},
+
+		// wrong pieceType
+		{"R", "R", "somepiece", 0, true},
+		{"r", "r", "", 0, true},
+		{"Q", "Q", "asdfg", 0, true},
+		{"q", "q", "12345", 0, true},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			res, err := parsePiece(tc.pieceString)
+			res, err := parsePiece(tc.pieceString, tc.pieceType)
 			if err != nil && !tc.isErr {
 				t.Fatalf("want nil, got err: %v", err)
 			}
@@ -42,47 +66,6 @@ func TestParsePiece(t *testing.T) {
 
 			if res != tc.piece {
 				t.Fatalf("want %s, got %s", tc.piece, res)
-			}
-		})
-	}
-}
-
-func TestParseNewpiece(t *testing.T) {
-	tests := []struct {
-		name           string
-		newpieceString string
-		newpiece       board.Piece
-		isErr          bool
-	}{
-		{"P", "P", 0, true},
-		{"p", "p", 0, true},
-		{"N", "N", board.WhiteKnight, false},
-		{"n", "n", board.BlackKnight, false},
-		{"B", "B", board.WhiteBishop, false},
-		{"b", "b", board.BlackBishop, false},
-		{"R", "R", board.WhiteRook, false},
-		{"r", "r", board.BlackRook, false},
-		{"Q", "Q", board.WhiteQueen, false},
-		{"q", "q", board.BlackQueen, false},
-		{"K", "K", 0, true},
-		{"k", "k", 0, true},
-		{"abcd", "abcd", 0, true},
-		{"", "", 0, false},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			res, err := parseNewpiece(tc.newpieceString)
-			if err != nil && !tc.isErr {
-				t.Fatalf("want nil, got err: %v", err)
-			}
-
-			if err == nil && tc.isErr {
-				t.Fatalf("want err, got nil")
-			}
-
-			if res != tc.newpiece {
-				t.Fatalf("want %s, got %s", tc.newpiece, res)
 			}
 		})
 	}
