@@ -4,11 +4,9 @@ package validation
 
 import (
 	"encoding/json"
+	"github.com/sadmadrus/chessBox/internal/board"
 	"log"
 	"net/http"
-	"strconv"
-
-	"github.com/sadmadrus/chessBox/internal/board"
 )
 
 // http хендлеры
@@ -35,49 +33,35 @@ func Simple(w http.ResponseWriter, r *http.Request) {
 
 		// валидация входных данных: клетка from существуют
 		fromParsed := r.URL.Query().Get("from")
-		// перевод в тип board.square для цифро-буквенного обозначения клетки (напр., "а1")
-		from := board.Sq(fromParsed)
-		if from == -1 {
-			// перевод в тип board.square для числового значения клетки от 0 до 63
-			var fromParsedNum int
-			fromParsedNum, err = strconv.Atoi(fromParsed)
-			from = board.Sq(fromParsedNum)
-			if from == -1 || err != nil {
-				log.Printf("%v: %v", errPieceNotExist, fromParsed)
-				w.WriteHeader(http.StatusBadRequest)
-				return
-			}
+		var fromSquare square
+		fromSquare, err = parseSquare(fromParsed)
+		if err != nil {
+			log.Printf("%v", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
 		}
 
 		// валидация входных данных: клетка to существуют
 		toParsed := r.URL.Query().Get("to")
-		// перевод в тип board.square для цифро-буквенного обозначения клетки (напр., "а1")
-		to := board.Sq(toParsed)
-		if to == -1 {
-			// перевод в тип board.square для числового значения клетки от 0 до 63
-			var toParsedNum int
-			toParsedNum, err = strconv.Atoi(toParsed)
-			to = board.Sq(toParsedNum)
-			if to == -1 || err != nil {
-				log.Printf("%v: %s", errPieceNotExist, toParsed)
-				w.WriteHeader(http.StatusBadRequest)
-				return
-			}
+		var toSquare square
+		toSquare, err = parseSquare(toParsed)
+		if err != nil {
+			log.Printf("%v", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
 		}
 
 		// валидация входных данных: клетки from и to различны
-		if from == to {
-			log.Printf("%v: %v (from), %v (to)", errFromToSquaresNotDiffer, from, to)
+		if fromSquare.isEqual(toSquare) {
+			log.Printf("%v: %v (from), %v (to)", errFromToSquaresNotDiffer, fromSquare, toSquare)
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
 		// валидация геометрического движения фигуры без привязки к позиции на доске
-		fromSquare := newSquare(int8(from))
-		toSquare := newSquare(int8(to))
 		err = move(piece, fromSquare, toSquare)
 		if err != nil {
-			log.Printf("%v: from %v - to %v", err, from, to)
+			log.Printf("%v: from %v - to %v", err, fromSquare, toSquare)
 			w.WriteHeader(http.StatusForbidden)
 			return
 		} else {
