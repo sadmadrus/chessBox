@@ -168,6 +168,49 @@ func (b *Board) ThreatsTo(s square) []square {
 		}
 	}
 
+	// knights
+	squares = make([]square, 0, 8)
+	if s%8 > 1 {
+		if !in8(s) {
+			squares = append(squares, s+6)
+		}
+		if !in1(s) {
+			squares = append(squares, s-10)
+		}
+	}
+	if !inA(s) {
+		if s < 48 {
+			squares = append(squares, s+15)
+		}
+		if s > 15 {
+			squares = append(squares, s-17)
+		}
+	}
+	if !inH(s) {
+		if s < 48 {
+			squares = append(squares, s+17)
+		}
+		if s > 15 {
+			squares = append(squares, s-15)
+		}
+	}
+	if s%8 < 6 {
+		if !in8(s) {
+			squares = append(squares, s+10)
+		}
+		if !in1(s) {
+			squares = append(squares, s-6)
+		}
+	}
+	for _, sq := range squares {
+		if !isB && b.brd[sq] == BlackKnight {
+			out = append(out, sq)
+		}
+		if !isW && b.brd[sq] == WhiteKnight {
+			out = append(out, sq)
+		}
+	}
+
 	// pawns
 	if !in8(s) && !isB {
 		squares = make([]square, 0, 2)

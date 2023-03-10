@@ -51,7 +51,7 @@ func TestIsValid(t *testing.T) {
 func TestThreatsTo(t *testing.T) {
 	tb, _ := board.FromFEN("8/5Q2/6nb/3Np3/4K2r/6P1/8/2B2R2 w - - 0 1")
 	s := board.Sq("f4")
-	want := []string{"f7", "f1", "h4", "h6", "c1", "e5", "g3", "e4"}
+	want := []string{"f7", "f1", "h4", "h6", "c1", "d5", "g6", "e5", "g3", "e4"}
 	got := tb.ThreatsTo(s)
 	fail := func() { t.Fatalf("want %v\ngot%v", want, got) }
 	if len(got) != len(want) {
