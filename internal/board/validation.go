@@ -22,6 +22,7 @@ package board
 func (b *Board) IsValid() bool {
 	bKing := square(-1)
 	wKing := square(-1)
+	var bPawns, wPawns []square
 	for s, c := range b.brd {
 		switch c {
 		case BlackKing:
@@ -34,9 +35,16 @@ func (b *Board) IsValid() bool {
 				return false
 			}
 			wKing = Sq(s)
+		case BlackPawn:
+			bPawns = append(bPawns, Sq(s))
+		case WhitePawn:
+			wPawns = append(wPawns, Sq(s))
 		}
 	}
 	if bKing == -1 || wKing == -1 {
+		return false
+	}
+	if len(bPawns) > 8 || len(wPawns) > 8 {
 		return false
 	}
 	return true

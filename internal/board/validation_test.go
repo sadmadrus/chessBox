@@ -26,9 +26,11 @@ func TestIsValid(t *testing.T) {
 		fen  string
 		want bool
 	}{
+		{"B00", "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1", true},
 		{"endgame", "8/8/4r3/3k4/8/8/3K1Q2/8 w - - 0 1", true},
 		{"two kings", "8/2k5/4r3/3k4/8/8/3K1Q2/8 w - - 0 1", false},
 		{"no king", "8/8/4r3/3k4/8/8/5Q2/8 w - - 0 1", false},
+		{"extra pawn", "rnbqkbnr/pppppppp/8/8/4P3/4P3/PPPP1PPP/RNBQKBNR b KQkq - 0 1", false},
 	}
 
 	for _, tc := range tests {
