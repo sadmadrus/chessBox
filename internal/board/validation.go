@@ -36,8 +36,14 @@ func (b *Board) IsValid() bool {
 			}
 			wKing = Sq(s)
 		case BlackPawn:
+			if s < 8 || s > 55 {
+				return false
+			}
 			bPawns = append(bPawns, Sq(s))
 		case WhitePawn:
+			if s < 8 || s > 55 {
+				return false
+			}
 			wPawns = append(wPawns, Sq(s))
 		}
 	}
