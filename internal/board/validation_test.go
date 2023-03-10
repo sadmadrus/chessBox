@@ -33,6 +33,8 @@ func TestIsValid(t *testing.T) {
 		{"extra pawn", "rnbqkbnr/pppppppp/8/8/4P3/4P3/PPPP1PPP/RNBQKBNR b KQkq - 0 1", false},
 		{"P in 8", "1P6/8/4r3/3k4/8/8/3K1Q2/8 w - - 0 1", false},
 		{"P in 1", "8/8/4r3/3k4/8/8/3K1Q2/2P5 w - - 0 1", false},
+		{"wrong king in check", "rnbqkbnr/pp3ppp/4p3/2pp4/Q1PP4/2N5/PP2PPPP/R1B1KBNR w KQkq - 0 1", false},
+		{"king in check", "rnbqkbnr/pp3ppp/4p3/2pp4/Q1PP4/2N5/PP2PPPP/R1B1KBNR b KQkq - 0 1", true},
 	}
 
 	for _, tc := range tests {
@@ -43,5 +45,21 @@ func TestIsValid(t *testing.T) {
 				t.Fatalf("want %v, got %v", tc.want, got)
 			}
 		})
+	}
+}
+
+func TestThreatsTo(t *testing.T) {
+	tb, _ := board.FromFEN("8/5Q2/6nb/3Np3/4K2r/6P1/8/2B2R2 w - - 0 1")
+	s := board.Sq("f4")
+	want := []string{"f7", "f1", "h4", "h6", "c1", "e5", "g3", "e4"}
+	got := tb.ThreatsTo(s)
+	fail := func() { t.Fatalf("want %v\ngot%v", want, got) }
+	if len(got) != len(want) {
+		fail()
+	}
+	for i := range got {
+		if got[i].String() != want[i] {
+			fail()
+		}
 	}
 }

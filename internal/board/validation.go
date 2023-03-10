@@ -41,7 +41,7 @@ func (b *Board) IsValid() bool {
 			}
 			bPawns = append(bPawns, Sq(s))
 		case WhitePawn:
-			if s < 8 || s > 55 {
+			if in1(Sq(s)) || in8(Sq(s)) {
 				return false
 			}
 			wPawns = append(wPawns, Sq(s))
@@ -50,8 +50,208 @@ func (b *Board) IsValid() bool {
 	if bKing == -1 || wKing == -1 {
 		return false
 	}
+
+	thatKing := bKing
+	if b.blk {
+		thatKing = wKing
+	}
+	if len(b.ThreatsTo(thatKing)) > 0 {
+		return false
+	}
+
 	if len(bPawns) > 8 || len(wPawns) > 8 {
 		return false
 	}
 	return true
+}
+
+// ThreatsTo enumerates squares that the given square is threatened from.
+func (b *Board) ThreatsTo(s square) []square {
+	if s < 0 || s > 63 {
+		return nil
+	}
+	var isW, isB bool
+	var out []square
+	if b.brd[s] != 0 {
+		if b.brd[s]%2 == 0 {
+			isB = true
+		} else {
+			isW = true
+		}
+	}
+
+	// vertical & horizontal
+	squares := make([]square, 0, 4)
+	for sq := s; sq < 64; sq += 8 {
+		if b.brd[sq] != 0 && s != sq {
+			squares = append(squares, sq)
+			break
+		}
+	}
+	for sq := s; sq >= 0; sq -= 8 {
+		if b.brd[sq] != 0 && s != sq {
+			squares = append(squares, sq)
+			break
+		}
+	}
+	for sq := s; ; sq++ {
+		if b.brd[sq] != 0 && s != sq {
+			squares = append(squares, sq)
+			break
+		}
+		if inH(sq) {
+			break
+		}
+	}
+	for sq := s; ; sq-- {
+		if b.brd[sq] != 0 && s != sq {
+			squares = append(squares, sq)
+			break
+		}
+		if inA(sq) {
+			break
+		}
+	}
+	for _, sq := range squares {
+		if !isB && (b.brd[sq] == BlackQueen || b.brd[sq] == BlackRook) {
+			out = append(out, sq)
+		}
+		if !isW && (b.brd[sq] == WhiteQueen || b.brd[sq] == WhiteRook) {
+			out = append(out, sq)
+		}
+	}
+
+	// diagonals
+	squares = make([]square, 0, 4)
+	for sq := s; ; sq += 9 {
+		if b.brd[sq] != 0 && s != sq {
+			squares = append(squares, sq)
+			break
+		}
+		if inH(sq) || in8(sq) {
+			break
+		}
+	}
+	for sq := s; ; sq += 7 {
+		if b.brd[sq] != 0 && s != sq {
+			squares = append(squares, sq)
+			break
+		}
+		if inA(sq) || in8(sq) {
+			break
+		}
+	}
+	for sq := s; ; sq -= 7 {
+		if b.brd[sq] != 0 && s != sq {
+			squares = append(squares, sq)
+			break
+		}
+		if inH(sq) || in1(sq) {
+			break
+		}
+	}
+	for sq := s; ; sq -= 9 {
+		if b.brd[sq] != 0 && s != sq {
+			squares = append(squares, sq)
+			break
+		}
+		if inA(sq) || in1(sq) {
+			break
+		}
+	}
+	for _, sq := range squares {
+		if !isB && (b.brd[sq] == BlackQueen || b.brd[sq] == BlackBishop) {
+			out = append(out, sq)
+		}
+		if !isW && (b.brd[sq] == WhiteQueen || b.brd[sq] == WhiteBishop) {
+			out = append(out, sq)
+		}
+	}
+
+	// pawns
+	if !in8(s) && !isB {
+		squares = make([]square, 0, 2)
+		if !inA(s) {
+			squares = append(squares, s+7)
+		}
+		if !inH(s) {
+			squares = append(squares, s+9)
+		}
+		for _, sq := range squares {
+			if b.brd[sq] == BlackPawn {
+				out = append(out, sq)
+			}
+		}
+	}
+	if !in1(s) && !isW {
+		squares = make([]square, 0, 2)
+		if !inA(s) {
+			squares = append(squares, s-9)
+		}
+		if !inH(s) {
+			squares = append(squares, s-7)
+		}
+		for _, sq := range squares {
+			if b.brd[sq] == WhitePawn {
+				out = append(out, sq)
+			}
+		}
+	}
+
+	// kings
+	squares = make([]square, 0, 8)
+	if !inA(s) {
+		if !in1(s) {
+			squares = append(squares, s-9)
+		}
+		squares = append(squares, s-1)
+		if !in8(s) {
+			squares = append(squares, s+7)
+		}
+	}
+	if !inH(s) {
+		if !in1(s) {
+			squares = append(squares, s-7)
+		}
+		squares = append(squares, s+1)
+		if !in8(s) {
+			squares = append(squares, s+9)
+		}
+	}
+	if !in1(s) {
+		squares = append(squares, s-8)
+	}
+	if !in8(s) {
+		squares = append(squares, s+8)
+	}
+	for _, sq := range squares {
+		if !isB && b.brd[sq] == BlackKing {
+			out = append(out, sq)
+		}
+		if !isW && b.brd[sq] == WhiteKing {
+			out = append(out, sq)
+		}
+	}
+
+	return out
+}
+
+// inA is true if square is on the "a" column.
+func inA(s square) bool {
+	return s%8 == 0
+}
+
+// inH is true if square is on the "h" column.
+func inH(s square) bool {
+	return s%8 == 7
+}
+
+// in1 is true if square is on the row 1.
+func in1(s square) bool {
+	return s >= 0 && s <= 7
+}
+
+// in8 is true if square is on the row 8.
+func in8(s square) bool {
+	return s >= 53 && s <= 63
 }
