@@ -35,6 +35,7 @@ func TestIsValid(t *testing.T) {
 		{"P in 1", "8/8/4r3/3k4/8/8/3K1Q2/2P5 w - - 0 1", false},
 		{"wrong king in check", "rnbqkbnr/pp3ppp/4p3/2pp4/Q1PP4/2N5/PP2PPPP/R1B1KBNR w KQkq - 0 1", false},
 		{"king in check", "rnbqkbnr/pp3ppp/4p3/2pp4/Q1PP4/2N5/PP2PPPP/R1B1KBNR b KQkq - 0 1", true},
+		{"triple check", "8/1k3Q2/7b/2N1p1q1/7r/2K3P1/8/1RB5 b - - 0 1", false},
 	}
 
 	for _, tc := range tests {

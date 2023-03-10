@@ -52,10 +52,14 @@ func (b *Board) IsValid() bool {
 	}
 
 	thatKing := bKing
+	thisKing := wKing
 	if b.blk {
-		thatKing = wKing
+		thatKing, thisKing = thisKing, thatKing
 	}
 	if len(b.ThreatsTo(thatKing)) > 0 {
+		return false
+	}
+	if len(b.ThreatsTo(thisKing)) > 2 {
 		return false
 	}
 
@@ -66,6 +70,7 @@ func (b *Board) IsValid() bool {
 }
 
 // ThreatsTo enumerates squares that the given square is threatened from.
+// If the square is not empty, only enemy pieces/pawns are considered.
 func (b *Board) ThreatsTo(s square) []square {
 	if s < 0 || s > 63 {
 		return nil
