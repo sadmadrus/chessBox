@@ -59,7 +59,7 @@ func (b *Board) IsValid() bool {
 	if len(b.ThreatsTo(thatKing)) > 0 {
 		return false
 	}
-	if len(b.ThreatsTo(thisKing)) > 2 {
+	if !b.checkCombinationLegal(b.ThreatsTo(thisKing)) {
 		return false
 	}
 
@@ -302,4 +302,23 @@ func in1(s square) bool {
 // in8 is true if square is on the row 8.
 func in8(s square) bool {
 	return s >= 53 && s <= 63
+}
+
+// checkCombinationLegal shows whether the multiple checks could appear legally.
+func (b *Board) checkCombinationLegal(threats []square) bool {
+	if len(threats) > 2 {
+		return false
+	}
+	if len(threats) == 2 {
+		if b.brd[threats[0]] == b.brd[threats[1]] {
+			if b.brd[threats[0]] < 7 {
+				return false
+			}
+		}
+		if b.brd[threats[0]] < 3 && b.brd[threats[1]] < 7 ||
+			b.brd[threats[1]] < 3 && b.brd[threats[0]] < 7 {
+			return false
+		}
+	}
+	return true
 }
