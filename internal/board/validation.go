@@ -14,11 +14,11 @@
 
 package board
 
-// IsValid attempts to check whether the position could legally appear during
-// the game.
+// IsValid проверяет, могла ли позиция на доске легально возникнуть в ходе игры.
 //
-// The checks are not extremely thorough, so false positives are to be expected.
-// There shouldn't be any false negatives, though.
+// Проверки не доскональные, ряд нелегальных позиций могут быть определены как
+// легальные. А вот наоборот (чтоб легальная позиция была определена как
+// нелегальная) случиться не должно.
 func (b *Board) IsValid() bool {
 	bKing := square(-1)
 	wKing := square(-1)
@@ -69,8 +69,9 @@ func (b *Board) IsValid() bool {
 	return true
 }
 
-// ThreatsTo enumerates squares that the given square is threatened from.
-// If the square is not empty, only enemy pieces/pawns are considered.
+// ThreatsTo возвращает поля, на которых стоят фигуры, держащие данное поле «под
+// боем». Если поле не пустое, в расчёт берутся только фигуры противоположного
+// цвета.
 func (b *Board) ThreatsTo(s square) []square {
 	if s < 0 || s > 63 {
 		return nil
@@ -85,7 +86,7 @@ func (b *Board) ThreatsTo(s square) []square {
 		}
 	}
 
-	// vertical & horizontal
+	// вертикали и горизонтали
 	squares := make([]square, 0, 4)
 	for sq := s; sq < 64; sq += 8 {
 		if b.brd[sq] != 0 && s != sq {
@@ -126,7 +127,7 @@ func (b *Board) ThreatsTo(s square) []square {
 		}
 	}
 
-	// diagonals
+	// диагонали
 	squares = make([]square, 0, 4)
 	for sq := s; ; sq += 9 {
 		if b.brd[sq] != 0 && s != sq {
@@ -173,7 +174,7 @@ func (b *Board) ThreatsTo(s square) []square {
 		}
 	}
 
-	// knights
+	// кони
 	squares = make([]square, 0, 8)
 	if s%8 > 1 {
 		if !in8(s) {
@@ -216,7 +217,7 @@ func (b *Board) ThreatsTo(s square) []square {
 		}
 	}
 
-	// pawns
+	// пешки
 	if !in8(s) && !isB {
 		squares = make([]square, 0, 2)
 		if !inA(s) {
@@ -246,7 +247,7 @@ func (b *Board) ThreatsTo(s square) []square {
 		}
 	}
 
-	// kings
+	// короли
 	squares = make([]square, 0, 8)
 	if !inA(s) {
 		if !in1(s) {
@@ -284,27 +285,27 @@ func (b *Board) ThreatsTo(s square) []square {
 	return out
 }
 
-// inA is true if square is on the "a" column.
+// inA указывает, находится ли поле на вертикали a.
 func inA(s square) bool {
 	return s%8 == 0
 }
 
-// inH is true if square is on the "h" column.
+// inH указывает, находится ли поле на вертикали h.
 func inH(s square) bool {
 	return s%8 == 7
 }
 
-// in1 is true if square is on the row 1.
+// in1 указывает, находится ли поле на горизонтали 1.
 func in1(s square) bool {
 	return s >= 0 && s <= 7
 }
 
-// in8 is true if square is on the row 8.
+// in8 указывает, находится ли поле на горизонтали 8.
 func in8(s square) bool {
 	return s >= 53 && s <= 63
 }
 
-// checkCombinationLegal shows whether the multiple checks could appear legally.
+// checkCombinationLegal определяет, легально ли возник множественный шах.
 func (b *Board) checkCombinationLegal(threats []square) bool {
 	if len(threats) > 2 {
 		return false
