@@ -23,7 +23,11 @@ func (b *Board) IsValid() bool {
 	bKing := square(-1)
 	wKing := square(-1)
 	var bPawns, wPawns []square
+	number := make(map[Piece]int)
 	for s, c := range b.brd {
+		if c != 0 {
+			number[c]++
+		}
 		switch c {
 		case BlackKing:
 			if bKing != -1 {
@@ -45,6 +49,14 @@ func (b *Board) IsValid() bool {
 				return false
 			}
 			wPawns = append(wPawns, Sq(s))
+		case BlackBishop, WhiteBishop:
+			var pc Piece
+			if Sq(s).isBlack() {
+				pc = c + 8
+			} else {
+				pc = c + 10
+			}
+			number[pc]++
 		}
 	}
 	if bKing == -1 || wKing == -1 {
@@ -70,6 +82,11 @@ func (b *Board) IsValid() bool {
 	if len(bPawns) > 8 || len(wPawns) > 8 {
 		return false
 	}
+
+	if !numPiecesOk(number) {
+		return false
+	}
+
 	return true
 }
 
@@ -351,4 +368,37 @@ func (b *Board) enPassantValid() bool {
 		fromSq = b.ep + 8
 	}
 	return b.brd[pSq] == p && b.brd[b.ep] == 0 && b.brd[fromSq] == 0
+}
+
+// numPiecesOk проверяет, могло ли такое количество фигур на доске возникнуть не
+// в Bughouse.
+func numPiecesOk(num map[Piece]int) bool {
+	var wExtras, bExtras int
+	for p, n := range num {
+		var e int
+		switch p {
+		case WhiteQueen, BlackQueen, 13, 14, 15, 16:
+			e = n - 1
+		case WhiteRook, BlackRook, WhiteKnight, BlackKnight:
+			e = n - 2
+		}
+		if e < 0 {
+			continue
+		}
+		if p%2 == 1 {
+			wExtras += e
+		} else {
+			bExtras += e
+		}
+	}
+	return wExtras+num[WhitePawn] <= 8 && bExtras+num[BlackPawn] <= 8
+}
+
+// isBlack возвращает true, если поле чёрное.
+func (s square) isBlack() bool {
+	even := s%2 == 0
+	if (s/8)%2 == 0 {
+		return even
+	}
+	return !even
 }

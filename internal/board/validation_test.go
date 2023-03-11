@@ -41,6 +41,9 @@ func TestIsValid(t *testing.T) {
 		{"pawn-and-knight check", "4R1r1/6k1/5P2/3BK2N/7q/8/8/8 b - - 0 1", false},
 		{"e.p.", "4R1r1/4N1k1/8/2pBK3/7q/5P2/8/8 w - c6 0 1", true},
 		{"e.p. impossible", "4R1r1/4N1k1/8/2p1K3/3P3q/5P2/3B4/8 b - d3 0 1", false},
+		{"too many queens", "6r1/p2Ppp1p/1p1QPPp1/2p3Pk/3p4/7P/PPP2Q1K/8 w - - 0 1", false},
+		{"too many rooks", "5rr1/p2Ppp1p/1p2PPp1/2p3Pk/3p4/7P/PPP2Q1K/1r6 w - - 0 1", false},
+		{"too many same-field bishops", "5r2/p2Ppp1p/1p1bPPp1/2p1b1Pk/3p4/7P/PPP2Q1K/1r6 w - - 0 1", false},
 	}
 
 	for _, tc := range tests {
