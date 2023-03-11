@@ -423,9 +423,5 @@ func numPiecesOk(num map[Piece]int) bool {
 
 // isBlack возвращает true, если поле чёрное.
 func (s square) isBlack() bool {
-	even := s%2 == 0
-	if (s/8)%2 == 0 {
-		return even
-	}
-	return !even
+	return (s/8+s%8)%2 == 0
 }
