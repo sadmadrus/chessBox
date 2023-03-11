@@ -68,12 +68,19 @@ func TestSimple(t *testing.T) {
 			v.Add("to", tc.to)
 			u.RawQuery = v.Encode()
 
-			res, err := http.Get(u.String())
-			if err != nil {
-				t.Fatal(err)
-			}
-			if tc.result != res.StatusCode {
-				t.Fatalf("want %v, got %s", tc.result, res.Status)
+			for i := 0; i < 2; i++ {
+				res, err := http.Get(u.String()) // Get
+
+				if i == 1 { // Head
+					res, err = http.Head(u.String())
+				}
+
+				if err != nil {
+					t.Fatal(err)
+				}
+				if tc.result != res.StatusCode {
+					t.Fatalf("want %v, got %s", tc.result, res.Status)
+				}
 			}
 		})
 	}
@@ -94,12 +101,20 @@ func FuzzSimple(f *testing.F) {
 	f.Fuzz(func(t *testing.T, query string) {
 		u, _ := url.Parse(srv.URL)
 		u.RawQuery = query
-		res, err := http.Get(u.String())
-		if err != nil {
-			return
-		}
-		if res.StatusCode != http.StatusOK && res.StatusCode != http.StatusForbidden && res.StatusCode != http.StatusBadRequest {
-			t.Fatalf("unexpected reply: %s", res.Status)
+
+		for i := 0; i < 2; i++ {
+			res, err := http.Get(u.String()) // Get
+
+			if i == 1 { // Head
+				res, err = http.Head(u.String())
+			}
+
+			if err != nil {
+				return
+			}
+			if res.StatusCode != http.StatusOK && res.StatusCode != http.StatusForbidden && res.StatusCode != http.StatusBadRequest {
+				t.Fatalf("unexpected reply: %s", res.Status)
+			}
 		}
 	})
 }
@@ -193,22 +208,30 @@ func TestAdvanced(t *testing.T) {
 			v.Add("newpiece", tc.newpiece)
 			u.RawQuery = v.Encode()
 
-			res, err := http.Get(u.String())
+			for i := 0; i < 2; i++ {
+				res, err := http.Get(u.String()) // Get
 
-			if err != nil {
-				t.Fatal(err)
-			}
-			if tc.resultStatus != res.StatusCode {
-				t.Fatalf("want %v, got %s", tc.resultStatus, res.Status)
-			}
+				if i == 1 { // Head
+					res, err = http.Head(u.String())
+				}
 
-			var resBody []byte
-			resBody, err = io.ReadAll(res.Body)
-			if err != nil {
-				t.Fatalf("error reading response body: %v", err)
-			}
-			if strings.TrimSpace(string(resBody)) != tc.resultBrd {
-				t.Fatalf("JSON response: want %v, got %v", tc.resultBrd, strings.TrimSpace(string(resBody)))
+				if err != nil {
+					t.Fatal(err)
+				}
+				if tc.resultStatus != res.StatusCode {
+					t.Fatalf("want %v, got %s", tc.resultStatus, res.Status)
+				}
+
+				if i == 0 {
+					var resBody []byte
+					resBody, err = io.ReadAll(res.Body)
+					if err != nil {
+						t.Fatalf("error reading response body: %v", err)
+					}
+					if strings.TrimSpace(string(resBody)) != tc.resultBrd {
+						t.Fatalf("JSON response: want %v, got %v", tc.resultBrd, strings.TrimSpace(string(resBody)))
+					}
+				}
 			}
 		})
 	}
@@ -229,12 +252,31 @@ func FuzzAdvanced(f *testing.F) {
 	f.Fuzz(func(t *testing.T, query string) {
 		u, _ := url.Parse(srv.URL)
 		u.RawQuery = query
-		res, err := http.Get(u.String())
-		if err != nil {
-			return
-		}
-		if res.StatusCode != http.StatusOK && res.StatusCode != http.StatusForbidden && res.StatusCode != http.StatusBadRequest {
-			t.Fatalf("unexpected reply: %s", res.Status)
+
+		for i := 0; i < 2; i++ {
+			res, err := http.Get(u.String()) // Get
+
+			if i == 1 { // Head
+				res, err = http.Head(u.String())
+			}
+
+			if err != nil {
+				return
+			}
+			if res.StatusCode != http.StatusOK && res.StatusCode != http.StatusForbidden && res.StatusCode != http.StatusBadRequest {
+				t.Fatalf("unexpected reply: %s", res.Status)
+			}
+
+			if i == 0 && res.StatusCode == http.StatusOK { // Get response body
+				var resBody []byte
+				resBody, err = io.ReadAll(res.Body)
+				if err != nil {
+					t.Fatalf("error reading response body: %v", err)
+				}
+				if string(resBody) == "" {
+					t.Fatal("JSON response: want body response, got no response")
+				}
+			}
 		}
 	})
 }
