@@ -92,7 +92,6 @@ type advancedResponse struct {
 func Advanced(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" || r.Method == "HEAD" {
 		// валидация входных данных: доска board существует
-		// TODO: board нужно ли проверять валидность доски где-то вообще?
 		boardParsed := r.URL.Query().Get("board")
 		b, err := board.FromUsFEN(boardParsed)
 		if err != nil {
@@ -143,7 +142,11 @@ func Advanced(w http.ResponseWriter, r *http.Request) {
 		newBoard, isValid, err := advancedLogic(*b, fromSquare, toSquare, newpiece)
 		if err != nil {
 			log.Printf("error occured when trying to validate move: %v", err)
-			w.WriteHeader(http.StatusBadRequest)
+			if err == errInternalErrorIsSquareChecked {
+				w.WriteHeader(http.StatusInternalServerError)
+			} else {
+				w.WriteHeader(http.StatusBadRequest)
+			}
 			return
 		}
 

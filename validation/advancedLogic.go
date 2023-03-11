@@ -376,8 +376,11 @@ func isKingChecked(b board.Board, king board.Piece) (isChecked bool, err error) 
 	}
 
 	isChecked, err = isSquareChecked(b, kingSquare, king)
-	if err != nil || isChecked {
-		return isChecked, err
+	if err != nil {
+		return isChecked, errInternalErrorIsSquareChecked
+	}
+	if isChecked {
+		return isChecked, nil
 	}
 
 	isChecked, err = isCheckedByEnemyKing(b)
