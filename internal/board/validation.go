@@ -40,7 +40,7 @@ func (b *Board) IsValid() bool {
 			}
 			wKing = Sq(s)
 		case BlackPawn:
-			if s < 8 || s > 55 {
+			if in1(Sq(s)) || in8(Sq(s)) {
 				return false
 			}
 			bPawns = append(bPawns, Sq(s))
