@@ -87,6 +87,10 @@ func (b *Board) IsValid() bool {
 		return false
 	}
 
+	if !b.castlingsValid() {
+		return false
+	}
+
 	return true
 }
 
@@ -368,6 +372,29 @@ func (b *Board) enPassantValid() bool {
 		fromSq = b.ep + 8
 	}
 	return b.brd[pSq] == p && b.brd[b.ep] == 0 && b.brd[fromSq] == 0
+}
+
+// castlingsValid проверяет, на своих ли местах короли и ладьи для рокировок.
+func (b *Board) castlingsValid() bool {
+	if b.brd[60] != BlackKing && (b.HaveCastling(BlackKingside) || b.HaveCastling(BlackQueenside)) {
+		return false
+	}
+	if b.brd[4] != WhiteKing && (b.HaveCastling(WhiteKingside) || b.HaveCastling(WhiteQueenside)) {
+		return false
+	}
+	if b.brd[0] != WhiteRook && b.HaveCastling(WhiteQueenside) {
+		return false
+	}
+	if b.brd[7] != WhiteRook && b.HaveCastling(WhiteKingside) {
+		return false
+	}
+	if b.brd[56] != BlackRook && b.HaveCastling(BlackQueenside) {
+		return false
+	}
+	if b.brd[63] != BlackRook && b.HaveCastling(BlackKingside) {
+		return false
+	}
+	return true
 }
 
 // numPiecesOk проверяет, могло ли такое количество фигур на доске возникнуть не

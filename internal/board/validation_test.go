@@ -44,6 +44,7 @@ func TestIsValid(t *testing.T) {
 		{"too many queens", "6r1/p2Ppp1p/1p1QPPp1/2p3Pk/3p4/7P/PPP2Q1K/8 w - - 0 1", false},
 		{"too many rooks", "5rr1/p2Ppp1p/1p2PPp1/2p3Pk/3p4/7P/PPP2Q1K/1r6 w - - 0 1", false},
 		{"too many same-field bishops", "5r2/p2Ppp1p/1p1bPPp1/2p1b1Pk/3p4/7P/PPP2Q1K/1r6 w - - 0 1", false},
+		{"castling with moved rook", "4k2r/p2P1p1p/rp1bPPp1/2p1b1P1/3p4/7P/PPP2Q2/R3K2R b KQkq - 0 1", false},
 	}
 
 	for _, tc := range tests {
