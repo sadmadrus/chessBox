@@ -327,7 +327,7 @@ func in1(s square) bool {
 
 // in8 указывает, находится ли поле на горизонтали 8.
 func in8(s square) bool {
-	return s >= 53 && s <= 63
+	return s >= 56 && s <= 63
 }
 
 // checkCombinationLegal определяет, легально ли возник множественный шах.
