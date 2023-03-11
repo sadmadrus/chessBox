@@ -63,6 +63,10 @@ func (b *Board) IsValid() bool {
 		return false
 	}
 
+	if !b.enPassantValid() {
+		return false
+	}
+
 	if len(bPawns) > 8 || len(wPawns) > 8 {
 		return false
 	}
@@ -322,4 +326,29 @@ func (b *Board) checkCombinationLegal(threats []square) bool {
 		}
 	}
 	return true
+}
+
+// enPassantValid проверяет, похожа ли на правду информация о взятии на проходе.
+func (b *Board) enPassantValid() bool {
+	if b.ep == 0 {
+		return true
+	}
+	var p Piece
+	var pSq, fromSq square
+	if b.blk {
+		if b.ep/8 != 2 {
+			return false
+		}
+		p = WhitePawn
+		pSq = b.ep + 8
+		fromSq = b.ep - 8
+	} else {
+		if b.ep/8 != 5 {
+			return false
+		}
+		p = BlackPawn
+		pSq = b.ep - 8
+		fromSq = b.ep + 8
+	}
+	return b.brd[pSq] == p && b.brd[b.ep] == 0 && b.brd[fromSq] == 0
 }

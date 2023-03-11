@@ -39,11 +39,16 @@ func TestIsValid(t *testing.T) {
 		{"rooks double check", "6R1/4R1k1/8/3BK3/7q/8/8/8 b - - 0 1", true},
 		{"bishops double check", "1k6/B4Q2/6nb/3NB3/7r/6P1/6K1/5R2 b - - 0 1", false},
 		{"pawn-and-knight check", "4R1r1/6k1/5P2/3BK2N/7q/8/8/8 b - - 0 1", false},
+		{"e.p.", "4R1r1/4N1k1/8/2pBK3/7q/5P2/8/8 w - c6 0 1", true},
+		{"e.p. impossible", "4R1r1/4N1k1/8/2p1K3/3P3q/5P2/3B4/8 b - d3 0 1", false},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			b, _ := board.FromFEN(tc.fen)
+			b, err := board.FromFEN(tc.fen)
+			if err != nil {
+				t.Fatal(err)
+			}
 			got := b.IsValid()
 			if got != tc.want {
 				t.Fatalf("want %v, got %v", tc.want, got)
