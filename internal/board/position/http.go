@@ -15,7 +15,6 @@
 package position
 
 import (
-	"log"
 	"net/http"
 
 	"github.com/sadmadrus/chessBox/internal/board"
@@ -30,7 +29,6 @@ func Validator(w http.ResponseWriter, r *http.Request) {
 	}
 	b, err := board.FromUsFEN(r.URL.Query().Get("board"))
 	if err != nil {
-		log.Printf("board not parsed: %v", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -40,6 +38,5 @@ func Validator(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("invalid board: %v", b.FEN())
 	w.WriteHeader(http.StatusForbidden)
 }
