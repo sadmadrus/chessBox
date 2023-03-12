@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package board_test
+package position_test
 
 import (
 	"net/http"
@@ -20,11 +20,11 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/sadmadrus/chessBox/internal/board"
+	"github.com/sadmadrus/chessBox/internal/board/position"
 )
 
 func FuzzValidator(f *testing.F) {
-	srv := httptest.NewServer(http.HandlerFunc(board.Validator))
+	srv := httptest.NewServer(http.HandlerFunc(position.Validator))
 	defer srv.Close()
 	tests := []string{
 		"board=rnbqkbnr~pppppppp~8~8~8~8~PPPPPPPP~RNBQKBNR+w+KQkq+-+0+1",
@@ -56,7 +56,7 @@ func FuzzValidator(f *testing.F) {
 }
 
 func TestValidator(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(board.Validator))
+	srv := httptest.NewServer(http.HandlerFunc(position.Validator))
 	defer srv.Close()
 	tests := []struct {
 		name  string

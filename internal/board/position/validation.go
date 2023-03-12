@@ -12,46 +12,52 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package board
+// Пакет position содержит логику, анализирующую позицию на доске.
+package position
+
+import "github.com/sadmadrus/chessBox/internal/board"
 
 // IsValid проверяет, могла ли позиция на доске легально возникнуть в ходе игры.
 //
 // Проверки не доскональные, ряд нелегальных позиций могут быть определены как
 // легальные. А вот наоборот (чтоб легальная позиция была определена как
 // нелегальная) случиться не должно.
-func (b *Board) IsValid() bool {
-	bKing := square(-1)
-	wKing := square(-1)
-	var bPawns, wPawns []square
-	number := make(map[Piece]int)
-	for s, c := range b.brd {
+func IsValid(b board.Board) bool {
+	bKing := board.Square(-1)
+	wKing := board.Square(-1)
+	var bPawns, wPawns []board.Square
+	number := make(map[board.Piece]int)
+	for i := 0; i < 64; i++ {
+		s := board.Sq(i)
+		c := getPiece(b, s)
+
 		if c != 0 {
 			number[c]++
 		}
 		switch c {
-		case BlackKing:
+		case board.BlackKing:
 			if bKing != -1 {
 				return false
 			}
-			bKing = Sq(s)
-		case WhiteKing:
+			bKing = s
+		case board.WhiteKing:
 			if wKing != -1 {
 				return false
 			}
-			wKing = Sq(s)
-		case BlackPawn:
-			if in1(Sq(s)) || in8(Sq(s)) {
+			wKing = s
+		case board.BlackPawn:
+			if in1(s) || in8(s) {
 				return false
 			}
-			bPawns = append(bPawns, Sq(s))
-		case WhitePawn:
-			if in1(Sq(s)) || in8(Sq(s)) {
+			bPawns = append(bPawns, s)
+		case board.WhitePawn:
+			if in1(s) || in8(s) {
 				return false
 			}
-			wPawns = append(wPawns, Sq(s))
-		case BlackBishop, WhiteBishop:
-			var pc Piece
-			if Sq(s).isBlack() {
+			wPawns = append(wPawns, s)
+		case board.BlackBishop, board.WhiteBishop:
+			var pc board.Piece
+			if s.IsBlack() {
 				pc = c + 8
 			} else {
 				pc = c + 10
@@ -65,17 +71,17 @@ func (b *Board) IsValid() bool {
 
 	thatKing := bKing
 	thisKing := wKing
-	if b.blk {
+	if !b.NextToMove() {
 		thatKing, thisKing = thisKing, thatKing
 	}
-	if len(b.ThreatsTo(thatKing)) > 0 {
+	if len(ThreatsTo(thatKing, b)) > 0 {
 		return false
 	}
-	if !b.checkCombinationLegal(b.ThreatsTo(thisKing)) {
+	if !checkCombinationLegal(b, ThreatsTo(thisKing, b)) {
 		return false
 	}
 
-	if !b.enPassantValid() {
+	if !enPassantValid(b) {
 		return false
 	}
 
@@ -87,7 +93,7 @@ func (b *Board) IsValid() bool {
 		return false
 	}
 
-	if !b.castlingsValid() {
+	if !castlingsValid(b) {
 		return false
 	}
 
@@ -97,14 +103,14 @@ func (b *Board) IsValid() bool {
 // ThreatsTo возвращает поля, на которых стоят фигуры, держащие данное поле «под
 // боем». Если поле не пустое, в расчёт берутся только фигуры противоположного
 // цвета.
-func (b *Board) ThreatsTo(s square) []square {
+func ThreatsTo(s board.Square, b board.Board) []board.Square {
 	if s < 0 || s > 63 {
 		return nil
 	}
 	var isW, isB bool
-	var out []square
-	if b.brd[s] != 0 {
-		if b.brd[s]%2 == 0 {
+	var out []board.Square
+	if getPiece(b, s) != 0 {
+		if getPiece(b, s)%2 == 0 {
 			isB = true
 		} else {
 			isW = true
@@ -112,21 +118,21 @@ func (b *Board) ThreatsTo(s square) []square {
 	}
 
 	// вертикали и горизонтали
-	squares := make([]square, 0, 4)
+	squares := make([]board.Square, 0, 4)
 	for sq := s; sq < 64; sq += 8 {
-		if b.brd[sq] != 0 && s != sq {
+		if getPiece(b, sq) != 0 && s != sq {
 			squares = append(squares, sq)
 			break
 		}
 	}
 	for sq := s; sq >= 0; sq -= 8 {
-		if b.brd[sq] != 0 && s != sq {
+		if getPiece(b, sq) != 0 && s != sq {
 			squares = append(squares, sq)
 			break
 		}
 	}
 	for sq := s; ; sq++ {
-		if b.brd[sq] != 0 && s != sq {
+		if getPiece(b, sq) != 0 && s != sq {
 			squares = append(squares, sq)
 			break
 		}
@@ -135,7 +141,7 @@ func (b *Board) ThreatsTo(s square) []square {
 		}
 	}
 	for sq := s; ; sq-- {
-		if b.brd[sq] != 0 && s != sq {
+		if getPiece(b, sq) != 0 && s != sq {
 			squares = append(squares, sq)
 			break
 		}
@@ -144,18 +150,18 @@ func (b *Board) ThreatsTo(s square) []square {
 		}
 	}
 	for _, sq := range squares {
-		if !isB && (b.brd[sq] == BlackQueen || b.brd[sq] == BlackRook) {
+		if !isB && (getPiece(b, sq) == board.BlackQueen || getPiece(b, sq) == board.BlackRook) {
 			out = append(out, sq)
 		}
-		if !isW && (b.brd[sq] == WhiteQueen || b.brd[sq] == WhiteRook) {
+		if !isW && (getPiece(b, sq) == board.WhiteQueen || getPiece(b, sq) == board.WhiteRook) {
 			out = append(out, sq)
 		}
 	}
 
 	// диагонали
-	squares = make([]square, 0, 4)
+	squares = make([]board.Square, 0, 4)
 	for sq := s; ; sq += 9 {
-		if b.brd[sq] != 0 && s != sq {
+		if getPiece(b, sq) != 0 && s != sq {
 			squares = append(squares, sq)
 			break
 		}
@@ -164,7 +170,7 @@ func (b *Board) ThreatsTo(s square) []square {
 		}
 	}
 	for sq := s; ; sq += 7 {
-		if b.brd[sq] != 0 && s != sq {
+		if getPiece(b, sq) != 0 && s != sq {
 			squares = append(squares, sq)
 			break
 		}
@@ -173,7 +179,7 @@ func (b *Board) ThreatsTo(s square) []square {
 		}
 	}
 	for sq := s; ; sq -= 7 {
-		if b.brd[sq] != 0 && s != sq {
+		if getPiece(b, sq) != 0 && s != sq {
 			squares = append(squares, sq)
 			break
 		}
@@ -182,7 +188,7 @@ func (b *Board) ThreatsTo(s square) []square {
 		}
 	}
 	for sq := s; ; sq -= 9 {
-		if b.brd[sq] != 0 && s != sq {
+		if getPiece(b, sq) != 0 && s != sq {
 			squares = append(squares, sq)
 			break
 		}
@@ -191,16 +197,16 @@ func (b *Board) ThreatsTo(s square) []square {
 		}
 	}
 	for _, sq := range squares {
-		if !isB && (b.brd[sq] == BlackQueen || b.brd[sq] == BlackBishop) {
+		if !isB && (getPiece(b, sq) == board.BlackQueen || getPiece(b, sq) == board.BlackBishop) {
 			out = append(out, sq)
 		}
-		if !isW && (b.brd[sq] == WhiteQueen || b.brd[sq] == WhiteBishop) {
+		if !isW && (getPiece(b, sq) == board.WhiteQueen || getPiece(b, sq) == board.WhiteBishop) {
 			out = append(out, sq)
 		}
 	}
 
 	// кони
-	squares = make([]square, 0, 8)
+	squares = make([]board.Square, 0, 8)
 	if s%8 > 1 {
 		if !in8(s) {
 			squares = append(squares, s+6)
@@ -234,17 +240,17 @@ func (b *Board) ThreatsTo(s square) []square {
 		}
 	}
 	for _, sq := range squares {
-		if !isB && b.brd[sq] == BlackKnight {
+		if !isB && getPiece(b, sq) == board.BlackKnight {
 			out = append(out, sq)
 		}
-		if !isW && b.brd[sq] == WhiteKnight {
+		if !isW && getPiece(b, sq) == board.WhiteKnight {
 			out = append(out, sq)
 		}
 	}
 
 	// пешки
 	if !in8(s) && !isB {
-		squares = make([]square, 0, 2)
+		squares = make([]board.Square, 0, 2)
 		if !inA(s) {
 			squares = append(squares, s+7)
 		}
@@ -252,13 +258,13 @@ func (b *Board) ThreatsTo(s square) []square {
 			squares = append(squares, s+9)
 		}
 		for _, sq := range squares {
-			if b.brd[sq] == BlackPawn {
+			if getPiece(b, sq) == board.BlackPawn {
 				out = append(out, sq)
 			}
 		}
 	}
 	if !in1(s) && !isW {
-		squares = make([]square, 0, 2)
+		squares = make([]board.Square, 0, 2)
 		if !inA(s) {
 			squares = append(squares, s-9)
 		}
@@ -266,14 +272,14 @@ func (b *Board) ThreatsTo(s square) []square {
 			squares = append(squares, s-7)
 		}
 		for _, sq := range squares {
-			if b.brd[sq] == WhitePawn {
+			if getPiece(b, sq) == board.WhitePawn {
 				out = append(out, sq)
 			}
 		}
 	}
 
 	// короли
-	squares = make([]square, 0, 8)
+	squares = make([]board.Square, 0, 8)
 	if !inA(s) {
 		if !in1(s) {
 			squares = append(squares, s-9)
@@ -299,10 +305,10 @@ func (b *Board) ThreatsTo(s square) []square {
 		squares = append(squares, s+8)
 	}
 	for _, sq := range squares {
-		if !isB && b.brd[sq] == BlackKing {
+		if !isB && getPiece(b, sq) == board.BlackKing {
 			out = append(out, sq)
 		}
-		if !isW && b.brd[sq] == WhiteKing {
+		if !isW && getPiece(b, sq) == board.WhiteKing {
 			out = append(out, sq)
 		}
 	}
@@ -311,38 +317,38 @@ func (b *Board) ThreatsTo(s square) []square {
 }
 
 // inA указывает, находится ли поле на вертикали a.
-func inA(s square) bool {
+func inA(s board.Square) bool {
 	return s%8 == 0
 }
 
 // inH указывает, находится ли поле на вертикали h.
-func inH(s square) bool {
+func inH(s board.Square) bool {
 	return s%8 == 7
 }
 
 // in1 указывает, находится ли поле на горизонтали 1.
-func in1(s square) bool {
+func in1(s board.Square) bool {
 	return s >= 0 && s <= 7
 }
 
 // in8 указывает, находится ли поле на горизонтали 8.
-func in8(s square) bool {
+func in8(s board.Square) bool {
 	return s >= 56 && s <= 63
 }
 
 // checkCombinationLegal определяет, легально ли возник множественный шах.
-func (b *Board) checkCombinationLegal(threats []square) bool {
+func checkCombinationLegal(b board.Board, threats []board.Square) bool {
 	if len(threats) > 2 {
 		return false
 	}
 	if len(threats) == 2 {
-		if b.brd[threats[0]] == b.brd[threats[1]] {
-			if b.brd[threats[0]] < 7 {
+		if getPiece(b, threats[0]) == getPiece(b, threats[1]) {
+			if getPiece(b, threats[0]) < 7 {
 				return false
 			}
 		}
-		if b.brd[threats[0]] < 3 && b.brd[threats[1]] < 7 ||
-			b.brd[threats[1]] < 3 && b.brd[threats[0]] < 7 {
+		if getPiece(b, threats[0]) < 3 && getPiece(b, threats[1]) < 7 ||
+			getPiece(b, threats[1]) < 3 && getPiece(b, threats[0]) < 7 {
 			return false
 		}
 	}
@@ -350,48 +356,50 @@ func (b *Board) checkCombinationLegal(threats []square) bool {
 }
 
 // enPassantValid проверяет, похожа ли на правду информация о взятии на проходе.
-func (b *Board) enPassantValid() bool {
-	if b.ep == 0 {
+func enPassantValid(b board.Board) bool {
+	ep := b.GetEnPassant()
+	if ep == -1 {
 		return true
 	}
-	var p Piece
-	var pSq, fromSq square
-	if b.blk {
-		if b.ep/8 != 2 {
+	var p board.Piece
+	var pSq, fromSq board.Square
+	if !b.NextToMove() {
+		if ep/8 != 2 {
 			return false
 		}
-		p = WhitePawn
-		pSq = b.ep + 8
-		fromSq = b.ep - 8
+		p = board.WhitePawn
+		pSq = ep + 8
+		fromSq = ep - 8
 	} else {
-		if b.ep/8 != 5 {
+		if ep/8 != 5 {
 			return false
 		}
-		p = BlackPawn
-		pSq = b.ep - 8
-		fromSq = b.ep + 8
+		p = board.BlackPawn
+		pSq = ep - 8
+		fromSq = ep + 8
 	}
-	return b.brd[pSq] == p && b.brd[b.ep] == 0 && b.brd[fromSq] == 0
+
+	return getPiece(b, pSq) == p && getPiece(b, ep) == 0 && getPiece(b, fromSq) == 0
 }
 
 // castlingsValid проверяет, на своих ли местах короли и ладьи для рокировок.
-func (b *Board) castlingsValid() bool {
-	if b.brd[60] != BlackKing && (b.HaveCastling(BlackKingside) || b.HaveCastling(BlackQueenside)) {
+func castlingsValid(b board.Board) bool {
+	if getPiece(b, board.Sq("e8")) != board.BlackKing && (b.HaveCastling(board.BlackKingside) || b.HaveCastling(board.BlackQueenside)) {
 		return false
 	}
-	if b.brd[4] != WhiteKing && (b.HaveCastling(WhiteKingside) || b.HaveCastling(WhiteQueenside)) {
+	if getPiece(b, board.Sq("e1")) != board.WhiteKing && (b.HaveCastling(board.WhiteKingside) || b.HaveCastling(board.WhiteQueenside)) {
 		return false
 	}
-	if b.brd[0] != WhiteRook && b.HaveCastling(WhiteQueenside) {
+	if getPiece(b, board.Sq("a1")) != board.WhiteRook && b.HaveCastling(board.WhiteQueenside) {
 		return false
 	}
-	if b.brd[7] != WhiteRook && b.HaveCastling(WhiteKingside) {
+	if getPiece(b, board.Sq("h1")) != board.WhiteRook && b.HaveCastling(board.WhiteKingside) {
 		return false
 	}
-	if b.brd[56] != BlackRook && b.HaveCastling(BlackQueenside) {
+	if getPiece(b, board.Sq("a8")) != board.BlackRook && b.HaveCastling(board.BlackQueenside) {
 		return false
 	}
-	if b.brd[63] != BlackRook && b.HaveCastling(BlackKingside) {
+	if getPiece(b, board.Sq("h8")) != board.BlackRook && b.HaveCastling(board.BlackKingside) {
 		return false
 	}
 	return true
@@ -399,14 +407,14 @@ func (b *Board) castlingsValid() bool {
 
 // numPiecesOk проверяет, могло ли такое количество фигур на доске возникнуть не
 // в Bughouse.
-func numPiecesOk(num map[Piece]int) bool {
+func numPiecesOk(num map[board.Piece]int) bool {
 	var wExtras, bExtras int
 	for p, n := range num {
 		var e int
 		switch p {
-		case WhiteQueen, BlackQueen, 13, 14, 15, 16:
+		case board.WhiteQueen, board.BlackQueen, 13, 14, 15, 16:
 			e = n - 1
-		case WhiteRook, BlackRook, WhiteKnight, BlackKnight:
+		case board.WhiteRook, board.BlackRook, board.WhiteKnight, board.BlackKnight:
 			e = n - 2
 		}
 		if e < 0 {
@@ -418,10 +426,11 @@ func numPiecesOk(num map[Piece]int) bool {
 			bExtras += e
 		}
 	}
-	return wExtras+num[WhitePawn] <= 8 && bExtras+num[BlackPawn] <= 8
+	return wExtras+num[board.WhitePawn] <= 8 && bExtras+num[board.BlackPawn] <= 8
 }
 
-// isBlack возвращает true, если поле чёрное.
-func (s square) isBlack() bool {
-	return (s/8+s%8)%2 == 0
+// getPiece возвращает фигуру в данной клетке, не проверяя валидность клетки.
+func getPiece(b board.Board, s board.Square) board.Piece {
+	p, _ := b.Get(s)
+	return p
 }

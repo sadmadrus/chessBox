@@ -12,11 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package board
+package position
 
 import (
 	"log"
 	"net/http"
+
+	"github.com/sadmadrus/chessBox/internal/board"
 )
 
 // Validator — http.HandlerFunc для валидации позиции на доске.
@@ -26,14 +28,14 @@ func Validator(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
-	b, err := FromUsFEN(r.URL.Query().Get("board"))
+	b, err := board.FromUsFEN(r.URL.Query().Get("board"))
 	if err != nil {
 		log.Printf("board not parsed: %v", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	if b.IsValid() {
+	if IsValid(*b) {
 		w.WriteHeader(http.StatusOK)
 		return
 	}
