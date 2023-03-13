@@ -6,9 +6,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/sadmadrus/chessBox/internal/board/position"
-
 	"github.com/sadmadrus/chessBox/internal/board"
+	"github.com/sadmadrus/chessBox/internal/board/position"
 )
 
 // advancedLogic обрабывает общую логику валидации хода. Возвращает доску и флаг валидации хода (true валиден, false нет).
@@ -281,8 +280,6 @@ func checkCastling(b *board.Board, piece board.Piece, from, to square) (isValid 
 
 	// 1. проверка, что король не проходит через битое поле (под шахом).
 	squareToBePassed := newSquare(from.toInt8() + ((to.toInt8() - from.toInt8()) / 2))
-
-	// TODO: здесь появляется ошибка, из-за того что проверяю на шах клетку в которой нет короля
 	if isSquareChecked(*b, board.Sq(squareToBePassed.toInt()), piece == board.WhiteKing) {
 		log.Printf("%v", errCastlingThroughCheckedSquare)
 		return isValid, nil
