@@ -2,6 +2,7 @@ package validation
 
 import (
 	"fmt"
+	"github.com/sadmadrus/chessBox/internal/board/position"
 	"log"
 	"strconv"
 	"strings"
@@ -79,18 +80,13 @@ func advancedLogic(b board.Board, from, to square, newpiece board.Piece) (newBoa
 
 	// 9. Проверяем, что при новой позиции на доске не появился шах для собственного короля. На этом шаге также
 	// проверяем, что король не находится вплотную к чужому королю - такой ход будет запрещен.
-	var king board.Piece
+	king := "k"
 	if b.NextToMove() {
-		king = board.WhiteKing
-	} else {
-		king = board.BlackKing
+		king = "K"
 	}
-	var kingChecked bool
-	kingChecked, err = isKingChecked(newBoard, king)
-	if err != nil {
-		return newBoard, isValid, err
-	}
-	if kingChecked {
+	kingSquare, _ := getSquareByPiece(newBoard, king)
+	checks := position.ThreatsTo(board.Sq(kingSquare.toInt()), newBoard)
+	if len(checks) != 0 {
 		log.Printf("%v", errKingChecked)
 		return newBoard, isValid, nil
 	}
@@ -284,12 +280,10 @@ func checkCastling(b *board.Board, piece board.Piece, from, to square) (isValid 
 
 	// 1. проверка, что король не проходит через битое поле (под шахом).
 	squareToBePassed := newSquare(from.toInt8() + ((to.toInt8() - from.toInt8()) / 2))
-	var squareChecked bool
-	squareChecked, err = isSquareChecked(*b, squareToBePassed, piece)
-	if err != nil {
-		return isValid, err
-	}
-	if squareChecked {
+	checks := position.ThreatsTo(board.Sq(squareToBePassed.toInt()), *b)
+
+	// TODO: здесь появляется ошибка, из-за того что проверяю на шах клетку в которой нет короля
+	if len(checks) != 0 {
 		log.Printf("%v", errCastlingThroughCheckedSquare)
 		return isValid, nil
 	}
@@ -365,68 +359,6 @@ func getNewBoard(b board.Board, piece board.Piece, from, to square, newpiece boa
 	return b, nil
 }
 
-// isKingChecked проверяет, что свой король не под шахом, а также близость чужого короля. Если шах есть (или чужой король
-// находится вполтную), возвращает true, иначе false. Возвращает ошибку, если возникла при обработке, иначе nil.
-func isKingChecked(b board.Board, king board.Piece) (isChecked bool, err error) {
-	kingString := king.String()
-	var kingSquare square
-	kingSquare, err = getSquareByPiece(b, kingString)
-	if err != nil {
-		return isChecked, err
-	}
-
-	isChecked, err = isSquareChecked(b, kingSquare, king)
-	if err != nil {
-		return isChecked, errInternalErrorIsSquareChecked
-	}
-	if isChecked {
-		return isChecked, nil
-	}
-
-	isChecked, err = isCheckedByEnemyKing(b)
-	return isChecked, err
-}
-
-// isSquareChecked проверяет, что на доске b нет шаха королю king, когда он находится в клетке sq. Если шах есть,
-// возвращает true, иначе false. Возвращает ошибку, если возникла при обработке, иначе nil.
-func isSquareChecked(b board.Board, sq square, king board.Piece) (isChecked bool, err error) {
-	var enemyKnight, enemyRook, enemyQueen, enemyBishop, enemyPawn board.Piece
-	if king == board.WhiteKing {
-		enemyKnight = board.BlackKnight
-		enemyRook = board.BlackRook
-		enemyQueen = board.BlackQueen
-		enemyBishop = board.BlackBishop
-		enemyPawn = board.BlackPawn
-	} else {
-		enemyKnight = board.WhiteKnight
-		enemyRook = board.WhiteRook
-		enemyQueen = board.WhiteQueen
-		enemyBishop = board.WhiteBishop
-		enemyPawn = board.WhitePawn
-	}
-
-	// проверяем, есть ли на расстоянии буквы Г от клетки sq вражеские кони.
-	isChecked, err = isSquareCheckedByKnights(b, sq, enemyKnight)
-	if err != nil || isChecked {
-		return isChecked, err
-	}
-
-	// проверяем, есть ли по вертикали или горизонтали в качестве ближайших фигур вражеские ладьи и ферзи.
-	isChecked, err = isSquareCheckedVerticallyOrHorizontally(b, sq, enemyRook, enemyQueen)
-	if err != nil || isChecked {
-		return isChecked, err
-	}
-
-	// проверяем, есть ли по диагоналям в качестве ближайших фигур вражеские ферзи, слоны и пешки.
-	isChecked, err = isSquareCheckedDiagonally(b, sq, enemyQueen, enemyBishop, enemyPawn)
-	if err != nil {
-		return isChecked, err
-	}
-
-	return isChecked, nil
-
-}
-
 // getSquareByPiece возвращает клетку, на которой находится заданная фигура. Если такой фигуры на доске нет,
 // возвращает ошибку. Если таких фигур несколько, возвращает первую встретившуюся по пути с верхнего ряда к нижнему,
 // слево направо.
@@ -470,237 +402,4 @@ func getSquareByPiece(b board.Board, pieceString string) (pieceSquare square, er
 
 	pieceSquare = newSquare(squareRow*8 + int8(squareColumn))
 	return pieceSquare, nil
-}
-
-// isSquareCheckedByKnights проверяет ближайшие клетки в расположении буквой Г к своему королю на наличие на них
-// вражеского коня. Если есть хотя бы одна такая клетка, возвращает true, иначе false. Если при проверке клеток
-// возникает ошибка, она также возвращается, иначе возвращется nil.
-func isSquareCheckedByKnights(b board.Board, kingSquare square, enemyKnight board.Piece) (isChecked bool, err error) {
-	var squaresToBeChecked []square
-
-	// +2 клетки вверх, +1 клетка вправо
-	if kingSquare.row <= 5 && kingSquare.column <= 6 {
-		squaresToBeChecked = append(squaresToBeChecked, newSquare(kingSquare.toInt8()+int8(17)))
-	}
-	// +1 клетка вверх, +2 клетки вправо
-	if kingSquare.row <= 6 && kingSquare.column <= 5 {
-		squaresToBeChecked = append(squaresToBeChecked, newSquare(kingSquare.toInt8()+int8(10)))
-	}
-	// -1 клетка вниз, +2 клетки вправо
-	if kingSquare.row >= 1 && kingSquare.column <= 5 {
-		squaresToBeChecked = append(squaresToBeChecked, newSquare(kingSquare.toInt8()-int8(6)))
-	}
-	// -2 клетка вниз, +1 клетки вправо
-	if kingSquare.row >= 2 && kingSquare.column <= 6 {
-		squaresToBeChecked = append(squaresToBeChecked, newSquare(kingSquare.toInt8()-int8(15)))
-	}
-	// -2 клетка вниз, -1 клетки влево
-	if kingSquare.row >= 2 && kingSquare.column >= 1 {
-		squaresToBeChecked = append(squaresToBeChecked, newSquare(kingSquare.toInt8()-int8(17)))
-	}
-	// -1 клетка вниз, -2 клетки влево
-	if kingSquare.row >= 1 && kingSquare.column >= 2 {
-		squaresToBeChecked = append(squaresToBeChecked, newSquare(kingSquare.toInt8()-int8(10)))
-	}
-	// +1 клетка вверх, -2 клетки влево
-	if kingSquare.row <= 6 && kingSquare.column >= 2 {
-		squaresToBeChecked = append(squaresToBeChecked, newSquare(kingSquare.toInt8()+int8(6)))
-	}
-	// +2 клетка вверх, -1 клетки влево
-	if kingSquare.row <= 5 && kingSquare.column >= 1 {
-		squaresToBeChecked = append(squaresToBeChecked, newSquare(kingSquare.toInt8()+int8(15)))
-	}
-
-	for _, sq := range squaresToBeChecked {
-		var piece board.Piece
-		piece, err = b.Get(board.Sq(sq.toInt()))
-		if err != nil {
-			return isChecked, err
-		}
-		if piece == enemyKnight {
-			isChecked = true
-		}
-	}
-
-	return isChecked, nil
-}
-
-// isSquareCheckedVerticallyOrHorizontally проверяет ближайшие клетки по вертикали (сверху, снизу) и
-// горизонтали (слева, справа) по отношению к клетке своего короля kingSquare, на которых находятся вражеские ладьи и ферзи.
-// Если при проверке клеток возникает ошибка, она также возвращается, иначе возвращется nil.
-func isSquareCheckedVerticallyOrHorizontally(b board.Board, kingSquare square, enemyRook, enemyQueen board.Piece) (isChecked bool, err error) {
-	var (
-		squaresToBeChecked [][]square
-		squaresUp          []square
-		squaresDown        []square
-		squaresRight       []square
-		squaresLeft        []square
-		piece              board.Piece
-	)
-
-	// проверка вертикали вверх
-	var row = kingSquare.row
-	for row < 7 {
-		row++
-		squaresUp = append(squaresUp, newSquare(kingSquare.toInt8()+int8(8*(row-kingSquare.row))))
-	}
-	squaresToBeChecked = append(squaresToBeChecked, squaresUp)
-
-	// проверка вертикали вниз
-	row = kingSquare.row
-	for row > 0 {
-		row--
-		squaresDown = append(squaresDown, newSquare(kingSquare.toInt8()-int8(8*(kingSquare.row-row))))
-	}
-	squaresToBeChecked = append(squaresToBeChecked, squaresDown)
-
-	// проверка горизонтали вправо
-	var column = kingSquare.column
-	for column < 7 {
-		column++
-		squaresRight = append(squaresRight, newSquare(kingSquare.toInt8()+int8(column-kingSquare.column)))
-	}
-	squaresToBeChecked = append(squaresToBeChecked, squaresRight)
-
-	// проверка горизонтали влево
-	column = kingSquare.column
-	for column > 0 {
-		column--
-		squaresLeft = append(squaresLeft, newSquare(kingSquare.toInt8()-int8(kingSquare.column-column)))
-	}
-	squaresToBeChecked = append(squaresToBeChecked, squaresLeft)
-
-	for _, direction := range squaresToBeChecked {
-
-	DirectionLoop:
-		for _, sq := range direction {
-			piece, err = b.Get(board.Sq(sq.toInt()))
-			if err != nil {
-				return isChecked, err
-			}
-
-			switch piece {
-			case 0:
-				continue
-			case enemyRook, enemyQueen:
-				isChecked = true
-				return isChecked, nil
-			default:
-				break DirectionLoop
-			}
-		}
-	}
-
-	return isChecked, nil
-}
-
-// isSquareCheckedDiagonally проверяет ближайшие клетки по всем диагоналям по отношению к клетке своего короля kingSquare, на
-// которых находятся вражеские слоны, ферзи и пешки. Если есть хотя бы одна такая клетка, возвращает true, иначе false.
-// Если при проверке клеток возникает ошибка, она также возвращается, иначе возвращется nil.
-func isSquareCheckedDiagonally(b board.Board, kingSquare square, enemyQueen, enemyBishop, enemyPawn board.Piece) (isChecked bool, err error) {
-	var (
-		squaresToBeChecked [][]square
-		squaresUpRight     []square
-		squaresDownRight   []square
-		squaresDownLeft    []square
-		squaresUpLeft      []square
-		piece              board.Piece
-	)
-
-	// проверка диагонали вправо-вверх
-	var row = kingSquare.row
-	var column = kingSquare.column
-	for row < 7 && column < 7 {
-		row++
-		column++
-		squaresUpRight = append(squaresUpRight, newSquare(kingSquare.toInt8()+int8(9*abs(row-kingSquare.row))))
-	}
-	squaresToBeChecked = append(squaresToBeChecked, squaresUpRight)
-
-	// проверка диагонали вправо-вниз
-	row = kingSquare.row
-	column = kingSquare.column
-	for row > 0 && column < 7 {
-		row--
-		column++
-		squaresDownRight = append(squaresDownRight, newSquare(kingSquare.toInt8()-int8(7*abs(row-kingSquare.row))))
-	}
-	squaresToBeChecked = append(squaresToBeChecked, squaresDownRight)
-
-	// проверка диагонали влево-вниз
-	row = kingSquare.row
-	column = kingSquare.column
-	for row > 0 && column > 0 {
-		row--
-		column--
-		squaresDownLeft = append(squaresDownLeft, newSquare(kingSquare.toInt8()-int8(9*abs(row-kingSquare.row))))
-	}
-	squaresToBeChecked = append(squaresToBeChecked, squaresDownLeft)
-
-	// проверка диагонали влево-вверх
-	row = kingSquare.row
-	column = kingSquare.column
-	for row < 7 && column > 0 {
-		row++
-		column--
-		squaresUpLeft = append(squaresUpLeft, newSquare(kingSquare.toInt8()+int8(7*abs(row-kingSquare.row))))
-	}
-	squaresToBeChecked = append(squaresToBeChecked, squaresUpLeft)
-
-	for _, direction := range squaresToBeChecked {
-
-	DirectionLoop:
-		for _, sq := range direction {
-			piece, err = b.Get(board.Sq(sq.toInt()))
-			if err != nil {
-				return isChecked, err
-			}
-
-			switch piece {
-			case 0:
-				continue
-			case enemyQueen, enemyBishop:
-				isChecked = true
-				return isChecked, nil
-			case enemyPawn:
-				if enemyPawn == board.BlackPawn && (sq.row-kingSquare.row == 1) {
-					isChecked = true
-				} else if enemyPawn == board.WhitePawn && (sq.row-kingSquare.row == -1) {
-					isChecked = true
-				} else {
-					break DirectionLoop
-				}
-
-				if isChecked {
-					return isChecked, nil
-				}
-			default:
-				break DirectionLoop
-			}
-
-		}
-	}
-
-	return isChecked, nil
-}
-
-// isCheckedByEnemyKing проверяет ближайшие клетки (вертикально, горизонтально, диагонально к клетке своего короля
-// kingSquare на наличие на них вражеского короля. Если вражеский король оказался вплотную к своему королю, возвращает
-// true, иначе false. Если при проверке клеток возникает ошибка, она также возвращается, иначе возвращется nil.
-func isCheckedByEnemyKing(b board.Board) (isChecked bool, err error) {
-	var whiteKingSquare, blackKingSquare square
-	whiteKingSquare, err = getSquareByPiece(b, "K")
-	if err != nil {
-		return isChecked, err
-	}
-	blackKingSquare, err = getSquareByPiece(b, "k")
-	if err != nil {
-		return isChecked, err
-	}
-
-	if abs(whiteKingSquare.diffRow(blackKingSquare)) <= 1 && abs(whiteKingSquare.diffColumn(blackKingSquare)) <= 1 {
-		isChecked = true
-	}
-
-	return isChecked, nil
 }
