@@ -100,7 +100,7 @@ func TestThreatsTo(t *testing.T) {
 		{"p down-left & down-right", "8/8/3K4/2p1p3/8/8/8/8 w - - 5 6", "d6", []string{}},
 		{"P down-left", "8/8/8/3r3q/8/5k2/4P3/8 b - - 5 6", 21, []string{"e2"}},
 		{"B & Q hidden, Ps don't check", "8/1B6/2P5/5P2/4k3/5b2/2R5/1Q6 b - - 5 6", 28, []string{}},
-		{"B down-right", "8/5P2/1QN1k3/8/1b1q4/3p3B/2r5/4K3 b - - 5 6", 44, []string{}},
+		{"B down-right", "8/5P2/1QN1k3/8/1b1q4/3p3B/2r5/4K3 b - - 5 6", 44, []string{"h3"}},
 	}
 
 	for _, tc := range tests {
