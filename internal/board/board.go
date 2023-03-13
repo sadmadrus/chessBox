@@ -30,7 +30,7 @@ type Board struct {
 	brd [64]Piece // доска из 64 клеток
 	blk bool      // false - ход белых, true - чёрных
 	cas Castling  // битовая маска возможных рокировок
-	ep  square    // клетка, которая в прошлом ходу перепрыгнута пешкой
+	ep  Square    // клетка, которая в прошлом ходу перепрыгнута пешкой
 	hm  int       // полуходы без взятий и продвижения пешек
 	fm  int       // номер хода -1 (для возможности использовать пустую доску)
 }
@@ -149,8 +149,8 @@ func Classical() *Board {
 }
 
 // Get возвращает фигуру, стоящую в заданной клетке.
-func (b *Board) Get(s square) (Piece, error) {
-	if s == -1 {
+func (b *Board) Get(s Square) (Piece, error) {
+	if !s.IsValid() {
 		return 0, fmt.Errorf("%w: %v", errSquareNotExist, s)
 	}
 	return b.brd[s], nil
@@ -158,8 +158,8 @@ func (b *Board) Get(s square) (Piece, error) {
 
 // Put ставит фигуру на заданную клетку; возвращает ошибку,
 // если клетка не пуста.
-func (b *Board) Put(s square, p Piece) error {
-	if s == -1 {
+func (b *Board) Put(s Square, p Piece) error {
+	if !s.IsValid() {
 		return fmt.Errorf("%w: %v", errSquareNotExist, s)
 	}
 	if b.brd[s] != 0 {
@@ -173,8 +173,8 @@ func (b *Board) Put(s square, p Piece) error {
 }
 
 // Remove убирает фигуру, стоящую в заданной клетке.
-func (b *Board) Remove(s square) error {
-	if s == -1 {
+func (b *Board) Remove(s Square) error {
+	if !s.IsValid() {
 		return fmt.Errorf("%w: %v", errSquareNotExist, s)
 	}
 	if b.brd[s] == 0 {
@@ -271,7 +271,7 @@ func (b *Board) RemoveCastling(c Castling) {
 
 // SetEnPassant устанавливает клетку, перепрыгнутую пешкой в прошлом
 // полуходу. Валидность не проверяется, только горизонталь // TODO?
-func (b *Board) SetEnPassant(s square) bool {
+func (b *Board) SetEnPassant(s Square) bool {
 	if s/8 != 2 && s/8 != 5 {
 		return false
 	}
@@ -281,7 +281,7 @@ func (b *Board) SetEnPassant(s square) bool {
 
 // GetEnPassant возвращает клетку, перепрыгнутую пешкой в прошлом ходу,
 // -1 если такой не было.
-func (b *Board) GetEnPassant() square {
+func (b *Board) GetEnPassant() Square {
 	if b.ep == 0 {
 		return -1
 	}
@@ -290,7 +290,7 @@ func (b *Board) GetEnPassant() square {
 
 // IsEnPassant возвращает true, если заданная клетка была перепрыгнута
 // пешкой в прошлом ходу.
-func (b *Board) IsEnPassant(s square) bool {
+func (b *Board) IsEnPassant(s Square) bool {
 	if s == 0 { // эта проверка нужна, потому что Board{} — валидная доска
 		return false
 	}
@@ -442,13 +442,23 @@ const (
 	BlackQueenside
 )
 
-// square - представление для клетки на доске.
-type square int8
+// Square - представление для клетки на доске.
+type Square int8
 
 var errSquareNotExist = fmt.Errorf("square does not exist")
 
+// IsValid сообщает, есть ли на доске такая клетка.
+func (s Square) IsValid() bool {
+	return s >= 0 && s <= 63
+}
+
+// isBlack возвращает true, если поле чёрное.
+func (s Square) IsBlack() bool {
+	return (s/8+s%8)%2 == 0
+}
+
 // String возвращает строковое представление клетки.
-func (s square) String() string {
+func (s Square) String() string {
 	if s < 0 || s > 63 {
 		return "-"
 	}
@@ -463,7 +473,7 @@ func (s square) String() string {
 // "a1", "c7", "e8" и т.п.
 // Соответственно, "a1" будет указывать на ту же клетку, что 0,
 // "e1" - на ту же, что 4, и т. д., вплоть до "h8" - 63.
-func Sq[S int | string](s S) square {
+func Sq[S int | string](s S) Square {
 	if ss, ok := any(s).(string); ok {
 		if len(ss) != 2 {
 			return -1
@@ -474,11 +484,11 @@ func Sq[S int | string](s S) square {
 		if ss[1] < '1' || ss[1] > '8' {
 			return -1
 		}
-		return square(int(ss[1]-'1')*8 + int(ss[0]-'a'))
+		return Square(int(ss[1]-'1')*8 + int(ss[0]-'a'))
 	}
 	i := any(s).(int)
 	if i < 0 || i > 63 {
 		return -1
 	}
-	return square(i)
+	return Square(i)
 }

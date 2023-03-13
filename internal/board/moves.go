@@ -21,7 +21,7 @@ import "fmt"
 // другому игроку, количество полуходов и ходов обновляется,
 // обновляются данные о пешке en passant и рокировках.
 // Рокировка и проведение пешки реализованы отдельными методами.
-func (b *Board) Move(from, to square) error {
+func (b *Board) Move(from, to Square) error {
 	if from < 0 {
 		return fmt.Errorf("%w: %v", errSquareNotExist, from)
 	}
@@ -143,7 +143,7 @@ func (b *Board) Castle(c Castling) error {
 }
 
 // Promote проводит пешку. Валидность хода не проверяется.
-func (b *Board) Promote(from square, to square, p Piece) error {
+func (b *Board) Promote(from Square, to Square, p Piece) error {
 	if from == -1 {
 		return fmt.Errorf("%w: %v", errSquareNotExist, from)
 	}
