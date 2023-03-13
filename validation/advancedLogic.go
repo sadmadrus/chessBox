@@ -2,10 +2,11 @@ package validation
 
 import (
 	"fmt"
-	"github.com/sadmadrus/chessBox/internal/board/position"
 	"log"
 	"strconv"
 	"strings"
+
+	"github.com/sadmadrus/chessBox/internal/board/position"
 
 	"github.com/sadmadrus/chessBox/internal/board"
 )
@@ -280,10 +281,9 @@ func checkCastling(b *board.Board, piece board.Piece, from, to square) (isValid 
 
 	// 1. проверка, что король не проходит через битое поле (под шахом).
 	squareToBePassed := newSquare(from.toInt8() + ((to.toInt8() - from.toInt8()) / 2))
-	checks := position.ThreatsTo(board.Sq(squareToBePassed.toInt()), *b)
 
 	// TODO: здесь появляется ошибка, из-за того что проверяю на шах клетку в которой нет короля
-	if len(checks) != 0 {
+	if isSquareChecked(*b, board.Sq(squareToBePassed.toInt()), piece == board.WhiteKing) {
 		log.Printf("%v", errCastlingThroughCheckedSquare)
 		return isValid, nil
 	}
@@ -402,4 +402,14 @@ func getSquareByPiece(b board.Board, pieceString string) (pieceSquare square, er
 
 	pieceSquare = newSquare(squareRow*8 + int8(squareColumn))
 	return pieceSquare, nil
+}
+
+// isSquareChecked проверяет, находится ли поле под боем.
+func isSquareChecked(b board.Board, s board.Square, weAreWhite bool) bool {
+	p := board.BlackPawn
+	if weAreWhite {
+		p = board.WhitePawn
+	}
+	_ = b.Put(s, p)
+	return len(position.ThreatsTo(s, b)) > 0
 }
