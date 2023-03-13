@@ -4,9 +4,11 @@ package validation
 
 import (
 	"encoding/json"
-	"github.com/sadmadrus/chessBox/internal/board"
 	"log"
 	"net/http"
+
+	"github.com/sadmadrus/chessBox/internal/board"
+	"github.com/sadmadrus/chessBox/internal/board/position"
 )
 
 // http хендлеры
@@ -91,7 +93,7 @@ type advancedResponse struct {
 // * фигура newpiece (q/r/b/n/Q/R/B/N или пустое значение)
 func Advanced(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" || r.Method == "HEAD" {
-		// валидация входных данных: доска board существует
+		// валидация входных данных: доска board существует и имеет валидную позицию
 		boardParsed := r.URL.Query().Get("board")
 		b, err := board.FromUsFEN(boardParsed)
 		if err != nil {
@@ -99,8 +101,13 @@ func Advanced(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
+		if !position.IsValid(*b) {
+			log.Printf("%v", errBoardNotValid)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
 
-		// валидация входных данных: клетка from существуют
+		// валидация входных данных: клетка from существует
 		fromParsed := r.URL.Query().Get("from")
 		var fromSquare square
 		fromSquare, err = parseSquare(fromParsed)
@@ -110,7 +117,7 @@ func Advanced(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// валидация входных данных: клетка to существуют
+		// валидация входных данных: клетка to существует
 		toParsed := r.URL.Query().Get("to")
 		var toSquare square
 		toSquare, err = parseSquare(toParsed)
