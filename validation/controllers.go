@@ -73,7 +73,7 @@ func Simple(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Printf("inside Simple %v: %v", errInvalidHttpMethod, r.Method)
-	w.WriteHeader(http.StatusBadRequest)
+	w.WriteHeader(http.StatusMethodNotAllowed)
 }
 
 // advancedResponse структура для возвражения тела ответа на запрос сложной валидации хода
@@ -175,7 +175,7 @@ func Advanced(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Printf("inside Advanced %v: %v", errInvalidHttpMethod, r.Method)
-	w.WriteHeader(http.StatusBadRequest)
+	w.WriteHeader(http.StatusMethodNotAllowed)
 }
 
 // AvailableMoves сервис отвечает за оплучение всех возможных ходов для данной позиции доски в нотации FEN и начальной клетке.
