@@ -33,7 +33,7 @@ func Simple(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// валидация входных данных: клетка from существуют
+		// валидация входных данных: клетка from существует
 		fromParsed := r.URL.Query().Get("from")
 		var fromSquare square
 		fromSquare, err = parseSquare(fromParsed)
@@ -43,7 +43,7 @@ func Simple(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// валидация входных данных: клетка to существуют
+		// валидация входных данных: клетка to существует
 		toParsed := r.URL.Query().Get("to")
 		var toSquare square
 		toSquare, err = parseSquare(toParsed)
@@ -149,11 +149,7 @@ func Advanced(w http.ResponseWriter, r *http.Request) {
 		newBoard, isValid, err := advancedLogic(*b, fromSquare, toSquare, newpiece)
 		if err != nil {
 			log.Printf("error occured when trying to validate move: %v", err)
-			if err == errInternalErrorIsSquareChecked {
-				w.WriteHeader(http.StatusInternalServerError)
-			} else {
-				w.WriteHeader(http.StatusBadRequest)
-			}
+			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 

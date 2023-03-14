@@ -32,7 +32,6 @@ var (
 	errCastlingThroughOccupiedSquare = fmt.Errorf("castling is not valid through square occupied by other pieces")
 	errPiecesStayInTheWay            = fmt.Errorf("piece or pieces stay in the way of figure move")
 	errPiecetypeNotExist             = fmt.Errorf("piece type does not exist")
-	errInternalErrorIsSquareChecked  = fmt.Errorf("internal error occured while performing isSquareChecked")
 	errBoardNotValid                 = fmt.Errorf("board has no valid position")
 )
 
