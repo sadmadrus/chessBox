@@ -278,14 +278,12 @@ func checkCastling(b *board.Board, piece board.Piece, from, to square) (isValid 
 		}
 	}
 
-	// 1. проверка, что король не проходит через битое поле (под шахом).
-	squareToBePassed := newSquare(from.toInt8() + ((to.toInt8() - from.toInt8()) / 2))
-	if isSquareChecked(*b, board.Sq(squareToBePassed.toInt()), piece == board.WhiteKing) {
-		log.Printf("%v", errCastlingThroughCheckedSquare)
+	// 1. Проверка, что указанная рокировка (castling) валидна (ни король, ни ладья еще не двигались).
+	if !b.HaveCastling(castling) {
 		return isValid, nil
 	}
 
-	// 2. проверка, что между клеткой короля (from) и клеткой ладьи (rookSquare) все клетки пустые
+	// 2. проверка, что между клеткой короля (from) и клеткой ладьи (rookSquare) все клетки пустые.
 	squaresBetweenKingAndRook := getSquaresToBePassed(board.WhiteRook, from, rookSquare)
 	for _, sq := range squaresBetweenKingAndRook {
 		var pc board.Piece
@@ -299,11 +297,14 @@ func checkCastling(b *board.Board, piece board.Piece, from, to square) (isValid 
 		}
 	}
 
-	// 3. Проверка, что указанная рокировка (castling) валидна (ни король, ни ладья еще не двигались).
-	if b.HaveCastling(castling) {
-		isValid = true
+	// 3. проверка, что король не проходит через битое поле (под шахом).
+	squareToBePassed := newSquare(from.toInt8() + ((to.toInt8() - from.toInt8()) / 2))
+	if isSquareChecked(*b, board.Sq(squareToBePassed.toInt()), piece == board.WhiteKing) {
+		log.Printf("%v", errCastlingThroughCheckedSquare)
+		return isValid, nil
 	}
 
+	isValid = true
 	return isValid, nil
 }
 
