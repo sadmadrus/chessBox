@@ -2,12 +2,12 @@ package validation
 
 import (
 	"fmt"
-	"github.com/sadmadrus/chessBox/internal/board/position"
 	"log"
 	"strconv"
 	"strings"
 
 	"github.com/sadmadrus/chessBox/internal/board"
+	"github.com/sadmadrus/chessBox/internal/board/position"
 )
 
 // advancedLogic обрабывает общую логику валидации хода. Возвращает доску и флаг валидации хода (true валиден, false нет).
@@ -278,17 +278,12 @@ func checkCastling(b *board.Board, piece board.Piece, from, to square) (isValid 
 		}
 	}
 
-	// 1. проверка, что король не проходит через битое поле (под шахом).
-	squareToBePassed := newSquare(from.toInt8() + ((to.toInt8() - from.toInt8()) / 2))
-	checks := position.ThreatsTo(board.Sq(squareToBePassed.toInt()), *b)
-
-	// TODO: здесь появляется ошибка, из-за того что проверяю на шах клетку в которой нет короля
-	if len(checks) != 0 {
-		log.Printf("%v", errCastlingThroughCheckedSquare)
+	// 1. Проверка, что указанная рокировка (castling) валидна (ни король, ни ладья еще не двигались).
+	if !b.HaveCastling(castling) {
 		return isValid, nil
 	}
 
-	// 2. проверка, что между клеткой короля (from) и клеткой ладьи (rookSquare) все клетки пустые
+	// 2. проверка, что между клеткой короля (from) и клеткой ладьи (rookSquare) все клетки пустые.
 	squaresBetweenKingAndRook := getSquaresToBePassed(board.WhiteRook, from, rookSquare)
 	for _, sq := range squaresBetweenKingAndRook {
 		var pc board.Piece
@@ -302,11 +297,14 @@ func checkCastling(b *board.Board, piece board.Piece, from, to square) (isValid 
 		}
 	}
 
-	// 3. Проверка, что указанная рокировка (castling) валидна (ни король, ни ладья еще не двигались).
-	if b.HaveCastling(castling) {
-		isValid = true
+	// 3. проверка, что король не проходит через битое поле (под шахом).
+	squareToBePassed := newSquare(from.toInt8() + ((to.toInt8() - from.toInt8()) / 2))
+	if isSquareChecked(*b, board.Sq(squareToBePassed.toInt()), piece == board.WhiteKing) {
+		log.Printf("%v", errCastlingThroughCheckedSquare)
+		return isValid, nil
 	}
 
+	isValid = true
 	return isValid, nil
 }
 
@@ -402,4 +400,14 @@ func getSquareByPiece(b board.Board, pieceString string) (pieceSquare square, er
 
 	pieceSquare = newSquare(squareRow*8 + int8(squareColumn))
 	return pieceSquare, nil
+}
+
+// isSquareChecked проверяет, находится ли поле под боем.
+func isSquareChecked(b board.Board, s board.Square, weAreWhite bool) bool {
+	p := board.BlackPawn
+	if weAreWhite {
+		p = board.WhitePawn
+	}
+	_ = b.Put(s, p)
+	return len(position.ThreatsTo(s, b)) > 0
 }

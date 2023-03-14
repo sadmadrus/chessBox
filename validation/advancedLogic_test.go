@@ -394,3 +394,42 @@ func TestGetSquareByPiece(t *testing.T) {
 		})
 	}
 }
+
+func TestIsSquareChecked(t *testing.T) {
+	brdWhiteFEN := "r3k2r/7P/2N5/7B/5b2/1q1Qp1n1/2P5/R3K2R w - - 5 6"
+	brdWhite, _ := board.FromFEN(brdWhiteFEN)
+
+	tests := []struct {
+		name        string
+		brd         board.Board
+		sq          int
+		playerWhite bool
+		want        bool
+	}{
+		{"b1 by q", *brdWhite, 1, true, true},
+		{"c1 none", *brdWhite, 2, true, false},
+		{"d1 none", *brdWhite, 3, true, false},
+		{"f1 by n", *brdWhite, 5, true, true},
+		{"g1 none", *brdWhite, 6, true, false},
+		{"e5 by b", *brdWhite, 36, true, true},
+		{"d4 none", *brdWhite, 27, true, false},
+		{"d2 by p", *brdWhite, 11, true, true},
+
+		{"b8 by N", *brdWhite, 57, false, true},
+		{"c8 none", *brdWhite, 58, false, false},
+		{"d8 by N", *brdWhite, 59, false, true},
+		{"e8 by B", *brdWhite, 60, false, true},
+		{"f8 none", *brdWhite, 61, false, false},
+		{"g8 by P", *brdWhite, 62, false, true},
+		{"a8 by R", *brdWhite, 24, false, true},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			res := isSquareChecked(tc.brd, board.Sq(tc.sq), tc.playerWhite)
+			if res != tc.want {
+				t.Fatalf("want %v, got %v", tc.want, res)
+			}
+		})
+	}
+}
