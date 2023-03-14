@@ -3,23 +3,12 @@
 package validation
 
 import (
-	"fmt"
-	"github.com/sadmadrus/chessBox/internal/board"
+	"encoding/json"
 	"log"
 	"net/http"
-	"strconv"
-)
 
-var (
-	errPieceNotExist          = fmt.Errorf("piece does not exist")
-	errInvalidHttpMethod      = fmt.Errorf("method is not supported")
-	errFromToSquaresNotDiffer = fmt.Errorf("from and to squares are not different")
-	errPawnMoveNotValid       = fmt.Errorf("pawn move is not valid")
-	errKnightMoveNotValid     = fmt.Errorf("knight move is not valid")
-	errBishopMoveNotValid     = fmt.Errorf("bishop move is not valid")
-	errRookMoveNotValid       = fmt.Errorf("rook move is not valid")
-	errQueenMoveNotValid      = fmt.Errorf("queen move is not valid")
-	errKingMoveNotValid       = fmt.Errorf("king move is not valid")
+	"github.com/sadmadrus/chessBox/internal/board"
+	"github.com/sadmadrus/chessBox/internal/board/position"
 )
 
 // http хендлеры
@@ -37,58 +26,44 @@ func Simple(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" || r.Method == "HEAD" {
 		// валидация входных данных: фигура piece существует
 		pieceParsed := r.URL.Query().Get("piece")
-		piece, err := parsePieceFromLetter(pieceParsed)
+		piece, err := parsePiece(pieceParsed, "piece")
 		if err != nil {
 			log.Printf("%v: %v", errPieceNotExist, pieceParsed)
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
-		// валидация входных данных: клетка from существуют
+		// валидация входных данных: клетка from существует
 		fromParsed := r.URL.Query().Get("from")
-		// перевод в тип board.square для цифро-буквенного обозначения клетки (напр., "а1")
-		from := board.Sq(fromParsed)
-		if from == -1 {
-			// перевод в тип board.square для числового значения клетки от 0 до 63
-			var fromParsedNum int
-			fromParsedNum, err = strconv.Atoi(fromParsed)
-			from = board.Sq(fromParsedNum)
-			if from == -1 || err != nil {
-				log.Printf("%v: %v", errPieceNotExist, fromParsed)
-				w.WriteHeader(http.StatusBadRequest)
-				return
-			}
+		var fromSquare square
+		fromSquare, err = parseSquare(fromParsed)
+		if err != nil {
+			log.Printf("%v", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
 		}
 
-		// валидация входных данных: клетка to существуют
+		// валидация входных данных: клетка to существует
 		toParsed := r.URL.Query().Get("to")
-		// перевод в тип board.square для цифро-буквенного обозначения клетки (напр., "а1")
-		to := board.Sq(toParsed)
-		if to == -1 {
-			// перевод в тип board.square для числового значения клетки от 0 до 63
-			var toParsedNum int
-			toParsedNum, err = strconv.Atoi(toParsed)
-			to = board.Sq(toParsedNum)
-			if to == -1 || err != nil {
-				log.Printf("%v: %s", errPieceNotExist, toParsed)
-				w.WriteHeader(http.StatusBadRequest)
-				return
-			}
+		var toSquare square
+		toSquare, err = parseSquare(toParsed)
+		if err != nil {
+			log.Printf("%v", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
 		}
 
 		// валидация входных данных: клетки from и to различны
-		if from == to {
-			log.Printf("%v: %v (from), %v (to)", errFromToSquaresNotDiffer, from, to)
+		if fromSquare.isEqual(toSquare) {
+			log.Printf("%v: %v (from), %v (to)", errFromToSquaresNotDiffer, fromSquare, toSquare)
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
 		// валидация геометрического движения фигуры без привязки к позиции на доске
-		fromSquare := newSquare(int8(from))
-		toSquare := newSquare(int8(to))
 		err = move(piece, fromSquare, toSquare)
 		if err != nil {
-			log.Printf("%v: from %v - to %v", err, from, to)
+			log.Printf("%v: from %v - to %v", err, fromSquare, toSquare)
 			w.WriteHeader(http.StatusForbidden)
 			return
 		} else {
@@ -98,7 +73,12 @@ func Simple(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Printf("inside Simple %v: %v", errInvalidHttpMethod, r.Method)
-	w.WriteHeader(http.StatusBadRequest)
+	w.WriteHeader(http.StatusMethodNotAllowed)
+}
+
+// advancedResponse структура для возвражения тела ответа на запрос сложной валидации хода
+type advancedResponse struct {
+	Board string `json:"board"`
 }
 
 // Advanced сервис отвечает за сложную валидацию хода по начальной и конечной клетке, а также по текущему состоянию
@@ -112,7 +92,86 @@ func Simple(w http.ResponseWriter, r *http.Request) {
 // * конечная клетка предполагаемого хода to (число от 0 до 63, либо строка вида a1, c7 и т.п).
 // * фигура newpiece (q/r/b/n/Q/R/B/N или пустое значение)
 func Advanced(w http.ResponseWriter, r *http.Request) {
-	// TODO
+	if r.Method == "GET" || r.Method == "HEAD" {
+		// валидация входных данных: доска board существует и имеет валидную позицию
+		boardParsed := r.URL.Query().Get("board")
+		b, err := board.FromUsFEN(boardParsed)
+		if err != nil {
+			log.Printf("%v", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		if !position.IsValid(*b) {
+			log.Printf("%v", errBoardNotValid)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		// валидация входных данных: клетка from существует
+		fromParsed := r.URL.Query().Get("from")
+		var fromSquare square
+		fromSquare, err = parseSquare(fromParsed)
+		if err != nil {
+			log.Printf("%v", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		// валидация входных данных: клетка to существует
+		toParsed := r.URL.Query().Get("to")
+		var toSquare square
+		toSquare, err = parseSquare(toParsed)
+		if err != nil {
+			log.Printf("%v", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		// валидация входных данных: клетки from и to различны
+		if fromSquare.isEqual(toSquare) {
+			log.Printf("%v: %v (from), %v (to)", errFromToSquaresNotDiffer, fromSquare, toSquare)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		// валидация входных данных: фигура newpiece принимает q/r/b/n/Q/R/B/N или пустое значение
+		newpieceParsed := r.URL.Query().Get("newpiece")
+		var newpiece board.Piece
+		newpiece, err = parsePiece(newpieceParsed, "newpiece")
+		if err != nil {
+			log.Printf("%v: %v", errNewpieceNotValid, newpieceParsed)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		// полная валидация хода с учетом положения на доске, а также возможных рокировок, взятия на проходе и
+		// проведения пешки
+		newBoard, isValid, err := advancedLogic(*b, fromSquare, toSquare, newpiece)
+		if err != nil {
+			log.Printf("error occured when trying to validate move: %v", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		if !isValid {
+			log.Printf("move invalid: %v", err)
+			w.WriteHeader(http.StatusForbidden)
+			return
+		} else {
+			boardUsFEN := newBoard.UsFEN()
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			data := advancedResponse{boardUsFEN}
+			err = json.NewEncoder(w).Encode(data)
+			if err != nil {
+				log.Printf("error while encoding json: %v", err)
+			}
+			return
+		}
+	}
+
+	log.Printf("inside Advanced %v: %v", errInvalidHttpMethod, r.Method)
+	w.WriteHeader(http.StatusMethodNotAllowed)
 }
 
 // AvailableMoves сервис отвечает за оплучение всех возможных ходов для данной позиции доски в нотации FEN и начальной клетке.
@@ -122,41 +181,4 @@ func Advanced(w http.ResponseWriter, r *http.Request) {
 // для данной фигуры.
 func AvailableMoves(w http.ResponseWriter, r *http.Request) {
 	// TODO написать логику
-}
-
-// Вспомогательные функции
-// TODO по мере написания сервисов вспомогательные функции могут быть реорганизованы в другие файлы этого пакета для удобства!
-
-// parsePieceFromLetter переводит строковое представление фигуры типа k/q/r/b/n/p/K/Q/R/B/N/P в тип board.Piece.  Если
-// преобразование невозможно, возвращает ошибку.
-// TODO add tests to all functions below
-func parsePieceFromLetter(piece string) (board.Piece, error) {
-	switch piece {
-	case "P":
-		return board.WhitePawn, nil
-	case "p":
-		return board.BlackPawn, nil
-	case "N":
-		return board.WhiteKnight, nil
-	case "n":
-		return board.BlackKnight, nil
-	case "B":
-		return board.WhiteBishop, nil
-	case "b":
-		return board.BlackBishop, nil
-	case "R":
-		return board.WhiteRook, nil
-	case "r":
-		return board.BlackRook, nil
-	case "Q":
-		return board.WhiteQueen, nil
-	case "q":
-		return board.BlackQueen, nil
-	case "K":
-		return board.WhiteKing, nil
-	case "k":
-		return board.BlackKing, nil
-	default:
-		return 0, fmt.Errorf("%w", errPieceNotExist)
-	}
 }
