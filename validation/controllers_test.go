@@ -81,6 +81,17 @@ func TestSimple(t *testing.T) {
 					if tc.result != res.StatusCode {
 						t.Fatalf("want %v, got %s", tc.result, res.Status)
 					}
+
+					if res.StatusCode == http.StatusOK {
+						var resBody []byte
+						resBody, err = io.ReadAll(res.Body)
+						if err != nil {
+							t.Fatalf("error reading response body: %v", err)
+						}
+						if string(resBody) != "" {
+							t.Fatalf("JSON response: want no body response, got response %s", string(resBody))
+						}
+					}
 				case "POST":
 					if res.StatusCode != http.StatusMethodNotAllowed {
 						t.Fatalf("unexpected reply for method %s: %s", method, res.Status)
@@ -120,6 +131,18 @@ func FuzzSimple(f *testing.F) {
 				if res.StatusCode != http.StatusOK && res.StatusCode != http.StatusForbidden && res.StatusCode != http.StatusBadRequest {
 					t.Fatalf("unexpected reply for method %s: %s", method, res.Status)
 				}
+
+				if res.StatusCode == http.StatusOK {
+					var resBody []byte
+					resBody, err = io.ReadAll(res.Body)
+					if err != nil {
+						t.Fatalf("error reading response body: %v", err)
+					}
+					if string(resBody) != "" {
+						t.Fatalf("JSON response: want no body response, got response %s", string(resBody))
+					}
+				}
+
 			case "POST":
 				if res.StatusCode != http.StatusMethodNotAllowed {
 					t.Fatalf("unexpected reply for method %s: %s", method, res.Status)
