@@ -411,3 +411,35 @@ func isSquareChecked(b board.Board, s board.Square, weAreWhite bool) bool {
 	_ = b.Put(s, p)
 	return len(position.ThreatsTo(s, b)) > 0
 }
+
+func getAvailableMoves(b board.Board, from square) (moves []square, err error) {
+	var allMoves []square
+	allMoves, err = getMoves(b, from)
+	if err != nil {
+		return moves, err
+	}
+
+	var piece board.Piece
+	piece, err = b.Get(board.Sq(from.toInt()))
+
+	for _, to := range allMoves {
+		var isValid bool
+		var newpiece board.Piece
+		switch piece {
+		case board.WhitePawn:
+			newpiece = board.WhiteQueen
+		case board.BlackPawn:
+			newpiece = board.BlackQueen
+		}
+
+		_, isValid, err = advancedLogic(b, from, to, newpiece)
+		if err != nil {
+			return moves, err
+		}
+		if isValid {
+			moves = append(moves, to)
+		}
+	}
+
+	return moves, err
+}

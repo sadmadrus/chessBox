@@ -4,7 +4,6 @@ package validation
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 
@@ -175,6 +174,11 @@ func Advanced(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusMethodNotAllowed)
 }
 
+// availableMovesResponse структура для возвражения тела ответа на запрос всех возможных ходов для фигуры
+type availableMovesResponse struct {
+	Moves []int `json:"moves"`
+}
+
 // AvailableMoves сервис отвечает за оплучение всех возможных ходов для данной позиции доски в нотации usFEN и начальной клетке.
 // Возвращает заголовок HttpResponse 200 (в случае непустого массива клеток) или HttpsResponse 403 (клетка пустая или
 // с фигурой, которой не принадлежит ход или массив клеток пуст) или HttpsResponse 405 (неправильный метод).
@@ -208,8 +212,35 @@ func AvailableMoves(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		fmt.Println(fromSquare)
 
+		var movesSquare []square
+		movesSquare, err = getAvailableMoves(*b, fromSquare)
+		if err != nil {
+			log.Println(err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		if len(movesSquare) == 0 {
+			w.WriteHeader(http.StatusForbidden)
+			return
+		}
+
+		var moves []int
+		for _, m := range movesSquare {
+			moves = append(moves, m.toInt())
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		data := availableMovesResponse{
+			moves,
+		}
+		err = json.NewEncoder(w).Encode(data)
+		if err != nil {
+			log.Printf("error while encoding json: %v", err)
+		}
+		return
 	}
 
 	log.Printf("inside AvailableMoves %v: %v", errInvalidHttpMethod, r.Method)

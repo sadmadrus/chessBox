@@ -33,6 +33,7 @@ var (
 	errPiecesStayInTheWay            = fmt.Errorf("piece or pieces stay in the way of figure move")
 	errPiecetypeNotExist             = fmt.Errorf("piece type does not exist")
 	errBoardNotValid                 = fmt.Errorf("board has no valid position")
+	errSquareEmpty                   = fmt.Errorf("square is empty")
 )
 
 // Структуры клетки
@@ -226,4 +227,204 @@ func moveKing(piece board.Piece, from, to square) error {
 		return fmt.Errorf("%w", errKingMoveNotValid)
 	}
 	return nil
+}
+
+// методы getMoves
+
+// getMoves возвращает все допустимые ходы фигуры с клетки from, без привязки к доске.
+func getMoves(b board.Board, from square) (moves []square, err error) {
+	var piece board.Piece
+	piece, err = b.Get(board.Sq(from.toInt()))
+	if err != nil {
+		return moves, err
+	}
+
+	switch piece {
+	case board.WhitePawn, board.BlackPawn:
+		moves = getPawnMoves(piece, from)
+	case board.WhiteKnight, board.BlackKnight:
+		moves = getKnightMoves(from)
+	case board.WhiteBishop, board.BlackBishop:
+		moves = getBishopMoves(from)
+	case board.WhiteRook, board.BlackRook:
+		moves = getRookMoves(from)
+	case board.WhiteQueen, board.BlackQueen:
+		moves = getQueenMoves(from)
+	case board.WhiteKing, board.BlackKing:
+		moves = getKingMoves(from)
+	}
+
+	return moves, nil
+}
+
+// getPawnMoves возвращает все допустимые ходы пешки с клетки from, без привязки к доске.
+func getPawnMoves(piece board.Piece, from square) (moves []square) {
+	switch piece {
+	case board.WhitePawn:
+		if from.row == 1 {
+			moves = append(moves, newSquare(from.toInt8()+16))
+		}
+		if from.row < 7 {
+			if from.column > 0 {
+				moves = append(moves, newSquare(from.toInt8()+7))
+			}
+			moves = append(moves, newSquare(from.toInt8()+8))
+			if from.column < 7 {
+				moves = append(moves, newSquare(from.toInt8()+9))
+			}
+		}
+
+	case board.BlackPawn:
+		if from.row == 6 {
+			moves = append(moves, newSquare(from.toInt8()-16))
+		}
+		if from.row > 0 {
+			if from.column > 0 {
+				moves = append(moves, newSquare(from.toInt8()-7))
+			}
+			moves = append(moves, newSquare(from.toInt8()-8))
+			if from.column < 7 {
+				moves = append(moves, newSquare(from.toInt8()-9))
+			}
+		}
+	}
+
+	return moves
+}
+
+// getKnightMoves возвращает все допустимые ходы коня с клетки from, без привязки к доске.
+func getKnightMoves(from square) (moves []square) {
+	if from.row < 6 && from.column < 7 {
+		moves = append(moves, newSquare(from.toInt8()+17))
+	}
+	if from.row < 7 && from.column < 6 {
+		moves = append(moves, newSquare(from.toInt8()+10))
+	}
+	if from.row > 0 && from.column < 6 {
+		moves = append(moves, newSquare(from.toInt8()-6))
+	}
+	if from.row > 1 && from.column < 7 {
+		moves = append(moves, newSquare(from.toInt8()-15))
+	}
+
+	if from.row > 1 && from.column > 0 {
+		moves = append(moves, newSquare(from.toInt8()-17))
+	}
+	if from.row > 0 && from.column > 1 {
+		moves = append(moves, newSquare(from.toInt8()-10))
+	}
+	if from.row < 7 && from.column > 1 {
+		moves = append(moves, newSquare(from.toInt8()+6))
+	}
+	if from.row < 6 && from.column > 0 {
+		moves = append(moves, newSquare(from.toInt8()+15))
+	}
+
+	return moves
+}
+
+// getBishopMoves возвращает все допустимые ходы слона с клетки from, без привязки к доске.
+func getBishopMoves(from square) (moves []square) {
+	row, column := from.row, from.column
+	for row < 7 && column < 7 {
+		moves = append(moves, newSquare(from.toInt8()+9))
+		row++
+		column++
+	}
+
+	row, column = from.row, from.column
+	for row < 7 && column > 0 {
+		moves = append(moves, newSquare(from.toInt8()-7))
+		row++
+		column--
+	}
+
+	row, column = from.row, from.column
+	for row > 0 && column > 0 {
+		moves = append(moves, newSquare(from.toInt8()-9))
+		row--
+		column--
+	}
+
+	row, column = from.row, from.column
+	for row > 0 && column < 7 {
+		moves = append(moves, newSquare(from.toInt8()+7))
+		row--
+		column++
+	}
+
+	return moves
+}
+
+// getRookMoves возвращает все допустимые ходы ладьи с клетки from, без привязки к доске.
+func getRookMoves(from square) (moves []square) {
+	row := from.row
+	for row < 7 {
+		moves = append(moves, newSquare(from.toInt8()+8))
+		row++
+	}
+
+	row = from.row
+	for row > 0 {
+		moves = append(moves, newSquare(from.toInt8()-8))
+		row--
+	}
+
+	column := from.column
+	for column < 7 {
+		moves = append(moves, newSquare(from.toInt8()+1))
+		column++
+	}
+
+	column = from.column
+	for column > 0 {
+		moves = append(moves, newSquare(from.toInt8()-1))
+		column--
+	}
+
+	return moves
+}
+
+// getQueenMoves возвращает все допустимые ходы ферзя с клетки from, без привязки к доске.
+func getQueenMoves(from square) (moves []square) {
+	bishopMoves := getBishopMoves(from)
+	rookMoves := getRookMoves(from)
+
+	moves = append(moves, bishopMoves...)
+	moves = append(moves, rookMoves...)
+
+	return moves
+}
+
+// getKingMoves возвращает все допустимые ходы короля с клетки from, без привязки к доске.
+func getKingMoves(from square) (moves []square) {
+	// вертикали и горизонтали
+	if from.row > 0 {
+		moves = append(moves, newSquare(from.toInt8()-8))
+	}
+	if from.row < 7 {
+		moves = append(moves, newSquare(from.toInt8()+8))
+	}
+	if from.column > 0 {
+		moves = append(moves, newSquare(from.toInt8()-1))
+	}
+	if from.column < 7 {
+		moves = append(moves, newSquare(from.toInt8()+1))
+	}
+
+	// диагонали
+	if from.row > 0 && from.column > 0 {
+		moves = append(moves, newSquare(from.toInt8()-9))
+	}
+	if from.row > 0 && from.column < 7 {
+		moves = append(moves, newSquare(from.toInt8()-7))
+	}
+	if from.row < 7 && from.column > 0 {
+		moves = append(moves, newSquare(from.toInt8()+7))
+	}
+	if from.row < 7 && from.column < 7 {
+		moves = append(moves, newSquare(from.toInt8()+9))
+	}
+
+	return moves
 }
