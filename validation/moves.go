@@ -251,7 +251,7 @@ func getMoves(b board.Board, from square) (moves []square, err error) {
 	case board.WhiteQueen, board.BlackQueen:
 		moves = getQueenMoves(from)
 	case board.WhiteKing, board.BlackKing:
-		moves = getKingMoves(from)
+		moves = getKingMoves(piece, from)
 	}
 
 	return moves, nil
@@ -264,7 +264,7 @@ func getPawnMoves(piece board.Piece, from square) (moves []square) {
 		if from.row == 1 {
 			moves = append(moves, newSquare(from.toInt8()+16))
 		}
-		if from.row < 7 {
+		if from.row < 7 && from.row > 0 {
 			if from.column > 0 {
 				moves = append(moves, newSquare(from.toInt8()+7))
 			}
@@ -278,13 +278,13 @@ func getPawnMoves(piece board.Piece, from square) (moves []square) {
 		if from.row == 6 {
 			moves = append(moves, newSquare(from.toInt8()-16))
 		}
-		if from.row > 0 {
+		if from.row > 0 && from.row < 7 {
 			if from.column > 0 {
-				moves = append(moves, newSquare(from.toInt8()-7))
+				moves = append(moves, newSquare(from.toInt8()-9))
 			}
 			moves = append(moves, newSquare(from.toInt8()-8))
 			if from.column < 7 {
-				moves = append(moves, newSquare(from.toInt8()-9))
+				moves = append(moves, newSquare(from.toInt8()-7))
 			}
 		}
 	}
@@ -326,29 +326,37 @@ func getKnightMoves(from square) (moves []square) {
 // getBishopMoves возвращает все допустимые ходы слона с клетки from, без привязки к доске.
 func getBishopMoves(from square) (moves []square) {
 	row, column := from.row, from.column
-	for row < 7 && column < 7 {
-		moves = append(moves, newSquare(from.toInt8()+9))
+	for row <= 7 && column <= 7 {
+		if row != from.row && column != from.column {
+			moves = append(moves, newSquare(int8(row*8+column)))
+		}
 		row++
 		column++
 	}
 
 	row, column = from.row, from.column
-	for row < 7 && column > 0 {
-		moves = append(moves, newSquare(from.toInt8()-7))
+	for row <= 7 && column >= 0 {
+		if row != from.row && column != from.column {
+			moves = append(moves, newSquare(int8(row*8+column)))
+		}
 		row++
 		column--
 	}
 
 	row, column = from.row, from.column
-	for row > 0 && column > 0 {
-		moves = append(moves, newSquare(from.toInt8()-9))
+	for row >= 0 && column >= 0 {
+		if row != from.row && column != from.column {
+			moves = append(moves, newSquare(int8(row*8+column)))
+		}
 		row--
 		column--
 	}
 
 	row, column = from.row, from.column
-	for row > 0 && column < 7 {
-		moves = append(moves, newSquare(from.toInt8()+7))
+	for row >= 0 && column <= 7 {
+		if row != from.row && column != from.column {
+			moves = append(moves, newSquare(int8(row*8+column)))
+		}
 		row--
 		column++
 	}
@@ -359,26 +367,34 @@ func getBishopMoves(from square) (moves []square) {
 // getRookMoves возвращает все допустимые ходы ладьи с клетки from, без привязки к доске.
 func getRookMoves(from square) (moves []square) {
 	row := from.row
-	for row < 7 {
-		moves = append(moves, newSquare(from.toInt8()+8))
+	for row <= 7 {
+		if row != from.row {
+			moves = append(moves, newSquare(int8(row*8+from.column)))
+		}
 		row++
 	}
 
 	row = from.row
-	for row > 0 {
-		moves = append(moves, newSquare(from.toInt8()-8))
+	for row >= 0 {
+		if row != from.row {
+			moves = append(moves, newSquare(int8(row*8+from.column)))
+		}
 		row--
 	}
 
 	column := from.column
-	for column < 7 {
-		moves = append(moves, newSquare(from.toInt8()+1))
+	for column <= 7 {
+		if column != from.column {
+			moves = append(moves, newSquare(int8(from.row*8+column)))
+		}
 		column++
 	}
 
 	column = from.column
-	for column > 0 {
-		moves = append(moves, newSquare(from.toInt8()-1))
+	for column >= 0 {
+		if column != from.column {
+			moves = append(moves, newSquare(int8(from.row*8+column)))
+		}
 		column--
 	}
 
@@ -397,7 +413,22 @@ func getQueenMoves(from square) (moves []square) {
 }
 
 // getKingMoves возвращает все допустимые ходы короля с клетки from, без привязки к доске.
-func getKingMoves(from square) (moves []square) {
+func getKingMoves(piece board.Piece, from square) (moves []square) {
+	// рокировки
+	switch piece {
+	case board.WhiteKing:
+		if from.row == 0 && from.column == 4 {
+			moves = append(moves, newSquare(2))
+			moves = append(moves, newSquare(6))
+		}
+
+	case board.BlackKing:
+		if from.row == 7 && from.column == 4 {
+			moves = append(moves, newSquare(58))
+			moves = append(moves, newSquare(62))
+		}
+	}
+
 	// вертикали и горизонтали
 	if from.row > 0 {
 		moves = append(moves, newSquare(from.toInt8()-8))
