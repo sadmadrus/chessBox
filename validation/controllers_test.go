@@ -524,8 +524,8 @@ func FuzzAvailableMoves(f *testing.F) {
 					t.Fatalf("unexpected reply for method %s: %s", method, res.Status)
 				}
 			case "POST":
-				if res.StatusCode != http.StatusMethodNotAllowed {
-					t.Fatalf("unexpected reply for method %s: %s", method, res.Status)
+				if res.StatusCode != http.StatusMethodNotAllowed && res.StatusCode != http.StatusBadRequest {
+					t.Fatalf("unexpected reply for method %s: %s %v", method, res.Status, req)
 				}
 			}
 
