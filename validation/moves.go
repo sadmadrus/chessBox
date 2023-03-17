@@ -34,7 +34,6 @@ var (
 	errPiecesStayInTheWay            = fmt.Errorf("piece or pieces stay in the way of figure move")
 	errPiecetypeNotExist             = fmt.Errorf("piece type does not exist")
 	errBoardNotValid                 = fmt.Errorf("board has no valid position")
-	errSquareEmpty                   = fmt.Errorf("square is empty")
 )
 
 // Структуры клетки

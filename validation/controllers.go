@@ -75,7 +75,6 @@ func Simple(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	return
 }
 
 // advancedResponse структура для возвражения тела ответа на запрос сложной валидации хода
@@ -176,7 +175,6 @@ func Advanced(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("error while encoding json: %v", err)
 	}
-	return
 }
 
 // availableMovesResponse структура для возвражения тела ответа на запрос всех возможных ходов для фигуры
@@ -251,5 +249,4 @@ func AvailableMoves(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("error while encoding json: %v", err)
 	}
-	return
 }

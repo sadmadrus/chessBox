@@ -368,20 +368,20 @@ func TestAvailableMoves(t *testing.T) {
 		{"not exist 65", brdWhiteUsFEN, "65", 400, ""},
 		{"empty c1", brdWhiteUsFEN, "c1", 403, ""},
 
-		{"R a1 w", brdWhiteUsFEN, "a1", 200, fmt.Sprintf(`{"moves":[8,16,24,32,40,48]}`)},
+		{"R a1 w", brdWhiteUsFEN, "a1", 200, `{"moves":[8,16,24,32,40,48]}`},
 		{"R a1 b", brdBlackUsFEN, "a1", 403, ""},
 
-		{"N b1 w", brdWhiteUsFEN, "1", 200, fmt.Sprintf(`{"moves":[16,18]}`)},
+		{"N b1 w", brdWhiteUsFEN, "1", 200, `{"moves":[16,18]}`},
 		{"N b1 b", brdBlackUsFEN, "1", 403, ""},
 
-		{"K e1 w", brdWhiteUsFEN, "e1", 200, fmt.Sprintf(`{"moves":[3,5,6,12]}`)},
+		{"K e1 w", brdWhiteUsFEN, "e1", 200, `{"moves":[3,5,6,12]}`},
 		{"K e1 b", brdBlackUsFEN, "e1", 403, ""},
 
-		{"R h1 w", brdWhiteUsFEN, "7", 200, fmt.Sprintf(`{"moves":[5,6,15]}`)},
+		{"R h1 w", brdWhiteUsFEN, "7", 200, `{"moves":[5,6,15]}`},
 		{"R h1 b", brdBlackUsFEN, "7", 403, ""},
 
 		{"p b2 w", brdWhiteUsFEN, "b2", 403, ""},
-		{"p b2 b", brdBlackUsFEN, "b2", 200, fmt.Sprintf(`{"moves":[0]}`)},
+		{"p b2 b", brdBlackUsFEN, "b2", 200, `{"moves":[0]}`},
 
 		{"P d2 w", brdWhiteUsFEN, "11", 403, ""},
 		{"P d2 b", brdBlackUsFEN, "11", 403, ""},
@@ -390,29 +390,29 @@ func TestAvailableMoves(t *testing.T) {
 		{"N f2 b", brdBlackUsFEN, "f2", 403, ""},
 
 		{"n b3 w", brdWhiteUsFEN, "17", 403, ""},
-		{"n b3 b", brdBlackUsFEN, "17", 200, fmt.Sprintf(`{"moves":[0,2,11,27,32]}`)},
+		{"n b3 b", brdBlackUsFEN, "17", 200, `{"moves":[0,2,11,27,32]}`},
 
 		{"Q d3 w", brdWhiteUsFEN, "d3", 200,
-			fmt.Sprintf(`{"moves":[5,10,12,17,18,20,21,22,26,27,28,33,35,40,43]}`)},
+			`{"moves":[5,10,12,17,18,20,21,22,26,27,28,33,35,40,43]}`},
 		{"Q d3 b", brdBlackUsFEN, "d3", 403, ""},
 
 		{"P h3 w", brdWhiteUsFEN, "23", 403, ""},
 		{"P h3 b", brdBlackUsFEN, "23", 403, ""},
 
 		{"b b4 w", brdWhiteUsFEN, "b4", 403, ""},
-		{"b b4 b", brdBlackUsFEN, "b4", 200, fmt.Sprintf(`{"moves":[11,16,18,32]}`)},
+		{"b b4 b", brdBlackUsFEN, "b4", 200, `{"moves":[11,16,18,32]}`},
 
 		{"P g4 w", brdWhiteUsFEN, "30", 403, ""},
 		{"P g4 b", brdBlackUsFEN, "30", 403, ""},
 
 		{"q h4 w", brdWhiteUsFEN, "h4", 403, ""},
 		{"q h4 b", brdBlackUsFEN, "h4", 200,
-			fmt.Sprintf(`{"moves":[13,22,23,30,39,47,55,63]}`)},
+			`{"moves":[13,22,23,30,39,47,55,63]}`},
 
 		{"k c5 w", brdWhiteUsFEN, "34", 403, ""},
-		{"k c5 b", brdBlackUsFEN, "34", 200, fmt.Sprintf(`{"moves":[41]}`)},
+		{"k c5 b", brdBlackUsFEN, "34", 200, `{"moves":[41]}`},
 
-		{"P f5 w", brdWhiteUsFEN, "f5", 200, fmt.Sprintf(`{"moves":[45,46]}`)},
+		{"P f5 w", brdWhiteUsFEN, "f5", 200, `{"moves":[45,46]}`},
 		{"P f5 b", brdBlackUsFEN, "f5", 403, ""},
 
 		{"p g5 w", brdWhiteUsFEN, "38", 403, ""},
@@ -420,25 +420,25 @@ func TestAvailableMoves(t *testing.T) {
 
 		{"n c6 w", brdWhiteUsFEN, "c6", 403, ""},
 		{"n c6 b", brdBlackUsFEN, "c6", 200,
-			fmt.Sprintf(`{"moves":[27,32,36,52,57]}`)},
+			`{"moves":[27,32,36,52,57]}`},
 
 		{"r d6 w", brdWhiteUsFEN, "43", 403, ""},
 		{"r d6 b", brdBlackUsFEN, "43", 200,
-			fmt.Sprintf(`{"moves":[19,27,35,44,45,46,47,51]}`)},
+			`{"moves":[19,27,35,44,45,46,47,51]}`},
 
 		{"p a7 w", brdWhiteUsFEN, "a7", 403, ""},
-		{"p a7 b", brdBlackUsFEN, "a7", 200, fmt.Sprintf(`{"moves":[32,40]}`)},
+		{"p a7 b", brdBlackUsFEN, "a7", 200, `{"moves":[32,40]}`},
 
-		{"P e7 w", brdWhiteUsFEN, "52", 200, fmt.Sprintf(`{"moves":[59,60]}`)},
+		{"P e7 w", brdWhiteUsFEN, "52", 200, `{"moves":[59,60]}`},
 		{"P e7 b", brdBlackUsFEN, "52", 403, ""},
 
 		{"B f7 w", brdWhiteUsFEN, "f7", 200,
-			fmt.Sprintf(`{"moves":[17,26,35,39,44,46,60,62]}`)},
+			`{"moves":[17,26,35,39,44,46,60,62]}`},
 		{"B f7 b", brdBlackUsFEN, "f7", 403, ""},
 
 		{"r d8 w", brdWhiteUsFEN, "59", 403, ""},
 		{"r d8 b", brdBlackUsFEN, "59", 200,
-			fmt.Sprintf(`{"moves":[51,56,57,58,60,61,62,63]}`)},
+			`{"moves":[51,56,57,58,60,61,62,63]}`},
 	}
 
 	for _, tc := range tests {
