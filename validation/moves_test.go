@@ -253,8 +253,92 @@ func TestMoveKing(t *testing.T) {
 	}
 }
 
-//func TestGetMoves(t *testing.T) {
-//}
+func TestGetMoves(t *testing.T) {
+	brd1FEN := "3r4/p3PB2/2nr4/2k2Pp1/1b4Pq/1n1Q3P/1p1P1N2/RN2K2R w KQ g6 5 6"
+	brd1, _ := board.FromFEN(brd1FEN)
+
+	tests := []struct {
+		name  string
+		brd   board.Board
+		from  square
+		res   []square
+		isErr bool
+	}{
+		{"not exist 65", *brd1, newSquare(65), []square{}, true},
+		{"empty c1", *brd1, newSquare(2), []square{}, false},
+		{"R a1", *brd1, newSquare(0), []square{newSquare(8), newSquare(16), newSquare(24),
+			newSquare(32), newSquare(40), newSquare(48), newSquare(56), newSquare(1), newSquare(2),
+			newSquare(3), newSquare(4), newSquare(5), newSquare(6), newSquare(7)}, false},
+		{"N b1", *brd1, newSquare(1), []square{newSquare(16), newSquare(18), newSquare(11)}, false},
+		{"K e1", *brd1, newSquare(4), []square{newSquare(2), newSquare(3), newSquare(5),
+			newSquare(6), newSquare(11), newSquare(12), newSquare(13)}, false},
+		{"R h1", *brd1, newSquare(7), []square{newSquare(0), newSquare(1), newSquare(2),
+			newSquare(3), newSquare(4), newSquare(5), newSquare(6), newSquare(15), newSquare(23),
+			newSquare(31), newSquare(39), newSquare(47), newSquare(55), newSquare(63)}, false},
+		{"p b2", *brd1, newSquare(9), []square{newSquare(0), newSquare(1), newSquare(2)}, false},
+		{"P d2", *brd1, newSquare(11), []square{newSquare(18), newSquare(19), newSquare(20),
+			newSquare(27)}, false},
+		{"N f2", *brd1, newSquare(13), []square{newSquare(3), newSquare(7), newSquare(19),
+			newSquare(28), newSquare(30), newSquare(23)}, false},
+		{"n b3", *brd1, newSquare(17), []square{newSquare(0), newSquare(2), newSquare(11),
+			newSquare(27), newSquare(34), newSquare(32)}, false},
+		{"Q d3", *brd1, newSquare(19), []square{newSquare(3), newSquare(11), newSquare(16),
+			newSquare(17), newSquare(18), newSquare(20), newSquare(21), newSquare(22), newSquare(23),
+			newSquare(27), newSquare(35), newSquare(43), newSquare(51), newSquare(59), newSquare(10),
+			newSquare(1), newSquare(12), newSquare(5), newSquare(26), newSquare(33), newSquare(40),
+			newSquare(28), newSquare(37), newSquare(46), newSquare(55)}, false},
+		{"P h3", *brd1, newSquare(23), []square{newSquare(30), newSquare(31)}, false},
+		{"b b4", *brd1, newSquare(25), []square{newSquare(16), newSquare(18), newSquare(11),
+			newSquare(4), newSquare(32), newSquare(34), newSquare(43), newSquare(52), newSquare(61)}, false},
+		{"P g4", *brd1, newSquare(30), []square{newSquare(37), newSquare(38), newSquare(39)}, false},
+		{"q h4", *brd1, newSquare(31), []square{newSquare(7), newSquare(15), newSquare(23),
+			newSquare(39), newSquare(47), newSquare(55), newSquare(63), newSquare(24), newSquare(25),
+			newSquare(26), newSquare(27), newSquare(28), newSquare(29), newSquare(30), newSquare(22),
+			newSquare(13), newSquare(4), newSquare(38), newSquare(45), newSquare(52), newSquare(59)}, false},
+		{"k c5", *brd1, newSquare(34), []square{newSquare(25), newSquare(26), newSquare(27),
+			newSquare(33), newSquare(35), newSquare(41), newSquare(42), newSquare(43)}, false},
+		{"P f5", *brd1, newSquare(37), []square{newSquare(44), newSquare(45), newSquare(46)}, false},
+		{"p g5", *brd1, newSquare(38), []square{newSquare(29), newSquare(30), newSquare(31)}, false},
+		{"n c6", *brd1, newSquare(42), []square{newSquare(32), newSquare(25), newSquare(27),
+			newSquare(36), newSquare(52), newSquare(59), newSquare(57), newSquare(48)}, false},
+		{"r d6", *brd1, newSquare(43), []square{newSquare(3), newSquare(11), newSquare(19),
+			newSquare(27), newSquare(35), newSquare(51), newSquare(59), newSquare(40), newSquare(41),
+			newSquare(42), newSquare(44), newSquare(45), newSquare(46), newSquare(47)}, false},
+		{"p a7", *brd1, newSquare(48), []square{newSquare(40), newSquare(41), newSquare(32)}, false},
+		{"P e7", *brd1, newSquare(52), []square{newSquare(59), newSquare(60), newSquare(61)}, false},
+		{"B f7", *brd1, newSquare(53), []square{newSquare(60), newSquare(62), newSquare(46),
+			newSquare(39), newSquare(44), newSquare(35), newSquare(26), newSquare(17), newSquare(8)}, false},
+		{"r d8", *brd1, newSquare(59), []square{newSquare(3), newSquare(11), newSquare(19),
+			newSquare(27), newSquare(35), newSquare(43), newSquare(51), newSquare(56), newSquare(57),
+			newSquare(58), newSquare(60), newSquare(61), newSquare(62), newSquare(63)}, false},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			res, err := getMoves(tc.brd, tc.from)
+			if err != nil && !tc.isErr {
+				t.Fatalf("want nil, got err")
+			}
+			if err == nil && tc.isErr {
+				t.Fatalf("want err, got nil")
+			}
+
+			fail := func() { t.Fatalf("want %d, got %d", tc.res, res) }
+			if len(res) != len(tc.res) {
+				fail()
+			}
+
+			sort.Slice(res, func(i, j int) bool { return res[i].toInt() < res[j].toInt() })
+			sort.Slice(tc.res, func(i, j int) bool { return tc.res[i].toInt() < tc.res[j].toInt() })
+
+			for i := range res {
+				if res[i] != tc.res[i] {
+					fail()
+				}
+			}
+		})
+	}
+}
 
 func TestGetPawnMoves(t *testing.T) {
 	tests := []struct {
