@@ -455,81 +455,81 @@ func TestGetAvailableMoves(t *testing.T) {
 		{"not exist 65", *brdWhite, newSquare(65), []square{}, true},
 		{"empty c1", *brdWhite, newSquare(2), []square{}, false},
 
-		{"R a1", *brdWhite, newSquare(0), []square{newSquare(8), newSquare(16), newSquare(24),
+		{"R a1 w", *brdWhite, newSquare(0), []square{newSquare(8), newSquare(16), newSquare(24),
 			newSquare(32), newSquare(40), newSquare(48)}, false},
-		{"R a1", *brdBlack, newSquare(0), []square{}, false},
+		{"R a1 b", *brdBlack, newSquare(0), []square{}, false},
 
-		{"N b1", *brdWhite, newSquare(1), []square{newSquare(16), newSquare(18)}, false},
-		{"N b1", *brdBlack, newSquare(1), []square{}, false},
+		{"N b1 w", *brdWhite, newSquare(1), []square{newSquare(16), newSquare(18)}, false},
+		{"N b1 b", *brdBlack, newSquare(1), []square{}, false},
 
-		{"K e1", *brdWhite, newSquare(4), []square{newSquare(3), newSquare(5),
+		{"K e1 w", *brdWhite, newSquare(4), []square{newSquare(3), newSquare(5),
 			newSquare(6), newSquare(12)}, false},
-		{"K e1", *brdBlack, newSquare(4), []square{}, false},
+		{"K e1 b", *brdBlack, newSquare(4), []square{}, false},
 
-		{"R h1", *brdWhite, newSquare(7), []square{newSquare(5), newSquare(6), newSquare(15)}, false},
-		{"R h1", *brdBlack, newSquare(7), []square{}, false},
+		{"R h1 w", *brdWhite, newSquare(7), []square{newSquare(5), newSquare(6), newSquare(15)}, false},
+		{"R h1 b", *brdBlack, newSquare(7), []square{}, false},
 
-		{"p b2", *brdWhite, newSquare(9), []square{}, false},
-		{"p b2", *brdBlack, newSquare(9), []square{newSquare(0)}, false},
+		{"p b2 w", *brdWhite, newSquare(9), []square{}, false},
+		{"p b2 b", *brdBlack, newSquare(9), []square{newSquare(0)}, false},
 
-		{"P d2", *brdWhite, newSquare(11), []square{}, false},
-		{"P d2", *brdBlack, newSquare(11), []square{}, false},
+		{"P d2 w", *brdWhite, newSquare(11), []square{}, false},
+		{"P d2 b", *brdBlack, newSquare(11), []square{}, false},
 
-		{"N f2", *brdWhite, newSquare(13), []square{}, false},
-		{"N f2", *brdBlack, newSquare(13), []square{}, false},
+		{"N f2 w", *brdWhite, newSquare(13), []square{}, false},
+		{"N f2 b", *brdBlack, newSquare(13), []square{}, false},
 
-		{"n b3", *brdWhite, newSquare(17), []square{}, false},
-		{"n b3", *brdBlack, newSquare(17), []square{newSquare(0), newSquare(2), newSquare(11),
+		{"n b3 w", *brdWhite, newSquare(17), []square{}, false},
+		{"n b3 b", *brdBlack, newSquare(17), []square{newSquare(0), newSquare(2), newSquare(11),
 			newSquare(27), newSquare(32)}, false},
 
-		{"Q d3", *brdWhite, newSquare(19), []square{newSquare(17), newSquare(18), newSquare(20),
+		{"Q d3 w", *brdWhite, newSquare(19), []square{newSquare(17), newSquare(18), newSquare(20),
 			newSquare(21), newSquare(22), newSquare(27), newSquare(35), newSquare(43), newSquare(10),
 			newSquare(12), newSquare(5), newSquare(26), newSquare(33), newSquare(40), newSquare(28)}, false},
-		{"Q d3", *brdBlack, newSquare(19), []square{}, false},
+		{"Q d3 b", *brdBlack, newSquare(19), []square{}, false},
 
-		{"P h3", *brdWhite, newSquare(23), []square{}, false},
-		{"P h3", *brdBlack, newSquare(23), []square{}, false},
+		{"P h3 w", *brdWhite, newSquare(23), []square{}, false},
+		{"P h3 b", *brdBlack, newSquare(23), []square{}, false},
 
-		{"b b4", *brdWhite, newSquare(25), []square{}, false},
-		{"b b4", *brdBlack, newSquare(25), []square{newSquare(16), newSquare(18), newSquare(11),
+		{"b b4 w", *brdWhite, newSquare(25), []square{}, false},
+		{"b b4 b", *brdBlack, newSquare(25), []square{newSquare(16), newSquare(18), newSquare(11),
 			newSquare(32)}, false},
 
-		{"P g4", *brdWhite, newSquare(30), []square{}, false},
-		{"P g4", *brdBlack, newSquare(30), []square{}, false},
+		{"P g4 w", *brdWhite, newSquare(30), []square{}, false},
+		{"P g4 b", *brdBlack, newSquare(30), []square{}, false},
 
-		{"q h4", *brdWhite, newSquare(31), []square{}, false},
-		{"q h4", *brdBlack, newSquare(31), []square{newSquare(23), newSquare(39), newSquare(47),
+		{"q h4 w", *brdWhite, newSquare(31), []square{}, false},
+		{"q h4 b", *brdBlack, newSquare(31), []square{newSquare(23), newSquare(39), newSquare(47),
 			newSquare(55), newSquare(63), newSquare(30), newSquare(22), newSquare(13)}, false},
 
-		{"k c5", *brdWhite, newSquare(34), []square{}, false},
-		{"k c5", *brdBlack, newSquare(34), []square{newSquare(41)}, false},
+		{"k c5 w", *brdWhite, newSquare(34), []square{}, false},
+		{"k c5 b", *brdBlack, newSquare(34), []square{newSquare(41)}, false},
 
-		{"P f5", *brdWhite, newSquare(37), []square{newSquare(45), newSquare(46)}, false},
-		{"P f5", *brdBlack, newSquare(37), []square{}, false},
+		{"P f5 w", *brdWhite, newSquare(37), []square{newSquare(45), newSquare(46)}, false},
+		{"P f5 b", *brdBlack, newSquare(37), []square{}, false},
 
-		{"p g5", *brdWhite, newSquare(38), []square{}, false},
-		{"p g5", *brdBlack, newSquare(38), []square{}, false},
+		{"p g5 w", *brdWhite, newSquare(38), []square{}, false},
+		{"p g5 b", *brdBlack, newSquare(38), []square{}, false},
 
-		{"n c6", *brdWhite, newSquare(42), []square{}, false},
-		{"n c6", *brdBlack, newSquare(42), []square{newSquare(32), newSquare(27),
+		{"n c6 w", *brdWhite, newSquare(42), []square{}, false},
+		{"n c6 b", *brdBlack, newSquare(42), []square{newSquare(32), newSquare(27),
 			newSquare(36), newSquare(52), newSquare(57)}, false},
 
-		{"r d6", *brdWhite, newSquare(43), []square{}, false},
-		{"r d6", *brdBlack, newSquare(43), []square{newSquare(19), newSquare(27), newSquare(35),
+		{"r d6 w", *brdWhite, newSquare(43), []square{}, false},
+		{"r d6 b", *brdBlack, newSquare(43), []square{newSquare(19), newSquare(27), newSquare(35),
 			newSquare(51), newSquare(44), newSquare(45), newSquare(46), newSquare(47)}, false},
 
-		{"p a7", *brdWhite, newSquare(48), []square{}, false},
-		{"p a7", *brdBlack, newSquare(48), []square{newSquare(40), newSquare(32)}, false},
+		{"p a7 w", *brdWhite, newSquare(48), []square{}, false},
+		{"p a7 b", *brdBlack, newSquare(48), []square{newSquare(40), newSquare(32)}, false},
 
-		{"P e7", *brdWhite, newSquare(52), []square{newSquare(59), newSquare(60)}, false},
-		{"P e7", *brdBlack, newSquare(52), []square{}, false},
+		{"P e7 w", *brdWhite, newSquare(52), []square{newSquare(59), newSquare(60)}, false},
+		{"P e7 b", *brdBlack, newSquare(52), []square{}, false},
 
-		{"B f7", *brdWhite, newSquare(53), []square{newSquare(60), newSquare(62), newSquare(46),
+		{"B f7 w", *brdWhite, newSquare(53), []square{newSquare(60), newSquare(62), newSquare(46),
 			newSquare(39), newSquare(44), newSquare(35), newSquare(26), newSquare(17)}, false},
-		{"B f7", *brdBlack, newSquare(53), []square{}, false},
+		{"B f7 b", *brdBlack, newSquare(53), []square{}, false},
 
-		{"r d8", *brdWhite, newSquare(59), []square{}, false},
-		{"r d8", *brdBlack, newSquare(59), []square{newSquare(51), newSquare(56), newSquare(57),
+		{"r d8 w", *brdWhite, newSquare(59), []square{}, false},
+		{"r d8 b", *brdBlack, newSquare(59), []square{newSquare(51), newSquare(56), newSquare(57),
 			newSquare(58), newSquare(60), newSquare(61), newSquare(62), newSquare(63)}, false},
 	}
 

@@ -412,6 +412,11 @@ func isSquareChecked(b board.Board, s board.Square, weAreWhite bool) bool {
 	return len(position.ThreatsTo(s, b)) > 0
 }
 
+// getAvailableMoves по текущей позиции на доске b и клетке, с которой делается ход from определяет срез допустимых
+// клеток, куда можно передвинуть данную фигуру moves. Срез клеток возвращается отсортированным по возрастанию.
+// Пустой срез означает, что либо клетка пустая, либо на клетке стоит фигура, которой не принадлежит ход, либо на клетке
+// стоит фигура правильного цвета, для которой нет разрешенных ходов.
+// Если в процессе обработки возникает ошибка, она также возвращается, иначе возвращается nil.
 func getAvailableMoves(b board.Board, from square) (moves []square, err error) {
 	var allMoves []square
 	allMoves, err = getMoves(b, from)

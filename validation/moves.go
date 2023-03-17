@@ -2,6 +2,7 @@ package validation
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/sadmadrus/chessBox/internal/board"
 )
@@ -231,7 +232,8 @@ func moveKing(piece board.Piece, from, to square) error {
 
 // методы getMoves
 
-// getMoves возвращает все допустимые ходы фигуры с клетки from, без привязки к доске.
+// getMoves возвращает все допустимые ходы фигуры с клетки from, без привязки к доске. Срез клеток возвращается
+// отсортированным по возрастанию.
 func getMoves(b board.Board, from square) (moves []square, err error) {
 	var piece board.Piece
 	piece, err = b.Get(board.Sq(from.toInt()))
@@ -253,6 +255,8 @@ func getMoves(b board.Board, from square) (moves []square, err error) {
 	case board.WhiteKing, board.BlackKing:
 		moves = getKingMoves(piece, from)
 	}
+
+	sort.Slice(moves, func(i, j int) bool { return moves[i].toInt() < moves[j].toInt() })
 
 	return moves, nil
 }

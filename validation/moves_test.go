@@ -328,7 +328,6 @@ func TestGetMoves(t *testing.T) {
 				fail()
 			}
 
-			sort.Slice(res, func(i, j int) bool { return res[i].toInt() < res[j].toInt() })
 			sort.Slice(tc.res, func(i, j int) bool { return tc.res[i].toInt() < tc.res[j].toInt() })
 
 			for i := range res {
