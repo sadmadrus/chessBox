@@ -425,10 +425,9 @@ func getAvailableMoves(b board.Board, from square) (moves []square, err error) {
 	for _, to := range allMoves {
 		var isValid bool
 		var newpiece board.Piece
-		switch piece {
-		case board.WhitePawn:
+		if piece == board.WhitePawn && to.row == 7 {
 			newpiece = board.WhiteQueen
-		case board.BlackPawn:
+		} else if piece == board.BlackPawn && to.row == 0 {
 			newpiece = board.BlackQueen
 		}
 
