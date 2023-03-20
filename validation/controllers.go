@@ -28,6 +28,7 @@ func Simple(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "GET" && r.Method != "HEAD" {
 		log.Printf("inside Simple %v: %v", errInvalidHttpMethod, r.Method)
 		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
 	}
 
 	// валидация входных данных: фигура piece существует
@@ -99,6 +100,7 @@ func Advanced(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "GET" && r.Method != "HEAD" {
 		log.Printf("inside Advanced %v: %v", errInvalidHttpMethod, r.Method)
 		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
 	}
 
 	// валидация входных данных: доска board существует и имеет валидную позицию
@@ -196,6 +198,7 @@ func AvailableMoves(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "GET" && r.Method != "HEAD" {
 		log.Printf("inside AvailableMoves %v: %v", errInvalidHttpMethod, r.Method)
 		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
 	}
 
 	// валидация входных данных: доска board существует и имеет валидную позицию

@@ -102,56 +102,6 @@ func TestSimple(t *testing.T) {
 	}
 }
 
-func FuzzSimple(f *testing.F) {
-	srv := httptest.NewServer(http.HandlerFunc(validation.Simple))
-	defer srv.Close()
-	tests := []string{
-		"piece=P&from=e2&to=e4",
-		"from=4&to=2&piece=nil",
-		"from=a7&to=b6&piece=Q",
-	}
-	for _, tc := range tests {
-		f.Add(tc)
-	}
-
-	f.Fuzz(func(t *testing.T, query string) {
-		u, _ := url.Parse(srv.URL)
-		u.RawQuery = query
-
-		for _, method := range []string{"GET", "HEAD", "POST"} {
-			client := &http.Client{}
-			req, _ := http.NewRequest(method, u.String(), nil)
-			res, err := client.Do(req)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			switch method {
-			case "GET", "HEAD":
-				if res.StatusCode != http.StatusOK && res.StatusCode != http.StatusForbidden && res.StatusCode != http.StatusBadRequest {
-					t.Fatalf("unexpected reply for method %s: %s", method, res.Status)
-				}
-
-				if res.StatusCode == http.StatusOK {
-					var resBody []byte
-					resBody, err = io.ReadAll(res.Body)
-					if err != nil {
-						t.Fatalf("error reading response body: %v", err)
-					}
-					if string(resBody) != "" {
-						t.Fatalf("JSON response: want no body response, got response %s", string(resBody))
-					}
-				}
-
-			case "POST":
-				if res.StatusCode != http.StatusMethodNotAllowed {
-					t.Fatalf("unexpected reply for method %s: %s", method, res.Status)
-				}
-			}
-		}
-	})
-}
-
 func TestAdvanced(t *testing.T) {
 	var (
 		startBrd1WhiteUsFEN = "rnbq1bnr~ppP5~3p4~4pBBp~3PPPp1~QP2k1P1~P6P~R3K1NR+w+KQ+-+5+6"
@@ -284,66 +234,6 @@ func TestAdvanced(t *testing.T) {
 			}
 		})
 	}
-}
-
-func FuzzAdvanced(f *testing.F) {
-	srv := httptest.NewServer(http.HandlerFunc(validation.Advanced))
-	defer srv.Close()
-	tests := []string{
-		"board=rnbq1bnr~ppP5~3p4~4pBBp~3PPPp1~QP2k1P1~P6P~R3K1NR+w+KQ+-+5+6&from=b3&to=b4&newpiece=",
-		"to=b8&from=c7&newpiece=B&board=rnbq1bnr~ppP5~3p4~4pBBp~3PPPp1~QP2k1P1~P6P~R3K1NR+w+KQ+-+5+6",
-		"from=0&to=7&board=rn2k2r~8~8~8~3q4~6n1~8~R3K2R+b+KQq+-+5+6",
-	}
-	for _, tc := range tests {
-		f.Add(tc)
-	}
-
-	f.Fuzz(func(t *testing.T, query string) {
-		u, _ := url.Parse(srv.URL)
-		u.RawQuery = query
-
-		for _, method := range []string{"GET", "HEAD", "POST"} {
-			client := &http.Client{}
-			req, _ := http.NewRequest(method, u.String(), nil)
-			res, err := client.Do(req)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			switch method {
-			case "GET", "HEAD":
-				if res.StatusCode != http.StatusOK && res.StatusCode != http.StatusForbidden && res.StatusCode != http.StatusBadRequest {
-					t.Fatalf("unexpected reply for method %s: %s", method, res.Status)
-				}
-			case "POST":
-				if res.StatusCode != http.StatusMethodNotAllowed {
-					t.Fatalf("unexpected reply for method %s: %s", method, res.Status)
-				}
-			}
-
-			if method == "GET" && res.StatusCode == http.StatusOK {
-				var resBody []byte
-				resBody, err = io.ReadAll(res.Body)
-				if err != nil {
-					t.Fatalf("error reading response body: %v", err)
-				}
-				if string(resBody) == "" {
-					t.Fatal("JSON response: want body response, got no response")
-				}
-			}
-
-			if method == "HEAD" && res.StatusCode == http.StatusOK {
-				var resBody []byte
-				resBody, err = io.ReadAll(res.Body)
-				if err != nil {
-					t.Fatalf("error reading response body: %v", err)
-				}
-				if string(resBody) != "" {
-					t.Fatalf("JSON response: want no body response, got response %s", string(resBody))
-				}
-			}
-		}
-	})
 }
 
 func TestAvailableMoves(t *testing.T) {
@@ -494,10 +384,24 @@ func TestAvailableMoves(t *testing.T) {
 	}
 }
 
-func FuzzAvailableMoves(f *testing.F) {
-	srv := httptest.NewServer(http.HandlerFunc(validation.AvailableMoves))
-	defer srv.Close()
+func FuzzSimpleAdvancedAvailableMoves(f *testing.F) {
+	srvSimple := httptest.NewServer(http.HandlerFunc(validation.Simple))
+	srvAdvanced := httptest.NewServer(http.HandlerFunc(validation.Advanced))
+	srvAvailableMoves := httptest.NewServer(http.HandlerFunc(validation.AvailableMoves))
+
+	defer srvSimple.Close()
+	defer srvAdvanced.Close()
+	defer srvAvailableMoves.Close()
+
 	tests := []string{
+		"piece=P&from=e2&to=e4",
+		"from=4&to=2&piece=nil",
+		"from=a7&to=b6&piece=Q",
+
+		"board=rnbq1bnr~ppP5~3p4~4pBBp~3PPPp1~QP2k1P1~P6P~R3K1NR+w+KQ+-+5+6&from=b3&to=b4&newpiece=",
+		"to=b8&from=c7&newpiece=B&board=rnbq1bnr~ppP5~3p4~4pBBp~3PPPp1~QP2k1P1~P6P~R3K1NR+w+KQ+-+5+6",
+		"from=0&to=7&board=rn2k2r~8~8~8~3q4~6n1~8~R3K2R+b+KQq+-+5+6",
+
 		"board=3r4~p3PB2~2nr4~2k2Pp1~1b4Pq~1n1Q3P~1p1P1N2~BN2K2R+w+KQ+-+5+6&from=b3",
 		"from=8&board=rnbqkbnr~pppppppp~8~8~8~8~PPPPPPPP~RNBQKBNR+w+KQkq+-+1+1",
 		"from=c8&board=rn2k2r~8~8~8~3q4~6n1~8~R3K2R+b+KQq+-+5+6",
@@ -507,47 +411,70 @@ func FuzzAvailableMoves(f *testing.F) {
 	}
 
 	f.Fuzz(func(t *testing.T, query string) {
-		u, _ := url.Parse(srv.URL)
-		u.RawQuery = query
+		for _, srv := range []*httptest.Server{srvSimple, srvAdvanced, srvAvailableMoves} {
+			u, _ := url.Parse(srv.URL)
+			u.RawQuery = query
 
-		for _, method := range []string{"GET", "HEAD", "POST"} {
-			client := &http.Client{}
-			req, _ := http.NewRequest(method, u.String(), nil)
-			res, err := client.Do(req)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			switch method {
-			case "GET", "HEAD":
-				if res.StatusCode != http.StatusOK && res.StatusCode != http.StatusForbidden && res.StatusCode != http.StatusBadRequest {
-					t.Fatalf("unexpected reply for method %s: %s", method, res.Status)
-				}
-			case "POST":
-				if res.StatusCode != http.StatusMethodNotAllowed && res.StatusCode != http.StatusBadRequest {
-					t.Fatalf("unexpected reply for method %s: %s %v", method, res.Status, req)
-				}
-			}
-
-			if method == "GET" && res.StatusCode == http.StatusOK {
-				var resBody []byte
-				resBody, err = io.ReadAll(res.Body)
+			for _, method := range []string{"GET", "HEAD", "POST"} {
+				client := &http.Client{}
+				req, err := http.NewRequest(method, u.String(), nil)
 				if err != nil {
-					t.Fatalf("error reading response body: %v", err)
+					return
 				}
-				if string(resBody) == "" {
-					t.Fatal("JSON response: want body response, got no response")
-				}
-			}
-
-			if method == "HEAD" && res.StatusCode == http.StatusOK {
-				var resBody []byte
-				resBody, err = io.ReadAll(res.Body)
+				res, err := client.Do(req)
 				if err != nil {
-					t.Fatalf("error reading response body: %v", err)
+					return
 				}
-				if string(resBody) != "" {
-					t.Fatalf("JSON response: want no body response, got response %s", string(resBody))
+
+				switch method {
+				case "GET":
+					if res.StatusCode != http.StatusOK && res.StatusCode != http.StatusForbidden && res.StatusCode != http.StatusBadRequest {
+						t.Fatalf("unexpected reply for method %s: %s", method, res.Status)
+					}
+
+					if res.StatusCode == http.StatusOK {
+						var resBody []byte
+						resBody, err = io.ReadAll(res.Body)
+						if err != nil {
+							t.Fatalf("error reading response body: %v", err)
+						}
+
+						switch srv {
+						case srvSimple:
+							if string(resBody) != "" {
+								t.Fatalf("JSON response: want no body response, got response %s", string(resBody))
+							}
+
+						case srvAdvanced, srvAvailableMoves:
+							if string(resBody) == "" {
+								t.Fatal("JSON response: want body response, got no response")
+							}
+
+						default:
+							t.Fatalf("unknown server: %v", srv)
+						}
+					}
+
+				case "HEAD":
+					if res.StatusCode != http.StatusOK && res.StatusCode != http.StatusForbidden && res.StatusCode != http.StatusBadRequest {
+						t.Fatalf("unexpected reply for method %s: %s", method, res.Status)
+					}
+
+					if res.StatusCode == http.StatusOK {
+						var resBody []byte
+						resBody, err = io.ReadAll(res.Body)
+						if err != nil {
+							t.Fatalf("error reading response body: %v", err)
+						}
+						if string(resBody) != "" {
+							t.Fatalf("JSON response: want no body response, got response %s", string(resBody))
+						}
+					}
+
+				case "POST":
+					if res.StatusCode != http.StatusMethodNotAllowed && res.StatusCode != http.StatusBadRequest {
+						t.Fatalf("unexpected reply for method %s: %s %v", method, res.Status, req)
+					}
 				}
 			}
 		}
