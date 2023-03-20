@@ -411,3 +411,39 @@ func isSquareChecked(b board.Board, s board.Square, weAreWhite bool) bool {
 	_ = b.Put(s, p)
 	return len(position.ThreatsTo(s, b)) > 0
 }
+
+// getAvailableMoves по текущей позиции на доске b и клетке, с которой делается ход from определяет срез допустимых
+// клеток, куда можно передвинуть данную фигуру moves. Срез клеток возвращается отсортированным по возрастанию.
+// Пустой срез означает, что либо клетка пустая, либо на клетке стоит фигура, которой не принадлежит ход, либо на клетке
+// стоит фигура правильного цвета, для которой нет разрешенных ходов.
+// Если в процессе обработки возникает ошибка, она также возвращается, иначе возвращается nil.
+func getAvailableMoves(b board.Board, from square) (moves []square, err error) {
+	var allMoves []square
+	allMoves, err = getMoves(b, from)
+	if err != nil {
+		return moves, err
+	}
+
+	var piece board.Piece
+	piece, err = b.Get(board.Sq(from.toInt()))
+
+	for _, to := range allMoves {
+		var isValid bool
+		var newpiece board.Piece
+		if piece == board.WhitePawn && to.row == 7 {
+			newpiece = board.WhiteQueen
+		} else if piece == board.BlackPawn && to.row == 0 {
+			newpiece = board.BlackQueen
+		}
+
+		_, isValid, err = advancedLogic(b, from, to, newpiece)
+		if err != nil {
+			return moves, err
+		}
+		if isValid {
+			moves = append(moves, to)
+		}
+	}
+
+	return moves, err
+}
