@@ -22,20 +22,20 @@
 
 > ПРИМЕР
 > 
-> **POST** _сервис_ HTTP/1.1
-> Host: chessbox.example
-> Content-Type: application/x-www-form-urlencoded
-> 
-> notify=http://router.chessbox.example:4321/endpoint
-> notifywhite=http://router2.chessbox.example/player
-> notifyblack=http://router8.chessbox.example
-> position=4k2r/6r1/8/8/8/8/3R4/R3K3 w Qk - 0 1
-> timing=40/90 SD/30 +30
-> timewhite=495
-> timeblack=208
+> **POST** _сервис_ HTTP/1.1  
+> Host: chessbox.example  
+> Content-Type: application/x-www-form-urlencoded  
+>   
+> notify=http://router.chessbox.example:4321/endpoint  
+> notifywhite=http://router2.chessbox.example/player  
+> notifyblack=http://router8.chessbox.example  
+> position=4k2r/6r1/8/8/8/8/3R4/R3K3 w Qk - 0 1  
+> timing=40/90 SD/30 +30  
+> timewhite=495  
+> timeblack=208  
 >
 > 
-> HTTP/1.1 201 Created
+> HTTP/1.1 201 Created  
 > Location: GAME1122334455
 
 Сервис принимает запрос `POST` с набором параметров в виде `x-www-form-urlencoded` и создаёт игру с заданными параметрами:
@@ -70,15 +70,15 @@
 
 > ПРИМЕР
 > 
-> **PUT** _сервис/GAME1122334455_ HTTP/1.1
-> Host: chessbox.example
-> Content-Type: application/x-www-form-urlencoded
+> **PUT** _сервис/GAME1122334455_ HTTP/1.1  
+> Host: chessbox.example  
+> Content-Type: application/x-www-form-urlencoded  
 > 
-> player=white
-> move=e2-e4
+> player=white  
+> move=e2-e4  
 >
 > 
-> HTTP/1.1 200 OK
+> HTTP/1.1 200 OK  
 
 Сервис принимает запрос `PUT` с набором параметров в виде `x-www-form-urlencoded`, и обрабатывает соответствующий ход. Оба параметра обязательны:
 
@@ -97,12 +97,12 @@
 
 > ПРИМЕР
 > 
-> **PUT** _сервис/GAME1122334455_ HTTP/1.1
-> Host: chessbox.example
-> Content-Type: application/x-www-form-urlencoded
+> **PUT** _сервис/GAME1122334455_ HTTP/1.1  
+> Host: chessbox.example  
+> Content-Type: application/x-www-form-urlencoded  
 > 
-> player=white
-> takeback=true
+> player=white  
+> takeback=true  
 >
 > 
 > HTTP/1.1 200 OK
@@ -122,12 +122,12 @@
 
 > ПРИМЕР
 > 
-> **PUT** _сервис/GAME1122334455_ HTTP/1.1
-> Host: chessbox.example
-> Content-Type: application/x-www-form-urlencoded
+> **PUT** _сервис/GAME1122334455_ HTTP/1.1  
+> Host: chessbox.example  
+> Content-Type: application/x-www-form-urlencoded  
 > 
-> player=white
-> drawoffer=true
+> player=white  
+> drawoffer=true  
 >
 > 
 > HTTP/1.1 200 OK
@@ -148,12 +148,12 @@
 
 > ПРИМЕР
 > 
-> **PUT** _сервис/GAME1122334455_ HTTP/1.1
-> Host: chessbox.example
-> Content-Type: application/x-www-form-urlencoded
+> **PUT** _сервис/GAME1122334455_ HTTP/1.1  
+> Host: chessbox.example  
+> Content-Type: application/x-www-form-urlencoded  
 > 
-> player=white
-> adjourn=true
+> player=white  
+> adjourn=true  
 >
 > 
 > HTTP/1.1 200 OK
@@ -174,12 +174,12 @@
 
 > ПРИМЕР
 > 
-> **PUT** _сервис/GAME1122334455_ HTTP/1.1
-> Host: chessbox.example
-> Content-Type: application/x-www-form-urlencoded
+> **PUT** _сервис/GAME1122334455_ HTTP/1.1  
+> Host: chessbox.example  
+> Content-Type: application/x-www-form-urlencoded  
 > 
-> player=white
-> fortfeit=true
+> player=white  
+> fortfeit=true  
 >
 > 
 > HTTP/1.1 200 OK
@@ -200,8 +200,8 @@
 
 > ПРИМЕР
 > 
-> **DELETE** _сервис/GAME1122334455_ HTTP/1.1
-> Host: chessbox.example
+> **DELETE** _сервис/GAME1122334455_ HTTP/1.1  
+> Host: chessbox.example  
 >
 > 
 > HTTP/1.1 200 OK
@@ -217,8 +217,8 @@
 
 > ПРИМЕР
 > 
-> **GET** _сервис/GAME1122334455_ HTTP/1.1
-> Host: chessbox.example
+> **GET** _сервис/GAME1122334455_ HTTP/1.1  
+> Host: chessbox.example  
 >
 > 
 > HTTP/1.1 200 OK
