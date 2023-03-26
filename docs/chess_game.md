@@ -32,9 +32,9 @@
 > Host: chessbox.example  
 > Content-Type: application/x-www-form-urlencoded  
 >   
-> notify=http://router.chessbox.example:4321/endpoint  
-> notifywhite=http://router2.chessbox.example/player  
-> notifyblack=http://router8.chessbox.example  
+> notify=http://gamescoordinator.chessbox.example:4321/endpoint  
+> white=http://playergate2.chessbox.example/player  
+> black=http://playergate8.chessbox.example  
 > position=4k2r/6r1/8/8/8/8/3R4/R3K3 w Qk - 0 46  
 > timing=40/90 SD/30 +30  
 > timewhite=495  
@@ -48,10 +48,10 @@
 > HTTP/1.1 201 Created  
 > Location: GAME1122334455
 
-Сервис принимает запрос `POST` с набором параметров в виде `x-www-form-urlencoded` и создаёт игру с заданными параметрами:
+Сервис принимает запрос `POST` с набором параметров в виде `x-www-form-urlencoded` и создаёт игру с заданными параметрами (параметры `notify`, `white` и `black` обязательны):
 
-- `notify` — единственный *обязательный* параметр, URL, на который будут отправляться запросы с уведомлениями для сервиса игровых сессий;
-- `notifywhite`, `notifyblack` — URL, на который будут дублироваться запросы с уведомлениями для игрока белыми/чёрными, соответственно;
+- `notify` — URL, на который будут отправляться запросы с уведомлениями для сервиса управления игровыми сессиями;
+- `white`, `black` — URL, на который будут дублироваться запросы с уведомлениями для игрока белыми/чёрными, соответственно (гейты игроков);
 - `position` — стартовая позиция в FEN, по умолчанию — `rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1`;
 - `timing` — формат времени для игры (по умолчанию — игра без учёта времени)
   - в нотации FIDE для классических шахмат (через пробел):
