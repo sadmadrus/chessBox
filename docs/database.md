@@ -2,6 +2,49 @@
 
 Сервис отвечает за ...
 
+```mermaid
+---
+title: Общая схема базы данных
+---  
+classDiagram
+
+class Users {
+  <<users>>
+  int id
+  string username
+  string password_hash
+  datetime created_at
+  string profile_info
+  int win_count
+  int draw_count
+  int loss_count
+}
+
+sessions <|-- users : user_id_white, user_id_black
+sessions : int id
+sessions : int user_id_white
+sessions : int user_id_black
+sessions : string board_usfen
+sessions : datetime created_at
+sessions : datetime updated_at
+sessions : bool is_active
+sessions : int winner
+
+sessions : create()
+sessions : update_board_usfen()
+sessions : update_is_active()
+sessions : get_board_usfen()
+
+moves <|-- sessions : session_id
+moves : int id
+moves : int session_id
+moves : int move_number
+moves : string move
+
+moves : create()
+moves : get_history()
+```
+
 ## Требования к API
 
 ### 1. Пользователи TBC
@@ -111,4 +154,4 @@
   * HttpResponse 400 (данные корректны, ошибка записи в БД)
   * HttpResponse 405 (неправильный метод)
 
-#### 3.2. Получение полной истории ходов для сессии: tbc
+#### 3.2. Получение полной истории ходов для сессии: tbc 
