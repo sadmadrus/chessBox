@@ -8,8 +8,7 @@ title: Общая схема базы данных
 ---  
 classDiagram
 
-class Users {
-  <<users>>
+class users {
   int id
   string username
   string password_hash
@@ -20,29 +19,36 @@ class Users {
   int loss_count
 }
 
-sessions <|-- users : user_id_white, user_id_black
-sessions : int id
-sessions : int user_id_white
-sessions : int user_id_black
-sessions : string board_usfen
-sessions : datetime created_at
-sessions : datetime updated_at
-sessions : bool is_active
-sessions : int winner
+class sessions {
+  int id
+  int user_id_white
+  int user_id_black
+  string board_usfen
+  datetime created_at
+  datetime updated_at
+  bool is_active
+  int winner
+  
+  create()
+  update_board_usfen()
+  update_is_active()
+  get_board_usfen()
+}
 
-sessions : create()
-sessions : update_board_usfen()
-sessions : update_is_active()
-sessions : get_board_usfen()
+sessions <|-- users : id -> user_id_white, user_id_black
 
-moves <|-- sessions : session_id
-moves : int id
-moves : int session_id
-moves : int move_number
-moves : string move
+class moves {
+  int id
+  int session_id
+  int move_number
+  string move
+  
+  create()
+  get_history()
+}
 
-moves : create()
-moves : get_history()
+moves <|-- sessions : id -> session_id
+
 ```
 
 ## Требования к API
