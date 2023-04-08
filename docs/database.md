@@ -7,44 +7,39 @@
 title: Общая схема базы данных
 ---  
 erDiagram
-
-MOVES {
-  int id PK
-  int game_id FK "many-to-many"
-  int move_number
-  string move "e7e8Q is allowed"
-  datetime time
-  int branch
-}
-
-GAMES {
-  int id PK
-  string board_fen
-  datetime created_at
-  datetime updated_at
-  bool is_active
-  int winner
-  bool white_turn
-}
-
-GAMES2USERS {
-   int id PK
-   int user_id FK "many-to-many"
-   int game_id FK "one-to-many"
-   string color "white, black allowed"
- }
-
-USERS {
-  string username UK
-  string email "example@example.example is allowed"
-  string password_hash
-  datetime created_at
-  string profile_info
-}
-
-GAMES <|--|> GAMES2USERS
-GAMES2USERS <|--|> USERS
-MOVES <|--|> GAMES
+  GAMES <|-- GAMES2USERS
+  GAMES2USERS <|-- USERS
+  MOVES <|-- GAMES
+  MOVES {
+    int id PK
+    int game_id FK "many-to-many"
+    int move_number
+    string move "e7e8Q is allowed"
+    datetime time
+    int branch
+  }
+  GAMES {
+    int id PK
+    string board_fen
+    datetime created_at
+    datetime updated_at
+    bool is_active
+    int winner
+    bool white_turn
+  }
+  GAMES2USERS {
+     int id PK
+     int user_id FK "many-to-many"
+     int game_id FK "one-to-many"
+     string color "white, black allowed"
+   }
+  USERS {
+    string username UK
+    string email "example@example.example is allowed"
+    string password_hash
+    datetime created_at
+    string profile_info
+  }
 ```
 
 ## Требования к API
