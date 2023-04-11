@@ -15,6 +15,7 @@ erDiagram
     string move "e7e8Q is allowed"
     datetime start_time
     datetime end_time
+    datetime updated_at
     int branch
   }
   GAMES {
@@ -176,7 +177,7 @@ erDiagram
 
 #### 3.1. Запись хода в таблицу (POST):
 
-Метод создает запись о новом ходе игры game_id в таблицу moves.
+Метод создает запись о новом ходе игры game_id в таблицу moves. Автоматически выставляется branch=0.
 
 ##### Входящие параметры:
 * game_id
@@ -184,7 +185,7 @@ erDiagram
 * move
 * start_time
 * end_time
-* branch
+* updated_at
 
 ##### Возвращает:
 * Header:
@@ -208,3 +209,19 @@ erDiagram
   * `500 Internal Server Error` - данные корректны, ошибка доступа в БД
 * JSON Body:
   * []move
+
+#### 3.3. Отмена хода (PATCH):
+
+Метод отменяет ход, измения записи о нем и последующих ходах в таблице moves, присваивая другое значение branch.
+
+##### Входящие параметры:
+* move_id
+
+##### Возвращает:
+* Header:
+  * `201 Created` - запись отредактирована в БД
+  * `403 Bad Request` - данные некорректны, поэтому не записаны в БД
+  * `405 Method Not Allowed` - неправильный метод
+  * `500 Internal Server Error` - данные корректны, ошибка записи в БД
+* JSON BODY:
+  * branch - присвоенный номер ветки
