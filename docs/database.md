@@ -5,16 +5,16 @@
 Общая схема базы данных
 ```mermaid
 erDiagram
-  GAMES <|-- GAMES2USERS
-  GAMES2USERS <|-- USERS
-  MOVES <|-- GAMES
-  
+  USERS ||--|{ GAMES2USERS : places
+  GAMES2USERS ||--|{ GAMES : places
+  GAMES ||--|{ MOVES : contains
   MOVES {
     int id PK
     int game_id FK "many-to-many"
     int move_number
     string move "e7e8Q is allowed"
-    datetime time
+    datetime start_time
+    datetime end_time
     int branch
   }
   GAMES {
@@ -205,7 +205,8 @@ erDiagram
 * game_id
 * move_number
 * move
-* time
+* start_time
+* end_time
 * branch
 
 ##### Возвращает:
