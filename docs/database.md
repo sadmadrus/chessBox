@@ -8,6 +8,7 @@ erDiagram
   GAMES <|-- GAMES2USERS
   GAMES2USERS <|-- USERS
   MOVES <|-- GAMES
+  
   MOVES {
     int id PK
     int game_id FK "many-to-many"
@@ -40,11 +41,34 @@ erDiagram
   }
 ```
 
+
+test
+```mermaid
+erDiagram
+    CUSTOMER ||--o{ ORDER : places
+    CUSTOMER {
+        string name
+        string custNumber
+        string sector
+    }
+    ORDER ||--|{ LINE-ITEM : contains
+    ORDER {
+        int orderNumber
+        string deliveryAddress
+    }
+    LINE-ITEM {
+        string productCode
+        int quantity
+        float pricePerUnit
+    }
+
+```
+
 ## Требования к API
 
 ### 1. Пользователи
 
-#### 1.1. Создание пользователя (PUT):
+#### 1.1. Создание пользователя (POST):
 
 Метод создает запись о новой игровой сессии в таблице users. Автоматически выставляется время created_at.
 
@@ -64,13 +88,14 @@ erDiagram
 * JSON Body:
   * id пользователя
 
-#### 1.2. Обновление информации о пользователе (PATCH):
+#### 1.2. Обновление информации о пользователе (PUT):
 
 Метод изменяет запись пользователя в таблице users, обновляя соответствующие поля.
 
 ##### Входящие параметры:
 * username
 * profile_info
+* email
 
 ##### Возвращает:
 * Header:
@@ -93,14 +118,17 @@ erDiagram
   * `400 Bad Request` - данные корректны, ошибка доступа к БД
   * `405 Method Not Allowed` - неправильный метод
 * JSON Body:
-  * created_at, profile_info, win_count, draw_count, loss_count
+  * created_at, profile_info, email
 
 
-### 2. Игровые сессии
+### 2. Игры
 
-#### 2.1. Создание игровой сессии (PUT):
+#### 2.1. Создание игры (POST):
 
-Метод создает запись о новой игровой сессии в таблице games. Автоматически выставляется время created_at, updated_at, winner=None, white_turn=true, is_active=true.
+Транзакцией создается:
+* запись о новой игре в таблице games. Автоматически выставляется время created_at, updated_at, winner=None, white_turn=true, is_active=true.
+* запись в таблице games2users для игрока белыми
+* запись в таблице games2users для игрока черными
 
 ##### Входящие параметры:
 * user_id_white
@@ -109,14 +137,16 @@ erDiagram
 
 ##### Возвращает:
 * Header:
-  * `201 Created` - запись создана в БД
+  * `201 Created` - записи созданы в БД
   * `403 Bad Request` - данные некорректны, поэтому не записаны в БД
   * `405 Method Not Allowed` - неправильный метод
   * `500 Internal Server Error` - данные корректны, ошибка записи в БД
 * JSON Body:
-  * id игровой сессии
+  * game_id - id игры
+  * white_id - id записи в таблице games2users для игрока белыми
+  * black_id - id записи в таблице games2users для игрока черными
 
-#### 2.2. Обновление (изменение очередности хода) игровой сессии (PATCH):
+#### 2.2. Обновление (изменение очередности хода) игры (PATCH):
 
 Метод создает изменяет запись игровой сессии по id в таблице games. Обновляются поля board_fen, updated_at, white_turn. При значении outcome != 0, обновляется поле winner и выставляется is_active = false.
 
@@ -132,7 +162,7 @@ erDiagram
   * `405 Method Not Allowed` - неправильный метод
   * `500 Internal Server Error` - данные корректны, ошибка записи в БД
 
-#### 2.3. Обновление статусов игровых сессий (PATCH):
+#### 2.3. Обновление статусов игровых сессий (PUT):
 
 Метод изменяет записи игровых сессии в таблице games, присваивая значение is_active = false тем, для которых поле updated_at не удовлетворяет нужному временному интервалу time_limit. Возвращается массив значений id сессий, которые были переведены в статус Неактивно.
 
@@ -167,9 +197,9 @@ erDiagram
 
 ### 3. История ходов
 
-#### 3.1. Запись хода в таблицу (PUT):
+#### 3.1. Запись хода в таблицу (POST):
 
-Метод создает запись о новом ходе игровой сессии game_id в таблицу moves.
+Метод создает запись о новом ходе игры game_id в таблицу moves.
 
 ##### Входящие параметры:
 * game_id
