@@ -1,8 +1,8 @@
 # Сервис базы данных
 
 Сервис отвечает за структуру, а также за добавление, обновление и получение записей из базы данных.
-Все входящие параметры задаются в виде JSON.
-Ответы возвращаются в виде JSON (время: ISO 8601, UTC с точностью до миллисекунд).
+Все входящие параметры задаются в виде JSON. Ответы возвращаются в виде JSON.
+Метки времени и интервалы времени передаются в формате ISO8601, UTC с точностью до миллисекунд.
 
 Общая схема базы данных
 ```mermaid
@@ -15,8 +15,7 @@ erDiagram
     int game_id FK "many-to-many"
     int move_number
     string move "e7e8Q is allowed"
-    datetime start_time
-    datetime end_time
+    int duration "in milliseconds"
     datetime updated_at
     int branch
   }
@@ -36,7 +35,7 @@ erDiagram
      int id PK
      int username FK "many-to-many"
      int game_id FK "one-to-many"
-     string color "white, black allowed"
+     bool isWhite
    }
   USERS {
     string username UK
@@ -115,6 +114,8 @@ erDiagram
 * user_black
 * board_fen
 * timing
+* time_white
+* time_black
 
 ##### Возвращает:
 * Header:
@@ -189,8 +190,7 @@ erDiagram
 * game_id
 * move_number
 * move
-* start_time
-* end_time
+* duration
 * updated_at
 * branch
 
