@@ -12,7 +12,7 @@ erDiagram
   GAMES ||--o{ MOVES : contains
   MOVES {
     int id PK
-    int game_id FK "many-to-many"
+    int game_id FK "one-to-many"
     int move_number
     string move "e7e8Q is allowed"
     int duration "in milliseconds"
@@ -105,7 +105,7 @@ erDiagram
 #### 2.1. Создание игры (POST):
 
 Транзакцией создается:
-* запись о новой игре в таблице games. Автоматически выставляется время created_at, updated_at, winner=None, white_turn=true, is_active=true.
+* запись о новой игре в таблице games. Автоматически выставляется время created_at, updated_at, winner=None, is_active=true.
 * запись в таблице games2users для игрока белыми
 * запись в таблице games2users для игрока черными
 
@@ -113,6 +113,7 @@ erDiagram
 * user_white
 * user_black
 * board_fen
+* white_turn
 * timing
 * time_white
 * time_black
