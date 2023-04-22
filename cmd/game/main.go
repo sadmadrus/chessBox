@@ -9,7 +9,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/sadmadrus/chessBox/internal/game"
+	"github.com/sadmadrus/chessBox/cmd/game/game"
 )
 
 var (
