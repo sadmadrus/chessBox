@@ -64,7 +64,11 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, "The game server is online and working.")
 	case http.MethodPost:
 		game.Creator(w, r)
+	case http.MethodOptions:
+		w.Header().Set("Allow", "GET, POST, OPTIONS")
+		w.WriteHeader(http.StatusNoContent)
 	default:
+		w.Header().Set("Allow", "GET, POST, OPTIONS")
 		http.Error(w, "Method not allowed.", http.StatusMethodNotAllowed)
 	}
 }
