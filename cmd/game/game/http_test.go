@@ -44,6 +44,9 @@ func TestCreatorSuccess(t *testing.T) {
 		t.Fatalf("want 201, got %v", res.StatusCode)
 	}
 	loc := res.Header.Get("location")
+	if loc == "" {
+		t.Fatal("empty or no Location header")
+	}
 	u, _ := url.Parse(srv.URL)
 	u.Path = loc
 	res, err = http.Get(u.String())
