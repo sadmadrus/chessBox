@@ -50,4 +50,5 @@ func Creator(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Add("location", "/"+string(g.id))
 	w.WriteHeader(http.StatusCreated)
+	g.serveCurrentState(w)
 }

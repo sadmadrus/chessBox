@@ -22,6 +22,7 @@ func TestGameGet(t *testing.T) {
 	if res.StatusCode != http.StatusOK {
 		t.Fatalf("want %v, got %v", http.StatusOK, res.StatusCode)
 	}
+
 	if res.Header.Get("content-type") != "application/json" {
 		t.Fatal("JSON reply expected")
 	}
