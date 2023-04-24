@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
+	"strings"
 	"testing"
 )
 
@@ -45,6 +47,32 @@ func TestGameHead(t *testing.T) {
 	}
 	if res.StatusCode != http.StatusOK {
 		t.Fatalf("want %v, got %v", http.StatusOK, res.StatusCode)
+	}
+}
+
+func TestGameMakeMove(t *testing.T) {
+	srv := serveNewGame(t)
+	defer srv.Close()
+
+	data := url.Values{
+		"player": []string{"white"},
+		"move":   []string{"e2e4"},
+	}
+
+	req, err := http.NewRequest(http.MethodPut, srv.URL, strings.NewReader(data.Encode()))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	req.Header.Set("content", "application/x-www-form-urlencoded")
+
+	res, err := (&http.Client{}).Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("want OK, got %s", res.Status)
 	}
 }
 
