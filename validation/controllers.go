@@ -4,12 +4,35 @@ package validation
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 
 	"github.com/sadmadrus/chessBox/internal/board"
 	"github.com/sadmadrus/chessBox/internal/board/position"
 )
+
+// CanMove возвращает ошибку, если в шахматах такой ход невозможен.
+// TODO: это грязная заглушка, надо переписать по-человечески.
+func CanMove(b board.Board, from, to board.Square, promoteTo board.Piece) error {
+	if !position.IsValid(b) {
+		return errBoardNotValid
+	}
+
+	fromSquare := newSquare(int8(from))
+	toSquare := newSquare(int8(to))
+
+	_, ok, err := advancedLogic(b, fromSquare, toSquare, promoteTo)
+	if err != nil {
+		return fmt.Errorf("can't validate the move: %w", err)
+	}
+
+	if !ok {
+		return fmt.Errorf("invalid move")
+	}
+
+	return nil
+}
 
 // http хендлеры
 

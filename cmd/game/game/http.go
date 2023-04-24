@@ -13,13 +13,10 @@ func Creator(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
-	b, err := io.ReadAll(r.Body)
+	data, err := parseUrlEncoded(r)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Could not read the request's body: %v", err), http.StatusBadRequest)
-	}
-	data, err := url.ParseQuery(string(b))
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Could not parse data: %v", err), http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 
 	manager := data.Get("notify")
@@ -51,4 +48,17 @@ func Creator(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("location", "/"+string(g.id))
 	w.WriteHeader(http.StatusCreated)
 	g.serveCurrentState(w)
+}
+
+// parseUrlEncoded возвращает данные из www-url-encoded.
+func parseUrlEncoded(r *http.Request) (url.Values, error) {
+	b, err := io.ReadAll(r.Body)
+	if err != nil {
+		return nil, fmt.Errorf("could not read the request's body: %w", err)
+	}
+	data, err := url.ParseQuery(string(b))
+	if err != nil {
+		return data, fmt.Errorf("could not parse data: %w", err)
+	}
+	return data, nil
 }
