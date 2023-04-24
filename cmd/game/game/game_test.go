@@ -5,16 +5,14 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-
-	"github.com/sadmadrus/chessBox/internal/board"
 )
 
+const startingFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+
 func TestGameGet(t *testing.T) {
-	g, err := new("none", "none", "none")
-	if err != nil {
-		t.Fatal(err)
-	}
-	srv := httptest.NewServer(g.handler())
+	srv := serveNewGame(t)
+	defer srv.Close()
+
 	res, err := http.Get(srv.URL)
 	if err != nil {
 		t.Fatal(err)
@@ -32,7 +30,29 @@ func TestGameGet(t *testing.T) {
 	if err = json.NewDecoder(res.Body).Decode(&state); err != nil {
 		t.Fatal(err)
 	}
-	if state.FEN != board.Classical().FEN() {
+	if state.FEN != startingFEN {
 		t.Fatalf("want starting position, got %s", state.FEN)
 	}
+}
+
+func TestGameHead(t *testing.T) {
+	srv := serveNewGame(t)
+	defer srv.Close()
+
+	res, err := http.Get(srv.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("want %v, got %v", http.StatusOK, res.StatusCode)
+	}
+}
+
+func serveNewGame(t *testing.T) *httptest.Server {
+	t.Helper()
+	g, err := new("none", "none", "none")
+	if err != nil {
+		t.Fatal(err)
+	}
+	return httptest.NewServer(g.handler())
 }
