@@ -55,7 +55,7 @@ func setupSignalHandling(done chan<- struct{}, s *http.Server) {
 // rootHandler отвечает за обработку запросов к сервису в целом.
 func rootHandler(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/" {
-		http.NotFound(w, r)
+		http.Error(w, "404 Game Not Found", http.StatusNotFound)
 		return
 	}
 
