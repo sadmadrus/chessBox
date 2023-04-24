@@ -2,6 +2,7 @@
 package game
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -68,6 +69,12 @@ type castling board.Castling
 func (c castling) aMove() {
 }
 
+// gameState — модель для ответа о состоянии игры.
+// TODO: остальные поля
+type gameState struct {
+	FEN string `json:"fen"`
+}
+
 func init() {
 	active = make(map[id]*game)
 }
@@ -99,7 +106,35 @@ func (g *game) registerAndServe() error {
 // handler — "ручка" для конкретной игры.
 func (g *game) handler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		http.Error(w, "Not (yet) implemented.", http.StatusNotImplemented)
+		switch r.Method {
+		case http.MethodGet:
+			g.serveCurrentState(w)
+		case http.MethodPut, http.MethodDelete:
+			http.Error(w, "Not (yet) implemented.", http.StatusNotImplemented)
+		case http.MethodOptions:
+			w.Header().Set("Allow", "GET, PUT, DELETE, OPTIONS")
+			w.WriteHeader(http.StatusNoContent)
+		default:
+			w.Header().Set("Allow", "GET, PUT, DELETE, OPTIONS")
+			http.Error(w, "Method not allowed.", http.StatusMethodNotAllowed)
+		}
+	}
+}
+
+// serveCurrentState пишет в ответ текущее состояние игры.
+func (g *game) serveCurrentState(w http.ResponseWriter) {
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(g.currentState()); err != nil {
+		http.Error(w, "Failed to encode the current game state.", http.StatusInternalServerError)
+		log.Printf("error encoding game state: %v", err)
+		return
+	}
+}
+
+// currentState возвращает состояние игры.
+func (g *game) currentState() gameState {
+	return gameState{
+		FEN: g.board.FEN(),
 	}
 }
 
