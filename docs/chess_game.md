@@ -192,7 +192,7 @@
 > Content-Type: application/x-www-form-urlencoded  
 > 
 > player=white  
-> fortfeit=true  
+> forfeit=true  
 >
 > 
 > HTTP/1.1 200 OK
