@@ -99,12 +99,11 @@ func new(manager, white, black string) (*game, error) {
 	}, nil
 }
 
-// registerAndServe запускает игру.
-func (g *game) registerAndServe() error {
+// start запускает игру.
+func (g *game) start() error {
 	if _, ok := active[g.id]; ok {
 		return fmt.Errorf("game already registered")
 	}
-	http.HandleFunc("/"+g.id.string(), g.handler())
 	active[g.id] = g
 	log.Printf("Started serving game: %s", g.id.string())
 	return nil
@@ -119,7 +118,7 @@ func (g *game) handler() http.HandlerFunc {
 		case http.MethodPut:
 			g.handlePut(w, r)
 		case http.MethodDelete:
-			http.Error(w, "Not (yet) implemented.", http.StatusNotImplemented)
+			g.stop()
 		case http.MethodOptions:
 			w.Header().Set("Allow", "GET, PUT, DELETE, OPTIONS")
 			w.WriteHeader(http.StatusNoContent)
@@ -174,6 +173,12 @@ func (g *game) handlePut(w http.ResponseWriter, r *http.Request) {
 	default:
 		http.Error(w, "not (yet) implemented", http.StatusNotImplemented)
 	}
+}
+
+// stop удаляет игру из сервиса.
+func (g *game) stop() {
+	log.Printf("Removing game: %s", g.id.string())
+	delete(active, g.id)
 }
 
 // processMoveRequest обрабатывает запрос на совершение хода

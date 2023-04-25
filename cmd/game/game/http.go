@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 )
 
 // Creator — http.HandlerFunc для создания новой игры.
@@ -40,7 +41,7 @@ func Creator(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("Couldn't create the game: %v", err), http.StatusInternalServerError)
 	}
 
-	err = g.registerAndServe()
+	err = g.start()
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Couldn't start the game: %v", err), http.StatusInternalServerError)
 	}
@@ -48,6 +49,16 @@ func Creator(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("location", "/"+string(g.id))
 	w.WriteHeader(http.StatusCreated)
 	g.serveCurrentState(w)
+}
+
+// GameHandler обрабатывает запросы к играм.
+func GameHandler(w http.ResponseWriter, r *http.Request) {
+	g, ok := active[id(strings.TrimPrefix(r.URL.Path, "/"))]
+	if !ok {
+		http.Error(w, "404 Game Not Found", http.StatusNotFound)
+		return
+	}
+	g.handler()(w, r)
 }
 
 // parseUrlEncoded возвращает данные из www-url-encoded.
