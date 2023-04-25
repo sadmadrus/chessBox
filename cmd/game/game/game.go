@@ -178,8 +178,7 @@ func (g *game) handlePut(w http.ResponseWriter, r *http.Request) {
 
 // processMoveRequest обрабатывает запрос на совершение хода
 func (g *game) processMoveRequest(data url.Values, w http.ResponseWriter) {
-	player := data.Get("player")
-	if !moveIsInTurn(player, g.board.NextToMove()) {
+	if !moveIsInTurn(data.Get("player"), g.board.NextToMove()) {
 		http.Error(w, "wrong turn", http.StatusConflict)
 	}
 
@@ -189,30 +188,23 @@ func (g *game) processMoveRequest(data url.Values, w http.ResponseWriter) {
 		return
 	}
 
+	if err := g.move(m); err != nil {
+		http.Error(w, fmt.Sprintf("move not allowed: %v", err), http.StatusForbidden)
+	}
+}
+
+// move совершает ход. Если возвращена ошибка, состояние игры не изменилось.
+func (g *game) move(m halfMove) error {
 	var promoteTo board.Piece
 	if p, ok := m.(promotion); ok {
 		promoteTo = p.toPiece()
 	}
 
-	if err := validation.CanMove(g.board, m.fromSquare(), m.toSquare(), promoteTo); err != nil {
-		http.Error(w, fmt.Sprintf("move not allowed: %v", err), http.StatusForbidden)
-		return
+	err := validation.CanMove(g.board, m.fromSquare(), m.toSquare(), promoteTo)
+	if err != nil {
+		return err
 	}
 
-	if err := g.doMove(m); err != nil {
-		http.Error(w, fmt.Sprintf("move not allowed: %v", err), http.StatusForbidden)
-	}
-
-	if player == "white" {
-		g.moves = append(g.moves, fullMove{white: m})
-	} else {
-		g.moves[len(g.moves)-1].black = m
-	}
-}
-
-// doMove совершает ход. Ход должен быть предварительно валидирован.
-func (g *game) doMove(m halfMove) error {
-	var err error
 	switch v := m.(type) {
 	case simpleMove:
 		err = g.board.Move(v.fromSquare(), v.toSquare())
@@ -223,7 +215,18 @@ func (g *game) doMove(m halfMove) error {
 	default:
 		err = fmt.Errorf("unknown move type")
 	}
-	return err
+
+	if err != nil {
+		return err
+	}
+
+	if g.board.NextToMove() {
+		g.moves[len(g.moves)-1].black = m
+	} else {
+		g.moves = append(g.moves, fullMove{white: m})
+	}
+
+	return nil
 }
 
 // moveIsInTurn возвращает true, если ход этого игрока.
