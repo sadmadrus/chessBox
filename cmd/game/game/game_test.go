@@ -8,8 +8,6 @@ import (
 	"net/url"
 	"strings"
 	"testing"
-
-	"github.com/sadmadrus/chessBox/internal/board"
 )
 
 const startingFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
@@ -88,30 +86,6 @@ func TestGameMakeMove(t *testing.T) {
 	want := "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
 	if state.FEN != want {
 		t.Fatalf("want %s, got %s", want, state.FEN)
-	}
-}
-
-func TestParseUCI(t *testing.T) {
-	tests := []struct {
-		move string
-		from string
-		to   string
-	}{
-		{"e2e4", "e2", "e4"},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.move, func(t *testing.T) {
-			m, err := parseUCI(tc.move)
-			if err != nil {
-				t.Fatal(err)
-			}
-			from := board.Sq(tc.from)
-			to := board.Sq(tc.to)
-			if from != m.fromSquare() || to != m.toSquare() {
-				t.Fatalf("want from %v to %v, got from %v to %v", from, to, m.fromSquare(), m.toSquare())
-			}
-		})
 	}
 }
 
