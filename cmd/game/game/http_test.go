@@ -76,9 +76,39 @@ func TestGameMakeMove(t *testing.T) {
 	}
 }
 
+func TestGameForfeit(t *testing.T) {
+	g := serveNewGame(t)
+
+	data := url.Values{
+		"player":  []string{"black"},
+		"forfeit": []string{"true"},
+	}
+
+	req := httptest.NewRequest(http.MethodPut, "/", strings.NewReader(data.Encode()))
+	req.Header.Set("content", "application/x-www-form-urlencoded")
+
+	rr := httptest.NewRecorder()
+	handler(g).ServeHTTP(rr, req)
+
+	if rr.Result().StatusCode != http.StatusOK {
+		t.Fatalf("want %v, got %v", http.StatusOK, rr.Result().Status)
+	}
+
+	var state gameState
+	defer rr.Result().Body.Close()
+	if err := json.NewDecoder(rr.Result().Body).Decode(&state); err != nil {
+		t.Fatal(err)
+	}
+
+	want := "1-0"
+	if state.Status != want {
+		t.Fatalf("want %s, got %s", want, state.Status)
+	}
+}
+
 func serveNewGame(t *testing.T) id {
 	t.Helper()
-	g, err := start("none", "none", "none")
+	g, err := start("none", "none", "none", nil)
 	if err != nil {
 		t.Fatal(err)
 	}

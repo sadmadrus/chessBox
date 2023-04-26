@@ -17,6 +17,7 @@ const gameRequestTimeout = time.Second * 3
 
 var (
 	errGameNotFound       = errors.New("game not found")
+	errGameOver           = errors.New("game is already over")
 	errGameRequestTimeout = errors.New("game request timed out")
 	errInvalidMove        = errors.New("move is invalid")
 	errNoPlayerSpecified  = errors.New("player is required, but no valid player is provided")
@@ -92,8 +93,8 @@ type gameState struct {
 	FEN    string `json:"fen"`
 }
 
-// start создаёт новую игру.
-func start(manager, white, black string) (id, error) {
+// start создаёт новую игру.  g.id будет проигнорирован.
+func start(manager, white, black string, g *game) (id, error) {
 	// TODO тут будет проверка, отвечают ли
 	reqCh := make(chan request)
 
@@ -104,7 +105,10 @@ func start(manager, white, black string) (id, error) {
 		_, loaded = games.LoadOrStore(gameId, reqCh)
 	}
 
-	g := &game{id: gameId, board: *board.Classical()}
+	if g == nil {
+		g = &game{board: *board.Classical()}
+	}
+	g.id = gameId
 
 	go func(in <-chan request) {
 		for {
@@ -114,8 +118,8 @@ func start(manager, white, black string) (id, error) {
 				g.returnState(req.replyTo)
 			case stopGame:
 				return
-			case makeMove:
-				g.processMove(req)
+			default:
+				g.processRequest(req)
 			}
 		}
 	}(reqCh)
@@ -138,10 +142,17 @@ func (g *game) state() gameState {
 	}
 }
 
-// processMove обрабатывает запрос хода.
-func (g *game) processMove(r request) {
+// processRequest обрабатывает запрос от игрока.
+func (g *game) processRequest(r request) {
+	var err error
+	switch r.kind {
+	case makeMove:
+		err = g.processMoveRequest(r)
+	case forfeit:
+		err = g.forfeit(r)
+	}
 	res := response{
-		err:   g.processMoveRequest(r),
+		err:   err,
 		state: g.state(),
 	}
 	r.replyTo <- res
@@ -153,6 +164,9 @@ func (g *game) processMove(r request) {
 func (g *game) processMoveRequest(r request) error {
 	if r.player == 0 {
 		return errNoPlayerSpecified
+	}
+	if g.status != ongoing {
+		return errGameOver
 	}
 	if !moveIsInTurn(r.player, g.board.NextToMove()) {
 		return errWrongTurn
@@ -200,6 +214,31 @@ func (g *game) move(m halfMove) error {
 	return nil
 }
 
+// forfeit обрабатывает сдачу в игре.
+func (g *game) forfeit(r request) error {
+	if g.status != ongoing {
+		return errGameOver
+	}
+	if r.player != white && r.player != black {
+		return errNoPlayerSpecified
+	}
+	if r.player == white {
+		g.win(black)
+	}
+	g.win(white)
+	return nil
+}
+
+// win переводит игру в состояние выигрыша указанного игрока.
+func (g *game) win(p player) {
+	switch p {
+	case white:
+		g.status = whiteWon
+	case black:
+		g.status = blackWon
+	}
+}
+
 // moveIsInTurn возвращает true, если ход этого игрока.
 func moveIsInTurn(p player, whiteToMove bool) bool {
 	if p == white {
@@ -238,6 +277,7 @@ func requestWithTimeout(r request, game id) (response, error) {
 	select {
 	case ch.(chan request) <- r:
 	case <-time.After(gameRequestTimeout):
+		log.Printf("sending request to game %v timed out", game.string())
 		return response{}, errGameRequestTimeout
 	}
 
@@ -245,6 +285,7 @@ func requestWithTimeout(r request, game id) (response, error) {
 	case res := <-r.replyTo:
 		return res, nil
 	case <-time.After(gameRequestTimeout):
+		log.Printf("waiting for response from game %v timed out", game.string())
 		return response{}, errGameRequestTimeout
 	}
 }

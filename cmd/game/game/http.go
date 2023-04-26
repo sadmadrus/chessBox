@@ -38,7 +38,7 @@ func Creator(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	g, err := start(manager, white, black)
+	g, err := start(manager, white, black, nil)
 	if err != nil {
 		// TODO проверка, не вернуть ли 408
 		http.Error(w, fmt.Sprintf("Couldn't create the game: %v", err), http.StatusInternalServerError)
@@ -153,22 +153,35 @@ func handlePut(game id, w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "can't parse move", http.StatusBadRequest)
 			return
 		}
+	case forfeit:
 	default:
 		http.Error(w, "not (yet) implemented", http.StatusNotImplemented)
 	}
 
 	res, err := requestWithTimeout(req, game)
-	switch {
-	case errors.Is(err, errGameNotFound):
-		http.Error(w, "404 Game Not Found", http.StatusNotFound)
+	if err != nil {
+		if errors.Is(err, errGameNotFound) {
+			http.Error(w, "404 Game Not Found", http.StatusNotFound)
+			return
+		}
+		if errors.Is(err, errGameRequestTimeout) {
+			http.Error(w, "503 Status Unavailable", http.StatusServiceUnavailable)
+			return
+		}
+		http.Error(w, "Unknown Server Error", http.StatusInternalServerError)
+		log.Printf("unexpected error: %v", err)
 		return
-	case errors.Is(err, errGameRequestTimeout):
-		http.Error(w, "503 Status Unavailable", http.StatusServiceUnavailable)
-		return
-	case errors.Is(err, errWrongTurn):
-		http.Error(w, "wrong turn", http.StatusConflict)
-	case err != nil:
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	}
+	if res.err != nil {
+		switch {
+		case errors.Is(res.err, errGameNotFound):
+			http.Error(w, "404 Game Not Found", http.StatusNotFound)
+			return
+		case errors.Is(res.err, errWrongTurn) || errors.Is(err, errGameOver):
+			http.Error(w, res.err.Error(), http.StatusConflict)
+		default:
+			http.Error(w, res.err.Error(), http.StatusBadRequest)
+		}
 	}
 
 	serveState(w, res.state)
