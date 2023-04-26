@@ -157,6 +157,8 @@ func handlePut(game id, w http.ResponseWriter, r *http.Request) {
 	case forfeit:
 	default:
 		w.WriteHeader(http.StatusNotImplemented)
+		serveCurrentState(game, w)
+		return
 	}
 
 	res, err := requestWithTimeout(req, game)
