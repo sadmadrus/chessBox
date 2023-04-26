@@ -16,29 +16,29 @@ func TestGame(t *testing.T) {
 		wantErr    error
 	}{
 		"move_after_won": {
-			board.Classical().FEN(), blackWon,
+			startingFEN, blackWon,
 			request{player: white, kind: makeMove, move: parseMove(t, "e2e4")},
-			board.Classical().FEN(), errGameOver,
+			startingFEN, errGameOver,
 		},
 		"move_out_of_turn": {
-			board.Classical().FEN(), ongoing,
+			startingFEN, ongoing,
 			request{player: black, kind: makeMove, move: parseMove(t, "g8f6")},
-			board.Classical().FEN(), errWrongTurn,
+			startingFEN, errWrongTurn,
 		},
 		"valid_move": {
-			board.Classical().FEN(), ongoing,
+			startingFEN, ongoing,
 			request{player: white, kind: makeMove, move: parseMove(t, "e2e4")},
 			"rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1", nil,
 		},
 		"illegal_move": {
-			board.Classical().FEN(), ongoing,
+			startingFEN, ongoing,
 			request{player: white, kind: makeMove, move: parseMove(t, "a1a4")},
-			board.Classical().FEN(), errInvalidMove,
+			startingFEN, errInvalidMove,
 		},
 		"forfeit_after_draw": {
-			board.Classical().FEN(), drawn,
+			startingFEN, drawn,
 			request{player: white, kind: forfeit, move: nil},
-			board.Classical().FEN(), errGameOver,
+			startingFEN, errGameOver,
 		},
 	}
 

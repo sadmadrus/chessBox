@@ -13,6 +13,20 @@ const startingFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 
 const urlencoded = "application/x-www-form-urlencoded"
 
+func TestCreatorFail(t *testing.T) {
+	data := url.Values{
+		"white": []string{"localhost:5566"},
+		"black": []string{"127.0.0.1:8899"},
+	}
+	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(data.Encode()))
+	rr := httptest.NewRecorder()
+	http.HandlerFunc(Creator).ServeHTTP(rr, req)
+
+	if rr.Result().StatusCode != http.StatusBadRequest {
+		t.Fatalf("want 400, got %v", rr.Result().Status)
+	}
+}
+
 func TestGameGet(t *testing.T) {
 	g := serveNewGame(t)
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
