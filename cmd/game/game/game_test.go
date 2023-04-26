@@ -17,22 +17,22 @@ func TestGame(t *testing.T) {
 	}{
 		"move_after_won": {
 			startingFEN, blackWon,
-			request{player: white, kind: makeMove, move: parseMove(t, "e2e4")},
+			request{player: white, kind: makeMove, move: parseMove("e2e4")},
 			startingFEN, errGameOver,
 		},
 		"move_out_of_turn": {
 			startingFEN, ongoing,
-			request{player: black, kind: makeMove, move: parseMove(t, "g8f6")},
+			request{player: black, kind: makeMove, move: parseMove("g8f6")},
 			startingFEN, errWrongTurn,
 		},
 		"valid_move": {
 			startingFEN, ongoing,
-			request{player: white, kind: makeMove, move: parseMove(t, "e2e4")},
+			request{player: white, kind: makeMove, move: parseMove("e2e4")},
 			"rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1", nil,
 		},
 		"illegal_move": {
 			startingFEN, ongoing,
-			request{player: white, kind: makeMove, move: parseMove(t, "a1a4")},
+			request{player: white, kind: makeMove, move: parseMove("a1a4")},
 			startingFEN, errInvalidMove,
 		},
 		"forfeit_after_draw": {
@@ -67,8 +67,7 @@ func TestGame(t *testing.T) {
 	}
 }
 
-func parseMove(t *testing.T, uci string) halfMove {
-	t.Helper()
+func parseMove(uci string) halfMove {
 	m, _ := parseUCI(uci)
 	return m
 }
