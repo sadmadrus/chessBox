@@ -5,10 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"math/rand"
 	"sync"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/sadmadrus/chessBox/internal/board"
 	"github.com/sadmadrus/chessBox/validation"
 )
@@ -250,14 +250,9 @@ func moveIsInTurn(p player, whiteToMove bool) bool {
 	return false
 }
 
-// newId генерирует уникальный id для игры.
+// newId генерирует id для игры (уникальность здесь не проверяется).
 func newId() id {
-	err := fmt.Errorf("not nil")
-	var u uuid.UUID
-	for err != nil {
-		u, err = uuid.NewRandom()
-	}
-	return id(u.String())
+	return id(fmt.Sprint(time.Now().UTC().Format("002150405"), rand.Int()))
 }
 
 func (i id) string() string {
