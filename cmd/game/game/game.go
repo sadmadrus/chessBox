@@ -235,7 +235,11 @@ func requestWithTimeout(r request, game id) (response, error) {
 		r.replyTo = make(chan response)
 	}
 
-	go func() { ch.(chan request) <- r }()
+	select {
+	case ch.(chan request) <- r:
+	case <-time.After(gameRequestTimeout):
+		return response{}, errGameRequestTimeout
+	}
 
 	select {
 	case res := <-r.replyTo:
