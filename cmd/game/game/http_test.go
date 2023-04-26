@@ -1,28 +1,86 @@
-package game_test
+package game
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
-
-	"github.com/sadmadrus/chessBox/cmd/game/game"
 )
 
-func TestCreatorFail(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(game.Creator))
-	defer srv.Close()
+const startingFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+
+func TestGameGet(t *testing.T) {
+	g := serveNewGame(t)
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	rr := httptest.NewRecorder()
+	handler(g).ServeHTTP(rr, req)
+
+	if rr.Result().StatusCode != http.StatusOK {
+		t.Fatalf("want %v, got %v", http.StatusOK, rr.Result().Status)
+	}
+
+	if rr.Result().Header.Get("content-type") != "application/json" {
+		t.Fatal("JSON reply expected")
+	}
+
+	var state gameState
+	defer rr.Result().Body.Close()
+	if err := json.NewDecoder(rr.Result().Body).Decode(&state); err != nil {
+		t.Fatal(err)
+	}
+	if state.FEN != startingFEN {
+		t.Fatalf("want starting position, got %s", state.FEN)
+	}
+}
+
+func TestGameHead(t *testing.T) {
+	g := serveNewGame(t)
+	req := httptest.NewRequest(http.MethodHead, "/", nil)
+	rr := httptest.NewRecorder()
+	handler(g).ServeHTTP(rr, req)
+
+	if rr.Result().StatusCode != http.StatusOK {
+		t.Fatalf("want %v, got %v", http.StatusOK, rr.Result().Status)
+	}
+}
+
+func TestGameMakeMove(t *testing.T) {
+	g := serveNewGame(t)
 
 	data := url.Values{
-		"white": []string{"localhost:5566"},
-		"black": []string{"127.0.0.1:8899"},
+		"player": []string{"white"},
+		"move":   []string{"e2e4"},
 	}
-	res, err := http.Post(srv.URL, "application/x-www-form-urlencoded", strings.NewReader(data.Encode()))
+
+	req := httptest.NewRequest(http.MethodPut, "/", strings.NewReader(data.Encode()))
+	req.Header.Set("content", "application/x-www-form-urlencoded")
+
+	rr := httptest.NewRecorder()
+	handler(g).ServeHTTP(rr, req)
+
+	if rr.Result().StatusCode != http.StatusOK {
+		t.Fatalf("want %v, got %v", http.StatusOK, rr.Result().Status)
+	}
+
+	var state gameState
+	defer rr.Result().Body.Close()
+	if err := json.NewDecoder(rr.Result().Body).Decode(&state); err != nil {
+		t.Fatal(err)
+	}
+
+	want := "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
+	if state.FEN != want {
+		t.Fatalf("want %s, got %s", want, state.FEN)
+	}
+}
+
+func serveNewGame(t *testing.T) id {
+	t.Helper()
+	g, err := start("none", "none", "none")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if res.StatusCode != http.StatusBadRequest {
-		t.Fatalf("want 400, got %v", res.StatusCode)
-	}
+	return g
 }

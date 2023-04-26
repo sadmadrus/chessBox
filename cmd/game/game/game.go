@@ -2,33 +2,39 @@
 package game
 
 import (
-	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
-	"net/http"
-	"net/url"
 	"sync"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/sadmadrus/chessBox/internal/board"
 	"github.com/sadmadrus/chessBox/validation"
 )
 
+const gameRequestTimeout = time.Second * 3
+
+var (
+	errGameNotFound       = errors.New("game not found")
+	errGameRequestTimeout = errors.New("game request timed out")
+	errInvalidMove        = errors.New("move is invalid")
+	errNoPlayerSpecified  = errors.New("player is required, but no valid player is provided")
+	errWrongTurn          = errors.New("wrong turn to move")
+)
+
 const errCantParse = "failed to parse"
 
 // games содержит игры под управлением данного микросервиса.
-// Использует ключ типа id и значение типа *game.
+// Использует ключ типа id и значение типа chan request.
 var games sync.Map
 
 // game представляет игру в шахматы.
 type game struct {
-	id      id
-	board   board.Board
-	manager string // менеджер игровых сессий
-	white   string // гейт, играющий за белых
-	black   string // гейт, играющий за чёрных
-	state   state
-	moves   []fullMove // основная вариация
+	id     id
+	board  board.Board
+	status state
+	moves  []fullMove // основная вариация
 }
 
 // id — идентификатор игры.
@@ -44,7 +50,29 @@ const (
 	blackWon
 )
 
-// kindOfRequest показывает, что хочет игрок.
+// request представляет собой запрос на изменение состояния игры.
+type request struct {
+	player  player
+	kind    kindOfRequest
+	move    halfMove
+	replyTo chan response // канал будет закрыт после отсылки ответа
+}
+
+// response представляет собой ответ игры на запрос об изменении состояния.
+type response struct {
+	err   error
+	state gameState
+}
+
+// player указывает на игрока, отправившего запрос.
+type player int
+
+const (
+	white player = iota + 1
+	black
+)
+
+// kindOfRequest показывает, что нужно сделать с игрой.
 type kindOfRequest int
 
 const (
@@ -53,124 +81,87 @@ const (
 	draw
 	adjourn
 	forfeit
+	showState
+	stopGame
 )
 
 // gameState — модель для ответа о состоянии игры.
 // TODO: остальные поля
 type gameState struct {
-	FEN string `json:"fen"`
+	Status string `json:"status"`
+	FEN    string `json:"fen"`
 }
 
-// new создаёт новую игру.
-func new(manager, white, black string) (*game, error) {
+// start создаёт новую игру.
+func start(manager, white, black string) (id, error) {
 	// TODO тут будет проверка, отвечают ли
-	return &game{
-		id:      newId(),
-		manager: manager,
-		white:   white,
-		black:   black,
-		state:   ongoing,
-		board:   *board.Classical(),
-	}, nil
-}
+	reqCh := make(chan request)
 
-// start запускает игру.
-func (g *game) start() error {
-	if _, ok := games.Load(g.id); ok {
-		return fmt.Errorf("game already registered")
+	var gameId id
+	loaded := true
+	for loaded {
+		gameId = newId()
+		_, loaded = games.LoadOrStore(gameId, reqCh)
 	}
-	games.Store(g.id, g)
-	log.Printf("Started serving game: %s", g.id.string())
-	return nil
-}
 
-// handler — "ручка" для конкретной игры.
-func (g *game) handler() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case http.MethodGet:
-			g.serveCurrentState(w)
-		case http.MethodPut:
-			g.handlePut(w, r)
-		case http.MethodDelete:
-			g.stop()
-		case http.MethodOptions:
-			w.Header().Set("Allow", "GET, PUT, DELETE, OPTIONS")
-			w.WriteHeader(http.StatusNoContent)
-		default:
-			w.Header().Set("Allow", "GET, PUT, DELETE, OPTIONS")
-			http.Error(w, "Method not allowed.", http.StatusMethodNotAllowed)
+	g := &game{id: gameId, board: *board.Classical()}
+
+	go func(in <-chan request) {
+		for {
+			req := <-in
+			switch req.kind {
+			case showState:
+				g.returnState(req.replyTo)
+			case stopGame:
+				return
+			case makeMove:
+				g.processMove(req)
+			}
 		}
-	}
+	}(reqCh)
+
+	log.Printf("Started serving game: %s", g.id.string())
+
+	return gameId, nil
 }
 
-// serveCurrentState пишет в ответ текущее состояние игры.
-func (g *game) serveCurrentState(w http.ResponseWriter) {
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(g.currentState()); err != nil {
-		http.Error(w, "Failed to encode the current game state.", http.StatusInternalServerError)
-		log.Printf("error encoding game state: %v", err)
-		return
-	}
+// returnState возвращает состояние игры.
+func (g *game) returnState(out chan<- response) {
+	out <- response{nil, g.state()}
+	close(out)
 }
 
-// currentState возвращает состояние игры.
-func (g *game) currentState() gameState {
+func (g *game) state() gameState {
 	return gameState{
-		FEN: g.board.FEN(),
+		Status: g.status.string(),
+		FEN:    g.board.FEN(),
 	}
 }
 
-// handlePut обрабатывает PUT-запросы для игры.
-func (g *game) handlePut(w http.ResponseWriter, r *http.Request) {
-	data, err := parseUrlEncoded(r)
+// processMove обрабатывает запрос хода.
+func (g *game) processMove(r request) {
+	res := response{
+		err:   g.processMoveRequest(r),
+		state: g.state(),
+	}
+	r.replyTo <- res
+	close(r.replyTo)
+}
+
+// processMoveRequest обрабатывает запрос хода и совершает ход, если он легален;
+// если возвращена ошибка, состояние игры не изменилось.
+func (g *game) processMoveRequest(r request) error {
+	if r.player == 0 {
+		return errNoPlayerSpecified
+	}
+	if !moveIsInTurn(r.player, g.board.NextToMove()) {
+		return errWrongTurn
+	}
+	err := g.move(r.move)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+		return fmt.Errorf("%w: %v", errInvalidMove, err)
 	}
-
-	player := data.Get("player")
-	if player != "white" && player != "black" {
-		http.Error(w, "no valid player specified", http.StatusBadRequest)
-		return
-	}
-
-	req := identifyRequest(data)
-	if req == 0 {
-		http.Error(w, "can't parse the request", http.StatusBadRequest)
-		return
-	}
-
-	switch req {
-	case makeMove:
-		g.processMoveRequest(data, w)
-	default:
-		http.Error(w, "not (yet) implemented", http.StatusNotImplemented)
-	}
-	g.serveCurrentState(w)
-}
-
-// stop удаляет игру из сервиса.
-func (g *game) stop() {
-	log.Printf("Removing game: %s", g.id.string())
-	games.Delete(g.id)
-}
-
-// processMoveRequest обрабатывает запрос на совершение хода
-func (g *game) processMoveRequest(data url.Values, w http.ResponseWriter) {
-	if !moveIsInTurn(data.Get("player"), g.board.NextToMove()) {
-		http.Error(w, "wrong turn", http.StatusConflict)
-	}
-
-	m, err := parseUCI(data.Get("move"))
-	if err != nil {
-		http.Error(w, "can't parse move", http.StatusBadRequest)
-		return
-	}
-
-	if err := g.move(m); err != nil {
-		http.Error(w, fmt.Sprintf("move not allowed: %v", err), http.StatusForbidden)
-	}
+	return nil
 }
 
 // move совершает ход. Если возвращена ошибка, состояние игры не изменилось.
@@ -210,36 +201,14 @@ func (g *game) move(m halfMove) error {
 }
 
 // moveIsInTurn возвращает true, если ход этого игрока.
-func moveIsInTurn(player string, whiteToMove bool) bool {
-	if player == "white" {
+func moveIsInTurn(p player, whiteToMove bool) bool {
+	if p == white {
 		return whiteToMove
 	}
-	return !whiteToMove
-}
-
-// identifyRequest возвращает тип запроса.
-func identifyRequest(data url.Values) kindOfRequest {
-	var have []kindOfRequest
-
-	keys := map[string]kindOfRequest{
-		"move":      makeMove,
-		"takeback":  takeback,
-		"drawoffer": draw,
-		"adjourn":   adjourn,
-		"forfeit":   forfeit,
+	if p == black {
+		return !whiteToMove
 	}
-
-	for k, v := range keys {
-		if data.Get(k) != "" {
-			have = append(have, v)
-		}
-	}
-
-	if len(have) != 1 {
-		return 0
-	}
-
-	return have[0]
+	return false
 }
 
 // newId генерирует уникальный id для игры.
@@ -254,4 +223,39 @@ func newId() id {
 
 func (i id) string() string {
 	return string(i)
+}
+
+func requestWithTimeout(r request, game id) (response, error) {
+	ch, ok := games.Load(game)
+	if !ok {
+		return response{}, errGameNotFound
+	}
+
+	if r.replyTo == nil {
+		r.replyTo = make(chan response)
+	}
+
+	go func() { ch.(chan request) <- r }()
+
+	select {
+	case res := <-r.replyTo:
+		return res, nil
+	case <-time.After(gameRequestTimeout):
+		return response{}, errGameRequestTimeout
+	}
+}
+
+func (st state) string() string {
+	switch st {
+	case ongoing:
+		return "ongoing"
+	case drawn:
+		return "1/2-1/2"
+	case whiteWon:
+		return "1-0"
+	case blackWon:
+		return "0-1"
+	default:
+		return ""
+	}
 }
