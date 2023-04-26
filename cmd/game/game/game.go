@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"sync"
 
 	"github.com/google/uuid"
 	"github.com/sadmadrus/chessBox/internal/board"
@@ -15,8 +16,8 @@ import (
 
 const errCantParse = "failed to parse"
 
-// active содержит игры под управлением данного микросервиса.
-var active map[id]*game
+// games содержит игры под управлением данного микросервиса.
+var games sync.Map
 
 // game представляет игру в шахматы.
 type game struct {
@@ -59,10 +60,6 @@ type gameState struct {
 	FEN string `json:"fen"`
 }
 
-func init() {
-	active = make(map[id]*game)
-}
-
 // new создаёт новую игру.
 func new(manager, white, black string) (*game, error) {
 	// TODO тут будет проверка, отвечают ли
@@ -78,10 +75,10 @@ func new(manager, white, black string) (*game, error) {
 
 // start запускает игру.
 func (g *game) start() error {
-	if _, ok := active[g.id]; ok {
+	if _, ok := games.Load(g.id); ok {
 		return fmt.Errorf("game already registered")
 	}
-	active[g.id] = g
+	games.Store(g.id, g)
 	log.Printf("Started serving game: %s", g.id.string())
 	return nil
 }
@@ -155,7 +152,7 @@ func (g *game) handlePut(w http.ResponseWriter, r *http.Request) {
 // stop удаляет игру из сервиса.
 func (g *game) stop() {
 	log.Printf("Removing game: %s", g.id.string())
-	delete(active, g.id)
+	games.Delete(g.id)
 }
 
 // processMoveRequest обрабатывает запрос на совершение хода

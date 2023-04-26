@@ -53,12 +53,12 @@ func Creator(w http.ResponseWriter, r *http.Request) {
 
 // GameHandler обрабатывает запросы к играм.
 func GameHandler(w http.ResponseWriter, r *http.Request) {
-	g, ok := active[id(strings.TrimPrefix(r.URL.Path, "/"))]
+	g, ok := games.Load(id(strings.TrimPrefix(r.URL.Path, "/")))
 	if !ok {
 		http.Error(w, "404 Game Not Found", http.StatusNotFound)
 		return
 	}
-	g.handler()(w, r)
+	g.(*game).handler()(w, r)
 }
 
 // parseUrlEncoded возвращает данные из www-url-encoded.
