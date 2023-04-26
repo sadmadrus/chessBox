@@ -42,6 +42,7 @@ func Creator(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		// TODO проверка, не вернуть ли 408
 		http.Error(w, fmt.Sprintf("Couldn't create the game: %v", err), http.StatusInternalServerError)
+		return
 	}
 
 	w.Header().Add("location", "/"+string(g))
@@ -155,7 +156,7 @@ func handlePut(game id, w http.ResponseWriter, r *http.Request) {
 		}
 	case forfeit:
 	default:
-		http.Error(w, "not (yet) implemented", http.StatusNotImplemented)
+		w.WriteHeader(http.StatusNotImplemented)
 	}
 
 	res, err := requestWithTimeout(req, game)
@@ -178,9 +179,11 @@ func handlePut(game id, w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "404 Game Not Found", http.StatusNotFound)
 			return
 		case errors.Is(res.err, errWrongTurn) || errors.Is(err, errGameOver):
-			http.Error(w, res.err.Error(), http.StatusConflict)
+			w.WriteHeader(http.StatusConflict)
+		case errors.Is(res.err, errInvalidMove):
+			w.WriteHeader(http.StatusForbidden)
 		default:
-			http.Error(w, res.err.Error(), http.StatusBadRequest)
+			w.WriteHeader(http.StatusBadRequest)
 		}
 	}
 

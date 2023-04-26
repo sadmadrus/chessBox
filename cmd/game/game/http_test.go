@@ -11,6 +11,8 @@ import (
 
 const startingFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 
+const urlencoded = "application/x-www-form-urlencoded"
+
 func TestGameGet(t *testing.T) {
 	g := serveNewGame(t)
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -55,7 +57,7 @@ func TestGameMakeMove(t *testing.T) {
 	}
 
 	req := httptest.NewRequest(http.MethodPut, "/", strings.NewReader(data.Encode()))
-	req.Header.Set("content", "application/x-www-form-urlencoded")
+	req.Header.Set("content", urlencoded)
 
 	rr := httptest.NewRecorder()
 	handler(g).ServeHTTP(rr, req)
@@ -74,6 +76,29 @@ func TestGameMakeMove(t *testing.T) {
 	if state.FEN != want {
 		t.Fatalf("want %s, got %s", want, state.FEN)
 	}
+
+	data.Set("player", "black")
+	data.Set("move", "d8d1")
+
+	req = httptest.NewRequest(http.MethodPut, "/", strings.NewReader(data.Encode()))
+	req.Header.Set("content", urlencoded)
+
+	rr = httptest.NewRecorder()
+	handler(g).ServeHTTP(rr, req)
+
+	if rr.Result().StatusCode != http.StatusForbidden {
+		t.Fatalf("want %v, got %v", http.StatusForbidden, rr.Result().Status)
+	}
+
+	defer rr.Result().Body.Close()
+	if err := json.NewDecoder(rr.Result().Body).Decode(&state); err != nil {
+		t.Fatal(err)
+	}
+
+	if state.FEN != want {
+		t.Fatalf("want %s, got %s", want, state.FEN)
+	}
+
 }
 
 func TestGameForfeit(t *testing.T) {
@@ -85,7 +110,7 @@ func TestGameForfeit(t *testing.T) {
 	}
 
 	req := httptest.NewRequest(http.MethodPut, "/", strings.NewReader(data.Encode()))
-	req.Header.Set("content", "application/x-www-form-urlencoded")
+	req.Header.Set("content", urlencoded)
 
 	rr := httptest.NewRecorder()
 	handler(g).ServeHTTP(rr, req)
