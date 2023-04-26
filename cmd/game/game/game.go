@@ -17,6 +17,7 @@ import (
 const errCantParse = "failed to parse"
 
 // games содержит игры под управлением данного микросервиса.
+// Использует ключ типа id и значение типа *game.
 var games sync.Map
 
 // game представляет игру в шахматы.
