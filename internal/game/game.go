@@ -16,6 +16,7 @@ import (
 const gameRequestTimeout = time.Second * 3
 
 var (
+	ErrCantParse          = errors.New("failed to parse")
 	ErrGameNotFound       = errors.New("game not found")
 	ErrGameOver           = errors.New("game is already over")
 	ErrGameRequestTimeout = errors.New("game request timed out")
@@ -23,8 +24,6 @@ var (
 	ErrNoPlayerSpecified  = errors.New("player is required, but no valid player is provided")
 	ErrWrongTurn          = errors.New("wrong turn to move")
 )
-
-const errCantParse = "failed to parse"
 
 // games содержит игры под управлением данного микросервиса.
 // Использует ключ типа id и значение типа chan request.
@@ -56,13 +55,13 @@ type Request struct {
 	Player  Player
 	Kind    RequestType
 	Move    Move
-	ReplyTo chan Response // канал будет закрыт после отсылки ответа
+	ReplyTo chan response // канал будет закрыт после отсылки ответа
 }
 
-// Response представляет собой ответ игры на запрос об изменении состояния.
-type Response struct {
-	Error error
-	State State
+// response представляет собой ответ игры на запрос об изменении состояния.
+type response struct {
+	err   error
+	state State
 }
 
 type Player int
@@ -135,8 +134,8 @@ func start(manager, white, black string, g *game) (ID, error) {
 }
 
 // returnState возвращает состояние игры.
-func (g *game) returnState(out chan<- Response) {
-	out <- Response{nil, g.state()}
+func (g *game) returnState(out chan<- response) {
+	out <- response{nil, g.state()}
 	close(out)
 }
 
@@ -156,9 +155,9 @@ func (g *game) processRequest(r Request) {
 	case Forfeit:
 		err = g.forfeit(r)
 	}
-	res := Response{
-		Error: err,
-		State: g.state(),
+	res := response{
+		err:   err,
+		state: g.state(),
 	}
 	r.ReplyTo <- res
 	close(r.ReplyTo)
@@ -270,29 +269,30 @@ func (id ID) String() string {
 	return string(id)
 }
 
-func (id ID) Do(r Request) (Response, error) {
+func (id ID) Do(r Request) (State, error) {
 	ch, ok := games.Load(id)
 	if !ok {
-		return Response{}, ErrGameNotFound
+		return State{}, ErrGameNotFound
 	}
 
 	if r.ReplyTo == nil {
-		r.ReplyTo = make(chan Response)
+		r.ReplyTo = make(chan response)
 	}
 
 	select {
 	case ch.(chan Request) <- r:
 	case <-time.After(gameRequestTimeout):
 		log.Printf("sending request to game %v timed out", id.String())
-		return Response{}, ErrGameRequestTimeout
+		return State{}, ErrGameRequestTimeout
 	}
 
 	select {
 	case res := <-r.ReplyTo:
-		return res, nil
+		err := res.err
+		return res.state, err
 	case <-time.After(gameRequestTimeout):
 		log.Printf("waiting for response from game %v timed out", id.String())
-		return Response{}, ErrGameRequestTimeout
+		return State{}, ErrGameRequestTimeout
 	}
 }
 

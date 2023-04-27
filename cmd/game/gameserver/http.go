@@ -135,7 +135,7 @@ func serveCurrentState(g game.ID, w http.ResponseWriter) {
 		log.Printf("unexpected error: %v", err)
 		return
 	}
-	serveState(w, res.State)
+	serveState(w, res)
 }
 
 // serveState пишет в ответ текущее состояние игры.
@@ -185,33 +185,23 @@ func handlePut(g game.ID, w http.ResponseWriter, r *http.Request) {
 
 	res, err := g.Do(req)
 	if err != nil {
-		if errors.Is(err, game.ErrGameNotFound) {
+		switch {
+		case errors.Is(err, game.ErrGameNotFound):
 			http.Error(w, "404 Game Not Found", http.StatusNotFound)
 			return
-		}
-		if errors.Is(err, game.ErrGameRequestTimeout) {
+		case errors.Is(err, game.ErrGameRequestTimeout):
 			http.Error(w, "503 Status Unavailable", http.StatusServiceUnavailable)
 			return
-		}
-		http.Error(w, "Unknown Server Error", http.StatusInternalServerError)
-		log.Printf("unexpected error: %v", err)
-		return
-	}
-	if res.Error != nil {
-		switch {
-		case errors.Is(res.Error, game.ErrGameNotFound):
-			http.Error(w, "404 Game Not Found", http.StatusNotFound)
-			return
-		case errors.Is(res.Error, game.ErrWrongTurn) || errors.Is(err, game.ErrGameOver):
+		case errors.Is(err, game.ErrWrongTurn) || errors.Is(err, game.ErrGameOver):
 			w.WriteHeader(http.StatusConflict)
-		case errors.Is(res.Error, game.ErrInvalidMove):
+		case errors.Is(err, game.ErrInvalidMove):
 			w.WriteHeader(http.StatusForbidden)
 		default:
 			w.WriteHeader(http.StatusBadRequest)
 		}
 	}
 
-	serveState(w, res.State)
+	serveState(w, res)
 }
 
 func getPlayer(data url.Values) game.Player {

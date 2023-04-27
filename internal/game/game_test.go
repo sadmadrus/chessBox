@@ -56,15 +56,13 @@ func TestGame(t *testing.T) {
 				t.Fatal(err)
 			}
 			res, err := g.Do(tc.request)
-			if err != nil {
-				t.Fatal(err)
+			if !errors.Is(err, tc.wantErr) {
+				t.Fatalf("want %v, got %v", tc.wantErr, err)
 			}
-			if res.State.FEN != tc.wantFEN {
-				t.Fatalf("want %s, got %s", tc.wantFEN, res.State.FEN)
+			if res.FEN != tc.wantFEN {
+				t.Fatalf("want %s, got %s", tc.wantFEN, res.FEN)
 			}
-			if !errors.Is(res.Error, tc.wantErr) {
-				t.Fatalf("want %v, got %v", tc.wantErr, res.Error)
-			}
+
 		})
 	}
 }

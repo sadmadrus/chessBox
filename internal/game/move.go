@@ -1,8 +1,6 @@
 package game
 
 import (
-	"fmt"
-
 	"github.com/sadmadrus/chessBox/internal/board"
 )
 
@@ -74,7 +72,7 @@ func (c castling) ToSquare() board.Square {
 // ParseUCI парсит ход из UCI-нотации
 func ParseUCI(s string) (Move, error) {
 	if len(s) != 4 && len(s) != 5 {
-		return nil, fmt.Errorf(errCantParse)
+		return nil, ErrCantParse
 	}
 
 	switch s {
@@ -91,7 +89,7 @@ func ParseUCI(s string) (Move, error) {
 	from := board.Sq(s[:2])
 	to := board.Sq(s[2:4])
 	if from == -1 || to == -1 {
-		return nil, fmt.Errorf(errCantParse)
+		return nil, ErrCantParse
 	}
 
 	var promoteTo board.Piece
@@ -110,7 +108,7 @@ func ParseUCI(s string) (Move, error) {
 			case 'n':
 				promoteTo = board.WhiteKing
 			default:
-				return nil, fmt.Errorf(errCantParse)
+				return nil, ErrCantParse
 			}
 		case '1':
 			switch pc {
@@ -123,10 +121,10 @@ func ParseUCI(s string) (Move, error) {
 			case 'n':
 				promoteTo = board.BlackKing
 			default:
-				return nil, fmt.Errorf(errCantParse)
+				return nil, ErrCantParse
 			}
 		default:
-			return nil, fmt.Errorf(errCantParse)
+			return nil, ErrCantParse
 		}
 	}
 
