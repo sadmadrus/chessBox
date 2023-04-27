@@ -202,6 +202,11 @@ func TestMove(t *testing.T) {
 			"b2", "a1",
 			"8/8/8/8/8/8/P7/p7 w - - 0 1",
 		},
+		"taking a piece": {
+			"r1b2rk1/pp1nqpbp/2pQ1np1/4p3/2P1P3/2N1BN1P/PP3PP1/2KR1B1R b - - 5 11",
+			"e7", "d6",
+			"r1b2rk1/pp1n1pbp/2pq1np1/4p3/2P1P3/2N1BN1P/PP3PP1/2KR1B1R w - - 0 12",
+		},
 	}
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
@@ -292,7 +297,7 @@ func TestPromote(t *testing.T) {
 			false, "3Q4/8/8/8/8/8/8/8 b - - 0 0",
 		},
 		"Black": {
-			"8/8/8/8/8/8/7p/8 b - - 0 0",
+			"8/8/8/8/8/8/7p/8 b - - 9 0",
 			"h2", "h1", board.BlackKnight, false,
 			"8/8/8/8/8/8/8/7n w - - 0 1",
 		},

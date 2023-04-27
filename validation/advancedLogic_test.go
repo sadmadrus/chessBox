@@ -12,13 +12,13 @@ func TestAdvancedLogic(t *testing.T) {
 		emptyBrd board.Board
 
 		startBrd1WhiteFEN = "rnbq1bnr/ppP5/3p4/4pBBp/3PPPp1/QP2k1P1/P6P/R3K1NR w KQ - 5 6"
-		endBrd1_2WhiteFEN = "rBbq1bnr/pp6/3p4/4pBBp/3PPPp1/QP2k1P1/P6P/R3K1NR b KQ - 5 6"
+		endBrd1_2WhiteFEN = "rBbq1bnr/pp6/3p4/4pBBp/3PPPp1/QP2k1P1/P6P/R3K1NR b KQ - 0 6"
 		endBrd1_3WhiteFEN = "rnbq1bnr/ppP5/3p4/4pBBp/3PPPp1/QP2k1P1/P6P/2KR2NR b - - 6 6"
-		endBrd1_4WhiteFEN = "rnbq1bnr/ppP5/3Q4/4pBBp/3PPPp1/1P2k1P1/P6P/R3K1NR b KQ - 5 6"
+		endBrd1_4WhiteFEN = "rnbq1bnr/ppP5/3Q4/4pBBp/3PPPp1/1P2k1P1/P6P/R3K1NR b KQ - 0 6"
 		endBrd1_5WhiteFEN = "rnbq1bnr/ppP5/3p4/4pBBp/3PPPp1/QP2k1P1/P2K3P/R5NR b - - 6 6"
 
 		startBrd1BlackFEN = "rnbq1bnr/ppP5/3p4/4pB1p/3PPPp1/QP2k1P1/P6P/R3K1NR b KQ f3 5 6"
-		endBrd1_2BlackFEN = "rnbq1bnr/ppP5/3p4/4pB1p/3PP3/QP2kpP1/P6P/R3K1NR w KQ - 5 7"
+		endBrd1_2BlackFEN = "rnbq1bnr/ppP5/3p4/4pB1p/3PP3/QP2kpP1/P6P/R3K1NR w KQ - 0 7"
 		endBrd1_3BlackFEN = "rnbq1bnr/ppP5/3p4/4pB1p/3PPPp1/QP3kP1/P6P/R3K1NR w KQ - 6 7"
 
 		startBrd2BlackFEN = "rn2k2r/8/8/8/3q4/6n1/8/R3K2R b KQq - 5 6"
@@ -288,8 +288,8 @@ func TestCheckCastling(t *testing.T) {
 func TestGetNewBoard(t *testing.T) {
 	var (
 		brdWhiteFEN     = "4k2r/QPp4p/r5pb/p7/P3N3/8/6PP/R3K2R w KQ - 5 6"
-		newbrdQa7a6FEN  = "4k2r/1Pp4p/Q5pb/p7/P3N3/8/6PP/R3K2R b KQ - 5 6"
-		newbrdPb7b8FEN  = "1R2k2r/Q1p4p/r5pb/p7/P3N3/8/6PP/R3K2R b KQ - 5 6"
+		newbrdQa7a6FEN  = "4k2r/1Pp4p/Q5pb/p7/P3N3/8/6PP/R3K2R b KQ - 0 6"
+		newbrdPb7b8FEN  = "1R2k2r/Q1p4p/r5pb/p7/P3N3/8/6PP/R3K2R b KQ - 0 6"
 		newbrdKO_OFEN   = "4k2r/QPp4p/r5pb/p7/P3N3/8/6PP/R4RK1 b - - 6 6"
 		newbrdKO_O_OFEN = "4k2r/QPp4p/r5pb/p7/P3N3/8/6PP/2KR3R b - - 6 6"
 
@@ -297,7 +297,7 @@ func TestGetNewBoard(t *testing.T) {
 		newbrdkO_OFEN  = "5rk1/QPp4p/r5pb/p7/P3N3/8/6PP/R3K2R w KQ - 6 7"
 		newbrdrh8g8FEN = "4k1r1/QPp4p/r5pb/p7/P3N3/8/6PP/R3K2R w KQ - 6 7"
 		newbrdbh6g5FEN = "4k2r/QPp4p/r5p1/p5b1/P3N3/8/6PP/R3K2R w KQk - 6 7"
-		newbrdpg6g5FEN = "4k2r/QPp4p/r6b/p5p1/P3N3/8/6PP/R3K2R w KQk - 5 7"
+		newbrdpg6g5FEN = "4k2r/QPp4p/r6b/p5p1/P3N3/8/6PP/R3K2R w KQk - 0 7"
 	)
 
 	brdWhite, _ := board.FromFEN(brdWhiteFEN)
