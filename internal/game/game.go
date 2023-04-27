@@ -262,6 +262,30 @@ func (g *game) win(p Player) {
 	}
 }
 
+// rewindToMove «перематывает» игру назад так, что последним ходом становится
+// ход номер number игрока player.
+func (g *game) rewindToMove(number int, player Player) error {
+	if number > len(g.moves) ||
+		(number == len(g.moves) && player == Black && g.moves[len(g.moves)-1].black == nil) {
+		return ErrInvalidMove
+	}
+
+	g.moves = g.moves[:number]
+	if player == White {
+		g.moves[len(g.moves)-1].black = nil
+	}
+
+	n, err := retrace(g.moves)
+	if err != nil {
+		return err
+	}
+
+	n.id = g.id
+	*g = *n
+
+	return nil
+}
+
 // moveIsInTurn возвращает true, если ход этого игрока.
 func moveIsInTurn(p Player, whiteToMove bool) bool {
 	if p == White {

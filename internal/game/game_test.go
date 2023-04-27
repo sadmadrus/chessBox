@@ -67,7 +67,7 @@ func TestGame(t *testing.T) {
 	}
 }
 
-func TestRecreate(t *testing.T) {
+func TestRetraceRewind(t *testing.T) {
 	moves := []string{"d2d4", "g8f6", "c2c4", "d7d6", "g1f3", "b8d7", "b1c3", "e7e5", "e2e4", "g7g6",
 		"c1e3", "f8g7", "d4e5", "d6e5", "h2h3", "c7c6", "d1d2", "d8e7", "e1c1", "e8g8",
 		"d2d6", "e7d6", "d1d6"} // https://www.chessgames.com/perl/chessgame?gid=1006866
@@ -90,6 +90,35 @@ func TestRecreate(t *testing.T) {
 	want := "r1b2rk1/pp1n1pbp/2pR1np1/4p3/2P1P3/2N1BN1P/PP3PP1/2K2B1R b - - 0 12"
 	if g.board.FEN() != want {
 		t.Fatalf("want %s, got %s", want, g.board.FEN())
+	}
+	if len(mm) != len(g.moves) {
+		t.Fatal("moves number mismatch")
+	}
+
+	thisId := ID("this")
+	g.id = thisId
+	g.status = whiteWon
+
+	if err := g.rewindToMove(15, Black); err == nil {
+		t.Fatal("should get error rewinding to future move")
+	}
+
+	err = g.rewindToMove(10, White)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want = "r1b1k2r/pp1nqpbp/2p2np1/4p3/2P1P3/2N1BN1P/PP1Q1PP1/2KR1B1R b kq - 3 10"
+	if g.board.FEN() != want {
+		t.Fatalf("after rewind want %s, got %s", want, g.board.FEN())
+	}
+	if len(g.moves) != 10 {
+		t.Fatal("moves number mismatch after rewind")
+	}
+	if g.id != thisId {
+		t.Fatal("ID changed after rewind")
+	}
+	if g.status != ongoing {
+		t.Fatal("status not reset after rewind")
 	}
 }
 
