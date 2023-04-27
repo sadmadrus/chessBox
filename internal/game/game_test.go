@@ -2,12 +2,47 @@ package game
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/sadmadrus/chessBox/internal/board"
 )
 
 const startingFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+
+func FuzzGameDo(f *testing.F) {
+	tests := []struct {
+		startPosition string
+		status        int
+		player        int
+		kind          int
+		move          string
+	}{
+		{startingFEN, 0, 1, 1, "e2e4"},
+		{startingFEN, 1, 2, 3, ""},
+		{"r1b2rk1/pp1n1pbp/2pR1np1/4p3/2P1P3/2N1BN1P/PP3PP1/2K2B1R b - - 0 12", 0, 2, 1, "g8h8"},
+	}
+	for _, tc := range tests {
+		f.Add(tc.startPosition, tc.status, tc.player, tc.kind, tc.move)
+	}
+
+	f.Fuzz(func(t *testing.T, startPosition string, status int, player int, kind int, move string) {
+		b, err := board.FromFEN(startPosition)
+		if err != nil {
+			return
+		}
+		this := &game{status: state(status), board: *b}
+		g, err := start("", "", "", this)
+		if err != nil {
+			return
+		}
+		res, _ := g.Do(Request{Player: Player(player), Kind: RequestType(kind), Move: parseMove(move)})
+		if RequestType(kind) != Delete && res.FEN == "" {
+			fmt.Println(res)
+			t.Fatal("empty FEN")
+		}
+	})
+}
 
 func TestGame(t *testing.T) {
 	tests := map[string]struct {

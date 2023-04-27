@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/sadmadrus/chessBox/internal/board"
+	"github.com/sadmadrus/chessBox/internal/board/position"
 	"github.com/sadmadrus/chessBox/validation"
 )
 
@@ -21,6 +22,7 @@ var (
 	ErrGameOver           = errors.New("game is already over")
 	ErrGameRequestTimeout = errors.New("game request timed out")
 	ErrInvalidMove        = errors.New("move is invalid")
+	ErrInvalidPosition    = errors.New("the supplied position is invalid")
 	ErrNoPlayerSpecified  = errors.New("player is required, but no valid player is provided")
 	ErrWrongTurn          = errors.New("wrong turn to move")
 )
@@ -110,6 +112,8 @@ func start(manager, white, black string, g *game) (ID, error) {
 
 	if g == nil {
 		g = &game{board: *board.Classical()}
+	} else if !position.IsValid(g.board) {
+		return "", ErrInvalidPosition
 	}
 	g.id = gameId
 
@@ -203,6 +207,10 @@ func (g *game) processMoveRequest(r Request) error {
 
 // move совершает ход. Если возвращена ошибка, состояние игры не изменилось.
 func (g *game) move(m Move) error {
+	if m == nil {
+		return ErrInvalidMove
+	}
+
 	var promoteTo board.Piece
 	if p, ok := m.(promotion); ok {
 		promoteTo = p.toPiece()
@@ -229,6 +237,9 @@ func (g *game) move(m Move) error {
 	}
 
 	if g.board.NextToMove() {
+		if len(g.moves) == 0 {
+			g.moves = append(g.moves, fullMove{}) // если первый ход (из заданной начальной позиции) — чёрных
+		}
 		g.moves[len(g.moves)-1].black = m
 	} else {
 		g.moves = append(g.moves, fullMove{white: m})

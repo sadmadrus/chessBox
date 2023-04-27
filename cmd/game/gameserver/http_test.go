@@ -16,6 +16,51 @@ const startingFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 
 const urlencoded = "application/x-www-form-urlencoded"
 
+func FuzzRoot(f *testing.F) {
+	tests := []string{
+		"white=this&black=that&notify=noway",
+		"move=e2e4&player=white",
+		"this=that",
+	}
+	for _, tc := range tests {
+		f.Add(tc)
+	}
+
+	f.Fuzz(func(t *testing.T, a string) {
+		req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(a))
+		rr := httptest.NewRecorder()
+		http.HandlerFunc(RootHandler).ServeHTTP(rr, req)
+		if rr.Code != http.StatusCreated {
+			return
+		}
+		loc := rr.Result().Header.Get("location")
+		if loc == "" {
+			t.Fatal("empty or no Location header")
+		}
+	})
+}
+
+func FuzzGameAPI(f *testing.F) {
+	tests := []string{
+		"move=e2e4&player=white",
+		"player=black&takeback=true",
+		"player=blue&move=e7e5",
+		"player=white&forfeit=true",
+		"this=that",
+	}
+	for _, tc := range tests {
+		f.Add(tc)
+	}
+	g, _ := game.New("none", "none", "none")
+
+	f.Fuzz(func(t *testing.T, a string) {
+		req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(a))
+		rr := httptest.NewRecorder()
+		handler(g).ServeHTTP(rr, req)
+		// этот фаззер ловит паники
+	})
+}
+
 func TestRoot404(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(RootHandler))
 	defer srv.Close()
