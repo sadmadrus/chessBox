@@ -1,4 +1,4 @@
-package game
+package gameserver
 
 import (
 	"encoding/json"
@@ -7,6 +7,8 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+
+	"github.com/sadmadrus/chessBox/internal/game"
 )
 
 const startingFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
@@ -41,7 +43,7 @@ func TestGameGet(t *testing.T) {
 		t.Fatal("JSON reply expected")
 	}
 
-	var state gameState
+	var state game.State
 	defer rr.Result().Body.Close()
 	if err := json.NewDecoder(rr.Result().Body).Decode(&state); err != nil {
 		t.Fatal(err)
@@ -80,7 +82,7 @@ func TestGameMakeMove(t *testing.T) {
 		t.Fatalf("want %v, got %v", http.StatusOK, rr.Result().Status)
 	}
 
-	var state gameState
+	var state game.State
 	defer rr.Result().Body.Close()
 	if err := json.NewDecoder(rr.Result().Body).Decode(&state); err != nil {
 		t.Fatal(err)
@@ -133,7 +135,7 @@ func TestGameForfeit(t *testing.T) {
 		t.Fatalf("want %v, got %v", http.StatusOK, rr.Result().Status)
 	}
 
-	var state gameState
+	var state game.State
 	defer rr.Result().Body.Close()
 	if err := json.NewDecoder(rr.Result().Body).Decode(&state); err != nil {
 		t.Fatal(err)
@@ -145,9 +147,9 @@ func TestGameForfeit(t *testing.T) {
 	}
 }
 
-func serveNewGame(t *testing.T) id {
+func serveNewGame(t *testing.T) game.ID {
 	t.Helper()
-	g, err := start("none", "none", "none", nil)
+	g, err := game.New("none", "none", "none")
 	if err != nil {
 		t.Fatal(err)
 	}

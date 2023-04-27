@@ -17,14 +17,14 @@ func TestParseUCI(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.move, func(t *testing.T) {
-			m, err := parseUCI(tc.move)
+			m, err := ParseUCI(tc.move)
 			if err != nil {
 				t.Fatal(err)
 			}
 			from := board.Sq(tc.from)
 			to := board.Sq(tc.to)
-			if from != m.fromSquare() || to != m.toSquare() {
-				t.Fatalf("want from %v to %v, got from %v to %v", from, to, m.fromSquare(), m.toSquare())
+			if from != m.FromSquare() || to != m.ToSquare() {
+				t.Fatalf("want from %v to %v, got from %v to %v", from, to, m.FromSquare(), m.ToSquare())
 			}
 		})
 	}

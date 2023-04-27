@@ -8,13 +8,13 @@ import (
 
 // fullMove содержит информацию о ходе.
 type fullMove struct {
-	white, black halfMove
+	white, black Move
 }
 
-// halfMove содержит информацию о ходе одного игрока.
-type halfMove interface {
-	fromSquare() board.Square
-	toSquare() board.Square
+// Move содержит информацию о ходе одного игрока.
+type Move interface {
+	FromSquare() board.Square
+	ToSquare() board.Square
 }
 
 type simpleMove struct {
@@ -29,19 +29,19 @@ type promotion struct {
 
 type castling board.Castling
 
-func (h simpleMove) fromSquare() board.Square {
+func (h simpleMove) FromSquare() board.Square {
 	return h.from
 }
 
-func (h simpleMove) toSquare() board.Square {
+func (h simpleMove) ToSquare() board.Square {
 	return h.to
 }
 
-func (p promotion) fromSquare() board.Square {
+func (p promotion) FromSquare() board.Square {
 	return p.from
 }
 
-func (p promotion) toSquare() board.Square {
+func (p promotion) ToSquare() board.Square {
 	return p.to
 }
 
@@ -49,7 +49,7 @@ func (p promotion) toPiece() board.Piece {
 	return p.promoteTo
 }
 
-func (c castling) fromSquare() board.Square {
+func (c castling) FromSquare() board.Square {
 	switch c {
 	case castling(board.WhiteKingside), castling(board.WhiteQueenside):
 		return board.Sq("e1")
@@ -58,7 +58,7 @@ func (c castling) fromSquare() board.Square {
 	}
 }
 
-func (c castling) toSquare() board.Square {
+func (c castling) ToSquare() board.Square {
 	switch c {
 	case castling(board.WhiteKingside):
 		return board.Sq("g1")
@@ -71,8 +71,8 @@ func (c castling) toSquare() board.Square {
 	}
 }
 
-// parseUCI парсит ход из UCI-нотации
-func parseUCI(s string) (halfMove, error) {
+// ParseUCI парсит ход из UCI-нотации
+func ParseUCI(s string) (Move, error) {
 	if len(s) != 4 && len(s) != 5 {
 		return nil, fmt.Errorf(errCantParse)
 	}

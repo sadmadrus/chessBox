@@ -7,38 +7,40 @@ import (
 	"github.com/sadmadrus/chessBox/internal/board"
 )
 
+const startingFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+
 func TestGame(t *testing.T) {
 	tests := map[string]struct {
 		haveFEN    string
 		haveStatus state
-		request    request
+		request    Request
 		wantFEN    string
 		wantErr    error
 	}{
 		"move_after_won": {
 			startingFEN, blackWon,
-			request{player: white, kind: makeMove, move: parseMove("e2e4")},
-			startingFEN, errGameOver,
+			Request{Player: White, Kind: MakeMove, Move: parseMove("e2e4")},
+			startingFEN, ErrGameOver,
 		},
 		"move_out_of_turn": {
 			startingFEN, ongoing,
-			request{player: black, kind: makeMove, move: parseMove("g8f6")},
-			startingFEN, errWrongTurn,
+			Request{Player: Black, Kind: MakeMove, Move: parseMove("g8f6")},
+			startingFEN, ErrWrongTurn,
 		},
 		"valid_move": {
 			startingFEN, ongoing,
-			request{player: white, kind: makeMove, move: parseMove("e2e4")},
+			Request{Player: White, Kind: MakeMove, Move: parseMove("e2e4")},
 			"rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1", nil,
 		},
 		"illegal_move": {
 			startingFEN, ongoing,
-			request{player: white, kind: makeMove, move: parseMove("a1a4")},
-			startingFEN, errInvalidMove,
+			Request{Player: White, Kind: MakeMove, Move: parseMove("a1a4")},
+			startingFEN, ErrInvalidMove,
 		},
 		"forfeit_after_draw": {
 			startingFEN, drawn,
-			request{player: white, kind: forfeit, move: nil},
-			startingFEN, errGameOver,
+			Request{Player: White, Kind: Forfeit, Move: nil},
+			startingFEN, ErrGameOver,
 		},
 	}
 
@@ -53,21 +55,21 @@ func TestGame(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			res, err := requestWithTimeout(tc.request, g)
+			res, err := g.Do(tc.request)
 			if err != nil {
 				t.Fatal(err)
 			}
-			if res.state.FEN != tc.wantFEN {
-				t.Fatalf("want %s, got %s", tc.wantFEN, res.state.FEN)
+			if res.State.FEN != tc.wantFEN {
+				t.Fatalf("want %s, got %s", tc.wantFEN, res.State.FEN)
 			}
-			if !errors.Is(res.err, tc.wantErr) {
-				t.Fatalf("want %v, got %v", tc.wantErr, res.err)
+			if !errors.Is(res.Error, tc.wantErr) {
+				t.Fatalf("want %v, got %v", tc.wantErr, res.Error)
 			}
 		})
 	}
 }
 
-func parseMove(uci string) halfMove {
-	m, _ := parseUCI(uci)
+func parseMove(uci string) Move {
+	m, _ := ParseUCI(uci)
 	return m
 }

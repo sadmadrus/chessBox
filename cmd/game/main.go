@@ -9,7 +9,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/sadmadrus/chessBox/cmd/game/game"
+	"github.com/sadmadrus/chessBox/cmd/game/gameserver"
 )
 
 var (
@@ -55,7 +55,7 @@ func setupSignalHandling(done chan<- struct{}, s *http.Server) {
 // rootHandler отвечает за обработку запросов к сервису в целом.
 func rootHandler(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/" {
-		game.GameHandler(w, r)
+		gameserver.GameHandler(w, r)
 		return
 	}
 
@@ -63,7 +63,7 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 	case http.MethodGet:
 		fmt.Fprint(w, "The game server is online and working.")
 	case http.MethodPost:
-		game.Creator(w, r)
+		gameserver.Creator(w, r)
 	case http.MethodOptions:
 		w.Header().Set("Allow", "GET, POST, OPTIONS")
 		w.WriteHeader(http.StatusNoContent)

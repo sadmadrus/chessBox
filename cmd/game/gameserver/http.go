@@ -1,4 +1,4 @@
-package game
+package gameserver
 
 import (
 	"encoding/json"
@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+
+	"github.com/sadmadrus/chessBox/internal/game"
 )
 
 // Creator — http.HandlerFunc для создания новой игры.
@@ -38,7 +40,7 @@ func Creator(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	g, err := start(manager, white, black, nil)
+	g, err := game.New(manager, white, black)
 	if err != nil {
 		// TODO проверка, не вернуть ли 408
 		http.Error(w, fmt.Sprintf("Couldn't create the game: %v", err), http.StatusInternalServerError)
@@ -52,9 +54,8 @@ func Creator(w http.ResponseWriter, r *http.Request) {
 
 // GameHandler обрабатывает запросы к играм.
 func GameHandler(w http.ResponseWriter, r *http.Request) {
-	g := id(strings.TrimPrefix(r.URL.Path, "/"))
-	_, ok := games.Load(g)
-	if !ok {
+	g := game.ID(strings.TrimPrefix(r.URL.Path, "/"))
+	if !g.Exists() {
 		http.Error(w, "404 Game Not Found", http.StatusNotFound)
 		return
 	}
@@ -62,7 +63,7 @@ func GameHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // handler — "ручка" для конкретной игры.
-func handler(game id) http.HandlerFunc {
+func handler(game game.ID) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet, http.MethodHead:
@@ -95,16 +96,16 @@ func parseUrlEncoded(r *http.Request) (url.Values, error) {
 }
 
 // serveCurrentState запрашиевает и пишет в ответ текущее состояние игры.
-func serveCurrentState(game id, w http.ResponseWriter) {
+func serveCurrentState(g game.ID, w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "application/json")
-	r := request{kind: showState}
-	res, err := requestWithTimeout(r, game)
+	r := game.Request{Kind: game.ShowState}
+	res, err := g.Do(r)
 	if err != nil {
-		if errors.Is(err, errGameNotFound) {
+		if errors.Is(err, game.ErrGameNotFound) {
 			http.Error(w, "404 Game Not Found", http.StatusNotFound)
 			return
 		}
-		if errors.Is(err, errGameRequestTimeout) {
+		if errors.Is(err, game.ErrGameRequestTimeout) {
 			http.Error(w, "503 Status Unavailable", http.StatusServiceUnavailable)
 			return
 		}
@@ -112,11 +113,11 @@ func serveCurrentState(game id, w http.ResponseWriter) {
 		log.Printf("unexpected error: %v", err)
 		return
 	}
-	serveState(w, res.state)
+	serveState(w, res.State)
 }
 
 // serveState пишет в ответ текущее состояние игры.
-func serveState(w http.ResponseWriter, s gameState) {
+func serveState(w http.ResponseWriter, s game.State) {
 	if err := json.NewEncoder(w).Encode(s); err != nil {
 		http.Error(w, "Failed to encode the current game state.", http.StatusInternalServerError)
 		log.Printf("error encoding game state: %v", err)
@@ -124,50 +125,49 @@ func serveState(w http.ResponseWriter, s gameState) {
 }
 
 // deleteGame удаляет игру из сервиса.
-func deleteGame(game id) {
-	log.Printf("Removing game: %s", game.string())
-	games.Delete(game)
-	r := request{kind: stopGame}
-	_, _ = requestWithTimeout(r, game)
+func deleteGame(g game.ID) {
+	log.Printf("Removing game: %s", g.String())
+	r := game.Request{Kind: game.Delete}
+	_, _ = g.Do(r)
 }
 
 // handlePut обрабатывает PUT-запросы для игры.
-func handlePut(game id, w http.ResponseWriter, r *http.Request) {
+func handlePut(g game.ID, w http.ResponseWriter, r *http.Request) {
 	data, err := parseUrlEncoded(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	req := request{player: getPlayer(data)}
+	req := game.Request{Player: getPlayer(data)}
 
-	req.kind = identifyRequest(data)
-	if req.kind == 0 {
+	req.Kind = identifyRequest(data)
+	if req.Kind == 0 {
 		http.Error(w, "can't parse the request", http.StatusBadRequest)
 		return
 	}
 
-	switch req.kind {
-	case makeMove:
-		req.move, err = parseUCI(data.Get("move"))
+	switch req.Kind {
+	case game.MakeMove:
+		req.Move, err = game.ParseUCI(data.Get("move"))
 		if err != nil {
 			http.Error(w, "can't parse move", http.StatusBadRequest)
 			return
 		}
-	case forfeit:
+	case game.Forfeit:
 	default:
 		w.WriteHeader(http.StatusNotImplemented)
-		serveCurrentState(game, w)
+		serveCurrentState(g, w)
 		return
 	}
 
-	res, err := requestWithTimeout(req, game)
+	res, err := g.Do(req)
 	if err != nil {
-		if errors.Is(err, errGameNotFound) {
+		if errors.Is(err, game.ErrGameNotFound) {
 			http.Error(w, "404 Game Not Found", http.StatusNotFound)
 			return
 		}
-		if errors.Is(err, errGameRequestTimeout) {
+		if errors.Is(err, game.ErrGameRequestTimeout) {
 			http.Error(w, "503 Status Unavailable", http.StatusServiceUnavailable)
 			return
 		}
@@ -175,44 +175,44 @@ func handlePut(game id, w http.ResponseWriter, r *http.Request) {
 		log.Printf("unexpected error: %v", err)
 		return
 	}
-	if res.err != nil {
+	if res.Error != nil {
 		switch {
-		case errors.Is(res.err, errGameNotFound):
+		case errors.Is(res.Error, game.ErrGameNotFound):
 			http.Error(w, "404 Game Not Found", http.StatusNotFound)
 			return
-		case errors.Is(res.err, errWrongTurn) || errors.Is(err, errGameOver):
+		case errors.Is(res.Error, game.ErrWrongTurn) || errors.Is(err, game.ErrGameOver):
 			w.WriteHeader(http.StatusConflict)
-		case errors.Is(res.err, errInvalidMove):
+		case errors.Is(res.Error, game.ErrInvalidMove):
 			w.WriteHeader(http.StatusForbidden)
 		default:
 			w.WriteHeader(http.StatusBadRequest)
 		}
 	}
 
-	serveState(w, res.state)
+	serveState(w, res.State)
 }
 
-func getPlayer(data url.Values) player {
+func getPlayer(data url.Values) game.Player {
 	switch data.Get("player") {
 	case "white":
-		return white
+		return game.White
 	case "black":
-		return black
+		return game.Black
 	default:
 		return 0
 	}
 }
 
 // identifyRequest возвращает тип запроса.
-func identifyRequest(data url.Values) kindOfRequest {
-	var have []kindOfRequest
+func identifyRequest(data url.Values) game.RequestType {
+	var have []game.RequestType
 
-	keys := map[string]kindOfRequest{
-		"move":      makeMove,
-		"takeback":  takeback,
-		"drawoffer": draw,
-		"adjourn":   adjourn,
-		"forfeit":   forfeit,
+	keys := map[string]game.RequestType{
+		"move":      game.MakeMove,
+		"takeback":  game.TakebackMove,
+		"drawoffer": game.OfferDraw,
+		"adjourn":   game.OfferAdjourn,
+		"forfeit":   game.Forfeit,
 	}
 
 	for k, v := range keys {
