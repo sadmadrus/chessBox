@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -18,7 +17,7 @@ var (
 )
 
 func main() {
-	http.HandleFunc("/", rootHandler)
+	http.HandleFunc("/", gameserver.RootHandler)
 	s := http.Server{
 		Addr: address,
 	}
@@ -50,25 +49,4 @@ func setupSignalHandling(done chan<- struct{}, s *http.Server) {
 		}
 		close(done)
 	}()
-}
-
-// rootHandler отвечает за обработку запросов к сервису в целом.
-func rootHandler(w http.ResponseWriter, r *http.Request) {
-	if r.URL.Path != "/" {
-		gameserver.GameHandler(w, r)
-		return
-	}
-
-	switch r.Method {
-	case http.MethodGet:
-		fmt.Fprint(w, "The game server is online and working.")
-	case http.MethodPost:
-		gameserver.Creator(w, r)
-	case http.MethodOptions:
-		w.Header().Set("Allow", "GET, POST, OPTIONS")
-		w.WriteHeader(http.StatusNoContent)
-	default:
-		w.Header().Set("Allow", "GET, POST, OPTIONS")
-		http.Error(w, "Method not allowed.", http.StatusMethodNotAllowed)
-	}
 }

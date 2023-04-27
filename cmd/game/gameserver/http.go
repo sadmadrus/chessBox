@@ -1,3 +1,4 @@
+// Пакет gameserver реализует HTTP API для сервиса игровой сессии.
 package gameserver
 
 import (
@@ -13,8 +14,29 @@ import (
 	"github.com/sadmadrus/chessBox/internal/game"
 )
 
-// Creator — http.HandlerFunc для создания новой игры.
-func Creator(w http.ResponseWriter, r *http.Request) {
+// RootHandler отвечает за обработку запросов к сервису в целом.
+func RootHandler(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path != "/" {
+		gameHandler(w, r)
+		return
+	}
+
+	switch r.Method {
+	case http.MethodGet:
+		fmt.Fprint(w, "The game server is online and working.")
+	case http.MethodPost:
+		creator(w, r)
+	case http.MethodOptions:
+		w.Header().Set("Allow", "GET, POST, OPTIONS")
+		w.WriteHeader(http.StatusNoContent)
+	default:
+		w.Header().Set("Allow", "GET, POST, OPTIONS")
+		http.Error(w, "Method not allowed.", http.StatusMethodNotAllowed)
+	}
+}
+
+// creator — http.HandlerFunc для создания новой игры.
+func creator(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
@@ -52,8 +74,8 @@ func Creator(w http.ResponseWriter, r *http.Request) {
 	serveCurrentState(g, w)
 }
 
-// GameHandler обрабатывает запросы к играм.
-func GameHandler(w http.ResponseWriter, r *http.Request) {
+// gameHandler обрабатывает запросы к играм.
+func gameHandler(w http.ResponseWriter, r *http.Request) {
 	g := game.ID(strings.TrimPrefix(r.URL.Path, "/"))
 	if !g.Exists() {
 		http.Error(w, "404 Game Not Found", http.StatusNotFound)
