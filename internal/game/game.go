@@ -133,6 +133,25 @@ func start(manager, white, black string, g *game) (ID, error) {
 	return gameId, nil
 }
 
+// retrace восстанавливает состояние игры из последовательности ходов.
+func retrace(mm []fullMove) (*game, error) {
+	g := &game{board: *board.Classical()}
+	for i, fm := range mm {
+		err := g.move(fm.white)
+		if err != nil {
+			return nil, fmt.Errorf("on move %v white error: %w", i+1, err)
+		}
+		if i == len(mm)-1 && fm.black == nil {
+			continue
+		}
+		err = g.move(fm.black)
+		if err != nil {
+			return nil, fmt.Errorf("on move %v black error: %w", i+1, err)
+		}
+	}
+	return g, nil
+}
+
 // returnState возвращает состояние игры.
 func (g *game) returnState(out chan<- response) {
 	out <- response{nil, g.state()}

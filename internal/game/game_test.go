@@ -67,6 +67,32 @@ func TestGame(t *testing.T) {
 	}
 }
 
+func TestRecreate(t *testing.T) {
+	moves := []string{"d2d4", "g8f6", "c2c4", "d7d6", "g1f3", "b8d7", "b1c3", "e7e5", "e2e4", "g7g6",
+		"c1e3", "f8g7", "d4e5", "d6e5", "h2h3", "c7c6", "d1d2", "d8e7", "e1c1", "e8g8",
+		"d2d6", "e7d6", "d1d6"} // https://www.chessgames.com/perl/chessgame?gid=1006866
+	var mm []fullMove
+	whiteToMove := true
+	for _, m := range moves {
+		hm := parseMove(m)
+		if whiteToMove {
+			mm = append(mm, fullMove{white: hm})
+		} else {
+			mm[len(mm)-1].black = hm
+		}
+		whiteToMove = !whiteToMove
+	}
+
+	g, err := retrace(mm)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "r1b2rk1/pp1n1pbp/2pR1np1/4p3/2P1P3/2N1BN1P/PP3PP1/2K2B1R b - - 0 12"
+	if g.board.FEN() != want {
+		t.Fatalf("want %s, got %s", want, g.board.FEN())
+	}
+}
+
 func parseMove(uci string) Move {
 	m, _ := ParseUCI(uci)
 	return m
