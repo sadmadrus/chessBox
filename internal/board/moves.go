@@ -51,6 +51,8 @@ func (b *Board) Move(from, to Square) error {
 	b.blk = !b.blk
 	if pc != BlackPawn && pc != WhitePawn && b.brd[to] == 0 {
 		b.hm++
+	} else {
+		b.hm = 0
 	}
 	switch from {
 	case 0:

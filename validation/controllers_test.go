@@ -106,11 +106,11 @@ func TestAdvanced(t *testing.T) {
 	var (
 		startBrd1WhiteUsFEN = "rnbq1bnr~ppP5~3p4~4pBBp~3PPPp1~QP2k1P1~P6P~R3K1NR+w+KQ+-+5+6"
 		endBrd1_2WhiteUsFEN = "rnbq1bnr~ppP5~3p4~4pBBp~3PPPp1~QP2k1P1~P6P~2KR2NR+b+-+-+6+6"
-		endBrd1_3WhiteUsFEN = "rBbq1bnr~pp6~3p4~4pBBp~3PPPp1~QP2k1P1~P6P~R3K1NR+b+KQ+-+5+6"
-		endBrd1_4WhiteUsFen = "rnbq1bnr~ppP5~3Q4~4pBBp~3PPPp1~1P2k1P1~P6P~R3K1NR+b+KQ+-+5+6"
+		endBrd1_3WhiteUsFEN = "rBbq1bnr~pp6~3p4~4pBBp~3PPPp1~QP2k1P1~P6P~R3K1NR+b+KQ+-+0+6"
+		endBrd1_4WhiteUsFen = "rnbq1bnr~ppP5~3Q4~4pBBp~3PPPp1~1P2k1P1~P6P~R3K1NR+b+KQ+-+0+6"
 
 		startBrd1BlackUsFEN = "rnbq1bnr~ppP5~3p4~4pB1p~3PPPp1~QP2k1P1~P6P~R3K1NR+b+KQ+f3+5+6"
-		endBrd1_2BlackUsFEN = "rnbq1bnr~ppP5~3p4~4pB1p~3PP3~QP2kpP1~P6P~R3K1NR+w+KQ+-+5+7"
+		endBrd1_2BlackUsFEN = "rnbq1bnr~ppP5~3p4~4pB1p~3PP3~QP2kpP1~P6P~R3K1NR+w+KQ+-+0+7"
 
 		startBrd2BlackUsFEN = "rn2k2r~8~8~8~3q4~6n1~8~R3K2R+b+KQq+-+5+6"
 
