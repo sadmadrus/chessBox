@@ -71,7 +71,7 @@ func creator(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Add("location", "/"+string(g))
 	w.WriteHeader(http.StatusCreated)
-	serveCurrentState(g, w)
+	serveCurrentState(w, g)
 }
 
 // gameHandler обрабатывает запросы к играм.
@@ -89,9 +89,9 @@ func handler(game game.ID) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet, http.MethodHead:
-			serveCurrentState(game, w)
+			serveCurrentState(w, game)
 		case http.MethodPut:
-			handlePut(game, w, r)
+			handlePut(w, r, game)
 		case http.MethodDelete:
 			deleteGame(game)
 		case http.MethodOptions:
@@ -118,7 +118,7 @@ func parseUrlEncoded(r *http.Request) (url.Values, error) {
 }
 
 // serveCurrentState запрашиевает и пишет в ответ текущее состояние игры.
-func serveCurrentState(g game.ID, w http.ResponseWriter) {
+func serveCurrentState(w http.ResponseWriter, g game.ID) {
 	w.Header().Set("Content-Type", "application/json")
 	r := game.Request{Kind: game.ShowState}
 	res, err := g.Do(r)
@@ -154,7 +154,7 @@ func deleteGame(g game.ID) {
 }
 
 // handlePut обрабатывает PUT-запросы для игры.
-func handlePut(g game.ID, w http.ResponseWriter, r *http.Request) {
+func handlePut(w http.ResponseWriter, r *http.Request, g game.ID) {
 	data, err := parseUrlEncoded(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -179,7 +179,7 @@ func handlePut(g game.ID, w http.ResponseWriter, r *http.Request) {
 	case game.Forfeit:
 	default:
 		w.WriteHeader(http.StatusNotImplemented)
-		serveCurrentState(g, w)
+		serveCurrentState(w, g)
 		return
 	}
 
