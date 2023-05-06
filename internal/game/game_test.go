@@ -171,7 +171,7 @@ func TestForfeit(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			g, _ := retrace(nil)
 			r := Request{Player: tc.player, Kind: Forfeit}
-			g.forfeit(r)
+			_ = g.forfeit(r)
 			if g.status != tc.want {
 				t.Fatalf("want %v, got %v", tc.want, g.status)
 			}
