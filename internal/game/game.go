@@ -258,8 +258,9 @@ func (g *game) forfeit(r Request) error {
 	}
 	if r.Player == White {
 		g.win(Black)
+	} else {
+		g.win(White)
 	}
-	g.win(White)
 	return nil
 }
 

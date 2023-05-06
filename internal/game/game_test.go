@@ -157,6 +157,28 @@ func TestRetraceRewind(t *testing.T) {
 	}
 }
 
+func TestForfeit(t *testing.T) {
+	tests := map[string]struct {
+		player Player
+		want   state
+	}{
+		"white": {White, blackWon},
+		"black": {Black, whiteWon},
+		"other": {8, ongoing},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			g, _ := retrace(nil)
+			r := Request{Player: tc.player, Kind: Forfeit}
+			g.forfeit(r)
+			if g.status != tc.want {
+				t.Fatalf("want %v, got %v", tc.want, g.status)
+			}
+		})
+	}
+}
+
 func parseMove(uci string) Move {
 	m, _ := ParseUCI(uci)
 	return m
