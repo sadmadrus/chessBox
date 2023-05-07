@@ -51,8 +51,10 @@ func (c castling) FromSquare() board.Square {
 	switch c {
 	case castling(board.WhiteKingside), castling(board.WhiteQueenside):
 		return board.Sq("e1")
-	default:
+	case castling(board.BlackKingside), castling(board.BlackQueenside):
 		return board.Sq("e8")
+	default:
+		panic("not a castling case")
 	}
 }
 
@@ -64,8 +66,10 @@ func (c castling) ToSquare() board.Square {
 		return board.Sq("c1")
 	case castling(board.BlackQueenside):
 		return board.Sq("c8")
-	default:
+	case castling(board.BlackKingside):
 		return board.Sq("g8")
+	default:
+		panic("not a castling case")
 	}
 }
 
