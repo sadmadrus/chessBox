@@ -99,7 +99,6 @@ func ParseUCI(s string) (Move, error) {
 	var promoteTo board.Piece
 	if len(s) == 5 {
 		pc := s[4]
-		s = s[:4]
 		switch s[3] {
 		case '8':
 			switch pc {
