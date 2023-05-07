@@ -27,12 +27,12 @@ type promotion struct {
 
 type castling board.Castling
 
-func (h simpleMove) FromSquare() board.Square {
-	return h.from
+func (s simpleMove) FromSquare() board.Square {
+	return s.from
 }
 
-func (h simpleMove) ToSquare() board.Square {
-	return h.to
+func (s simpleMove) ToSquare() board.Square {
+	return s.to
 }
 
 func (p promotion) FromSquare() board.Square {
