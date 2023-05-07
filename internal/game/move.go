@@ -110,7 +110,7 @@ func ParseUCI(s string) (Move, error) {
 			case 'b':
 				promoteTo = board.WhiteBishop
 			case 'n':
-				promoteTo = board.WhiteKing
+				promoteTo = board.WhiteKnight
 			default:
 				return nil, ErrCantParse
 			}
@@ -123,7 +123,7 @@ func ParseUCI(s string) (Move, error) {
 			case 'b':
 				promoteTo = board.BlackBishop
 			case 'n':
-				promoteTo = board.BlackKing
+				promoteTo = board.BlackKnight
 			default:
 				return nil, ErrCantParse
 			}

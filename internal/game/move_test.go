@@ -29,3 +29,36 @@ func TestParseUCI(t *testing.T) {
 		})
 	}
 }
+
+func TestParseUCIPromotion(t *testing.T) {
+	tests := []struct {
+		move  string
+		piece board.Piece
+	}{
+		{"h7h8n", board.WhiteKnight},
+		{"h2h1n", board.BlackKnight},
+		{"e7e8q", board.WhiteQueen},
+		{"d2d1q", board.BlackQueen},
+		{"b7b8r", board.WhiteRook},
+		{"a2a1r", board.BlackRook},
+		{"a7a8b", board.WhiteBishop},
+		{"b2b1b", board.BlackBishop},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.move, func(t *testing.T) {
+			m, err := ParseUCI(tc.move)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			prom, ok := m.(promotion)
+			if !ok {
+				t.Fatalf("want promotion, not some other kind of move")
+			}
+			if prom.promoteTo != tc.piece {
+				t.Fatalf("want %s, got %s", tc.piece.String(), prom.promoteTo.String())
+			}
+		})
+	}
+}
