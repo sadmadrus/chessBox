@@ -7,6 +7,74 @@ import (
 	"github.com/sadmadrus/chessBox/internal/board"
 )
 
+func TestCanMove(t *testing.T) {
+	var (
+		startBrd1WhiteFEN = "rnbq1bnr/ppP5/3p4/4pBBp/3PPPp1/QP2k1P1/P6P/R3K1NR w KQ - 5 6"
+		startBrd1BlackFEN = "rnbq1bnr/ppP5/3p4/4pB1p/3PPPp1/QP2k1P1/P6P/R3K1NR b KQ f3 5 6"
+		startBrd2BlackFEN = "rn2k2r/8/8/8/3q4/6n1/8/R3K2R b KQq - 5 6"
+		startBrd2WhiteFEN = "rn2k2r/8/8/8/3q4/6n1/8/R3K2R w KQq - 5 6"
+		invalidBrdFEN     = "rnbq1bnr/ppP5/3p4/4pBBp/3PPPp1/QP2k1P1/P6P/R3KKNR w KQ - 5 6"
+	)
+
+	startBrd1White, _ := board.FromFEN(startBrd1WhiteFEN)
+	startBrd1Black, _ := board.FromFEN(startBrd1BlackFEN)
+	startBrd2Black, _ := board.FromFEN(startBrd2BlackFEN)
+	startBrd2White, _ := board.FromFEN(startBrd2WhiteFEN)
+	invalidBrd, _ := board.FromFEN(invalidBrdFEN)
+
+	tests := []struct {
+		name      string
+		brd       board.Board
+		from      board.Square
+		to        board.Square
+		promoteTo board.Piece
+		isErr     bool
+	}{
+		{"from not valid", *startBrd1White, board.Sq(-1), board.Sq(33), 0, true},
+		{"to not valid", *startBrd1White, board.Sq(32), board.Sq(64), 0, true},
+		{"from and to equal", *startBrd1White, board.Sq(32), board.Sq(32), 0, true},
+		{"crazy promote", *startBrd1White, board.Sq(50), board.Sq(57), 15, true},
+		{"invalid board with 2 Kings", *invalidBrd, board.Sq(32), board.Sq(33), 0, true},
+
+		{"no piece", *startBrd1White, board.Sq(32), board.Sq(33), 0, true},
+		{"no promotion, promoteTo indicated", *startBrd1White, board.Sq(16), board.Sq(24), board.WhiteBishop, true},
+		{"promotion, wrong color promoteTo", *startBrd1White, board.Sq(50), board.Sq(57), board.BlackBishop, true},
+		{"promotion, no promoteTo indicated", *startBrd1White, board.Sq(50), board.Sq(57), 0, true},
+		{"pawn promotion successful", *startBrd1White, board.Sq(50), board.Sq(57), board.WhiteBishop, false},
+		{"white turn, black move", *startBrd1White, board.Sq(57), board.Sq(40), 0, true},
+		{"Knight try diagonal move", *startBrd1White, board.Sq(6), board.Sq(13), 0, true},
+		{"Q turn, P in the way", *startBrd1White, board.Sq(16), board.Sq(18), 0, true},
+		{"B turn, p in the way", *startBrd1White, board.Sq(37), board.Sq(23), 0, true},
+		{"P up, clash with p", *startBrd1White, board.Sq(22), board.Sq(30), 0, true},
+		{"P up, clash with B", *startBrd1White, board.Sq(29), board.Sq(37), 0, true},
+		{"R to P", *startBrd1White, board.Sq(0), board.Sq(8), 0, true},
+		{"Q to p", *startBrd1White, board.Sq(16), board.Sq(43), 0, false},
+		{"K O-O, N in the way", *startBrd1White, board.Sq(4), board.Sq(6), 0, true},
+		{"K O-O-O successful", *startBrd1White, board.Sq(4), board.Sq(2), 0, false},
+		{"K too close to k", *startBrd1White, board.Sq(4), board.Sq(11), 0, true},
+
+		{"p g4-f3 successful enPassant", *startBrd1Black, board.Sq(30), board.Sq(21), 0, false},
+		{"p g4-h3 enPassant not allowed", *startBrd1Black, board.Sq(30), board.Sq(23), 0, true},
+		{"k f3 under self-check", *startBrd1Black, board.Sq(20), board.Sq(21), 0, true},
+		{"K O-O through checked cells", *startBrd2White, board.Sq(4), board.Sq(6), 0, true},
+		{"K O-O-O through checked cells", *startBrd2White, board.Sq(4), board.Sq(2), 0, true},
+		{"k O-O not allowed", *startBrd2White, board.Sq(60), board.Sq(62), 0, true},
+		{"k O-O-O through busy cells", *startBrd2Black, board.Sq(60), board.Sq(58), 0, true},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			err := CanMove(tc.brd, tc.from, tc.to, tc.promoteTo)
+			if err != nil && !tc.isErr {
+				t.Fatalf("want nil, got err: %v", err)
+			}
+			if err == nil && tc.isErr {
+				t.Fatalf("want err, got nil")
+			}
+		})
+	}
+}
+
 func TestAdvancedLogic(t *testing.T) {
 	var (
 		emptyBrd board.Board
@@ -39,19 +107,19 @@ func TestAdvancedLogic(t *testing.T) {
 	startBrd2White, _ := board.FromFEN(startBrd2WhiteFEN)
 
 	tests := []struct {
-		name     string
-		brd      board.Board
-		from     square
-		to       square
-		newpiece board.Piece
-		newBoard board.Board
-		isValid  bool
-		isErr    bool
+		name      string
+		brd       board.Board
+		from      square
+		to        square
+		promoteTo board.Piece
+		newBoard  board.Board
+		isValid   bool
+		isErr     bool
 	}{
 		{"no piece", *startBrd1White, newSquare(32), newSquare(33), 0, emptyBrd, false, false},
-		{"no promotion, newpiece indicated", *startBrd1White, newSquare(16), newSquare(24), board.WhiteBishop, emptyBrd, false, false},
-		{"promotion, wrong color newpiece", *startBrd1White, newSquare(50), newSquare(57), board.BlackBishop, *startBrd1White, false, true},
-		{"promotion, no newpiece indicated", *startBrd1White, newSquare(50), newSquare(57), 0, emptyBrd, false, false},
+		{"no promotion, promoteTo indicated", *startBrd1White, newSquare(16), newSquare(24), board.WhiteBishop, emptyBrd, false, false},
+		{"promotion, wrong color promoteTo", *startBrd1White, newSquare(50), newSquare(57), board.BlackBishop, *startBrd1White, false, true},
+		{"promotion, no promoteTo indicated", *startBrd1White, newSquare(50), newSquare(57), 0, emptyBrd, false, false},
 		{"pawn promotion successful", *startBrd1White, newSquare(50), newSquare(57), board.WhiteBishop, *endBrd1_2White, true, false},
 		{"white turn, black move", *startBrd1White, newSquare(57), newSquare(40), 0, emptyBrd, false, false},
 		{"Knight try diagonal move", *startBrd1White, newSquare(6), newSquare(13), 0, emptyBrd, false, false},
@@ -76,7 +144,7 @@ func TestAdvancedLogic(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			newBoardRes, isValidRes, err := advancedLogic(tc.brd, tc.from, tc.to, tc.newpiece)
+			newBoardRes, isValidRes, err := advancedLogic(tc.brd, tc.from, tc.to, tc.promoteTo)
 			if err != nil && !tc.isErr {
 				t.Fatalf("want nil, got err: %v", err)
 			}

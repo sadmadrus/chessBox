@@ -10,8 +10,10 @@ import (
 // Кастомные ошибки валидации
 
 var (
+	errSquareNotExist                = fmt.Errorf("square does not exist") // либо экспортировать одноименную ошибку из пакета board
+	errPromoteToNotValid             = fmt.Errorf("promoteTo is not valid")
 	errPieceNotExist                 = fmt.Errorf("piece does not exist")
-	errNewpieceNotValid              = fmt.Errorf("newpiece is not valid")
+	errNewpieceNotValid              = fmt.Errorf("promoteTo is not valid")
 	errInvalidHttpMethod             = fmt.Errorf("method is not supported")
 	errFromToSquaresNotDiffer        = fmt.Errorf("from and to squares are not different")
 	errPawnMoveNotValid              = fmt.Errorf("pawn move is not valid")
@@ -25,8 +27,8 @@ var (
 	errClashWithPieceOfSameColor     = fmt.Errorf("clash with piece of the same color")
 	errClashWithKing                 = fmt.Errorf("clash with king")
 	errClashWithPawn                 = fmt.Errorf("pawn can not clash with another piece when moving vertically")
-	errNewpieceExist                 = fmt.Errorf("newpiece exists with no pawn promotion")
-	errNewpieceNotExist              = fmt.Errorf("newpiece does not exist but pawn promotion required")
+	errNewpieceExist                 = fmt.Errorf("promoteTo exists with no pawn promotion")
+	errNewpieceNotExist              = fmt.Errorf("promoteTo does not exist but pawn promotion required")
 	errPieceNotExistOnBoard          = fmt.Errorf("piece does not exist on board")
 	errKingChecked                   = fmt.Errorf("king checked after move")
 	errCastlingThroughCheckedSquare  = fmt.Errorf("castling is not valid through square under check")
@@ -34,6 +36,7 @@ var (
 	errPiecesStayInTheWay            = fmt.Errorf("piece or pieces stay in the way of figure move")
 	errPiecetypeNotExist             = fmt.Errorf("piece type does not exist")
 	errBoardNotValid                 = fmt.Errorf("board has no valid position")
+	errMoveNotValid                  = fmt.Errorf("move is not valid")
 )
 
 // Структуры клетки

@@ -86,7 +86,7 @@ type advancedResponse struct {
 // Advanced сервис отвечает за сложную валидацию хода по начальной и конечной клетке, а также по текущему состоянию
 // доски в нотации FEN.
 //
-// Также принимает на вход URL-параметр newpiece (это новая фигура, в которую нужно превратить
+// Также принимает на вход URL-параметр promoteTo (это новая фигура, в которую нужно превратить
 // пешку при достижении последнего ряда), в формате pieceВозвращает заголовок HttpResponse 200 (ход валиден) или
 // HttpsResponse 403 (ход невалиден). Возвращает HttpResponse 400 при некорректных входных данных и HttpsResponse 405
 // при некорректном методе запроса. Возвращает в теле JSON с конечной доской board в форате FEN.
@@ -95,7 +95,7 @@ type advancedResponse struct {
 // * доска board в формате UsFen (например, "rnbqkbnr~pppppppp~8~8~8~8~PPPPPPPP~RNBQKBNR+w+KQkq+-+0+1")
 // * начальная клетка предполагаемого хода from (число от 0 до 63, либо строка вида a1, c7 и т.п)
 // * конечная клетка предполагаемого хода to (число от 0 до 63, либо строка вида a1, c7 и т.п).
-// * фигура newpiece (q/r/b/n/Q/R/B/N или пустое значение)
+// * фигура promoteTo (q/r/b/n/Q/R/B/N или пустое значение)
 func Advanced(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "GET" && r.Method != "HEAD" {
 		log.Printf("inside Advanced %v: %v", errInvalidHttpMethod, r.Method)
@@ -144,10 +144,10 @@ func Advanced(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// валидация входных данных: фигура newpiece принимает q/r/b/n/Q/R/B/N или пустое значение
-	newpieceParsed := r.URL.Query().Get("newpiece")
+	// валидация входных данных: фигура promoteTo принимает q/r/b/n/Q/R/B/N или пустое значение
+	newpieceParsed := r.URL.Query().Get("promoteTo")
 	var newpiece board.Piece
-	newpiece, err = parsePiece(newpieceParsed, "newpiece")
+	newpiece, err = parsePiece(newpieceParsed, "promoteTo")
 	if err != nil {
 		log.Printf("%v: %v", errNewpieceNotValid, newpieceParsed)
 		w.WriteHeader(http.StatusBadRequest)

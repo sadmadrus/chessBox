@@ -1,3 +1,5 @@
+// Пакет validation валидирует ходы по текущему состоянию доски, начальной и конечной клеткам, и фигуре.
+
 package validation
 
 import (
@@ -10,9 +12,48 @@ import (
 	"github.com/sadmadrus/chessBox/internal/board/position"
 )
 
+// CanMove возвращает ошибку, если в шахматах такой ход невозможен.
+func CanMove(b board.Board, from, to board.Square, promoteTo board.Piece) error {
+	if !position.IsValid(b) {
+		return fmt.Errorf("%v: %v", errBoardNotValid, b)
+	}
+
+	if !from.IsValid() {
+		return fmt.Errorf("from %v: %s", errSquareNotExist, from)
+	}
+
+	if !to.IsValid() {
+		return fmt.Errorf("to %v: %s", errSquareNotExist, to)
+	}
+
+	fromSquare := newSquare(int8(from))
+	toSquare := newSquare(int8(to))
+
+	if fromSquare.isEqual(toSquare) {
+		return fmt.Errorf("%v: %d", errFromToSquaresNotDiffer, fromSquare)
+	}
+
+	if promoteTo < 0 || promoteTo == board.WhitePawn || promoteTo == board.BlackPawn || promoteTo >= board.WhiteKing {
+		return fmt.Errorf("%v: %d", errPromoteToNotValid, promoteTo)
+	}
+
+	// TODO: нет смысла функции advancedLogic возвращать новую доску и параметр ok.
+	// TODO: нет смысла в контроллерах. Нет смысла в parse функциях.
+	_, ok, err := advancedLogic(b, fromSquare, toSquare, promoteTo)
+	if err != nil {
+		return fmt.Errorf("can't validate the move: %w", err)
+	}
+
+	if !ok {
+		return errMoveNotValid
+	}
+
+	return nil
+}
+
 // advancedLogic обрабывает общую логику валидации хода. Возвращает доску и флаг валидации хода (true валиден, false нет).
 // В случае ошибки при обработке хода (некорректная клетка, фигура и т.п.), возвращает ошибку, в противном случае nil.
-func advancedLogic(b board.Board, from, to square, newpiece board.Piece) (newBoard board.Board, isValid bool, err error) {
+func advancedLogic(b board.Board, from, to square, promoteTo board.Piece) (newBoard board.Board, isValid bool, err error) {
 	// Логика валидации хода пошагово.
 	// 1. получаем фигуру, находящуюся в клетке from. Если в этой клетке фигуры нет, ход невалиден.
 	var piece board.Piece
@@ -26,9 +67,9 @@ func advancedLogic(b board.Board, from, to square, newpiece board.Piece) (newBoa
 	}
 
 	// 2. проверяем корректность данных о проходе пешки
-	isOk := checkPawnPromotion(piece, to, newpiece)
+	isOk := checkPawnPromotion(piece, to, promoteTo)
 	if !isOk {
-		log.Printf("%v or %v: %v %v %v %v (piece, from, to, newpiece)", errNewpieceNotExist, errNewpieceExist, piece, from, to, newpiece)
+		log.Printf("%v or %v: %v %v %v %v (piece, from, to, promoteTo)", errNewpieceNotExist, errNewpieceExist, piece, from, to, promoteTo)
 		return newBoard, isValid, nil
 	}
 
@@ -73,7 +114,7 @@ func advancedLogic(b board.Board, from, to square, newpiece board.Piece) (newBoa
 
 	// 8. На текущем этапе ход возможен. Генерируем новое положение доски newBoard. Так как до текущего положения ход
 	// валидирован, ошибок не ожидаем.
-	newBoard, err = getNewBoard(b, piece, from, to, newpiece)
+	newBoard, err = getNewBoard(b, piece, from, to, promoteTo)
 	if err != nil {
 		return newBoard, isValid, err
 	}
@@ -95,7 +136,7 @@ func advancedLogic(b board.Board, from, to square, newpiece board.Piece) (newBoa
 	return newBoard, isValid, nil
 }
 
-// checkPawnPromotion проверяет, что указанная пользователем новая фигура newpiece корректна относительно хода.
+// checkPawnPromotion проверяет, что указанная пользователем новая фигура promoteTo корректна относительно хода.
 // Возвращает true (фигура указана корректно) или false (некорректно).
 func checkPawnPromotion(piece board.Piece, to square, newpiece board.Piece) (isOk bool) {
 	// Если этим ходом проводится пешка, должна быть указана фигура. Если пешка не проводится, фигура не должна быть

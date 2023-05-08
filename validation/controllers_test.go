@@ -169,7 +169,7 @@ func TestAdvanced(t *testing.T) {
 		{"r a8-b6", classicUsFen, "a8", "b6", "", 403, ""},
 		{"e2-e4 with Q promotion", classicUsFen, "12", "28", "Q", 403, ""},
 		{"e2-e4 with b promotion", classicUsFen, "12", "28", "b", 403, ""},
-		{"no promotion, newpiece indicated", startBrd1WhiteUsFEN, "16", "24", "B", 403, ""},
+		{"no promotion, promoteTo indicated", startBrd1WhiteUsFEN, "16", "24", "B", 403, ""},
 
 		{"e2-e4 A", classicUsFen, "e2", "e4", "A", 400, ""},
 		{"e2-e4 B1", classicUsFen, "e2", "e4", "B1", 400, ""},
@@ -188,7 +188,7 @@ func TestAdvanced(t *testing.T) {
 			v.Add("board", tc.brd)
 			v.Add("from", tc.from)
 			v.Add("to", tc.to)
-			v.Add("newpiece", tc.newpiece)
+			v.Add("promoteTo", tc.newpiece)
 			u.RawQuery = v.Encode()
 
 			for _, method := range []string{"GET", "HEAD", "POST"} {
@@ -398,8 +398,8 @@ func FuzzSimpleAdvancedAvailableMoves(f *testing.F) {
 		"from=4&to=2&piece=nil",
 		"from=a7&to=b6&piece=Q",
 
-		"board=rnbq1bnr~ppP5~3p4~4pBBp~3PPPp1~QP2k1P1~P6P~R3K1NR+w+KQ+-+5+6&from=b3&to=b4&newpiece=",
-		"to=b8&from=c7&newpiece=B&board=rnbq1bnr~ppP5~3p4~4pBBp~3PPPp1~QP2k1P1~P6P~R3K1NR+w+KQ+-+5+6",
+		"board=rnbq1bnr~ppP5~3p4~4pBBp~3PPPp1~QP2k1P1~P6P~R3K1NR+w+KQ+-+5+6&from=b3&to=b4&promoteTo=",
+		"to=b8&from=c7&promoteTo=B&board=rnbq1bnr~ppP5~3p4~4pBBp~3PPPp1~QP2k1P1~P6P~R3K1NR+w+KQ+-+5+6",
 		"from=0&to=7&board=rn2k2r~8~8~8~3q4~6n1~8~R3K2R+b+KQq+-+5+6",
 
 		"board=3r4~p3PB2~2nr4~2k2Pp1~1b4Pq~1n1Q3P~1p1P1N2~BN2K2R+w+KQ+-+5+6&from=b3",

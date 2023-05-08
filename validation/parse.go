@@ -8,10 +8,10 @@ import (
 )
 
 // parsePiece переводит строковое представление фигуры типа piece (k/q/r/b/n/p/K/Q/R/B/N/P) в тип board.Piece; или фигуры
-// типа newpiece (q/r/b/n/Q/R/B/N или пустое значение) в тип board.Piece. Если преобразование невозможно, возвращает
+// типа promoteTo (q/r/b/n/Q/R/B/N или пустое значение) в тип board.Piece. Если преобразование невозможно, возвращает
 // ошибку. Если указаннекорректный тип фигуры pieceType, возвращает ошибку.
 func parsePiece(piece string, pieceType string) (board.Piece, error) {
-	if pieceType != "piece" && pieceType != "newpiece" {
+	if pieceType != "piece" && pieceType != "promoteTo" {
 		return 0, fmt.Errorf("%w: %s", errPiecetypeNotExist, pieceType)
 	}
 
@@ -47,7 +47,7 @@ func parsePiece(piece string, pieceType string) (board.Piece, error) {
 			return board.BlackPawn, nil
 		}
 
-	case "newpiece":
+	case "promoteTo":
 		switch piece {
 		case "":
 			return 0, nil
