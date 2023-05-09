@@ -12,9 +12,6 @@ import (
 var (
 	errSquareNotExist                = fmt.Errorf("square does not exist") // либо экспортировать одноименную ошибку из пакета board
 	errPromoteToNotValid             = fmt.Errorf("promoteTo is not valid")
-	errPieceNotExist                 = fmt.Errorf("piece does not exist")
-	errNewpieceNotValid              = fmt.Errorf("promoteTo is not valid")
-	errInvalidHttpMethod             = fmt.Errorf("method is not supported")
 	errFromToSquaresNotDiffer        = fmt.Errorf("from and to squares are not different")
 	errPawnMoveNotValid              = fmt.Errorf("pawn move is not valid")
 	errKnightMoveNotValid            = fmt.Errorf("knight move is not valid")
@@ -34,7 +31,6 @@ var (
 	errCastlingThroughCheckedSquare  = fmt.Errorf("castling is not valid through square under check")
 	errCastlingThroughOccupiedSquare = fmt.Errorf("castling is not valid through square occupied by other pieces")
 	errPiecesStayInTheWay            = fmt.Errorf("piece or pieces stay in the way of figure move")
-	errPiecetypeNotExist             = fmt.Errorf("piece type does not exist")
 	errBoardNotValid                 = fmt.Errorf("board has no valid position")
 	errMoveNotValid                  = fmt.Errorf("move is not valid")
 )
