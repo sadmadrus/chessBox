@@ -51,6 +51,34 @@ func CanMove(b board.Board, from, to board.Square, promoteTo board.Piece) error 
 	return nil
 }
 
+// AvailableMoves возвращает массив клеток, куда можно сделать ход.
+func AvailableMoves(b board.Board, from board.Square) (toSquares []board.Square) {
+	if !position.IsValid(b) {
+		return nil
+	}
+
+	if !from.IsValid() {
+		return nil
+	}
+
+	fromSquare := newSquare(int8(from))
+
+	movesSquare, err := getAvailableMoves(b, fromSquare)
+	if err != nil {
+		return nil
+	}
+
+	if len(movesSquare) == 0 {
+		return nil
+	}
+
+	for _, m := range movesSquare {
+		toSquares = append(toSquares, board.Sq(m.toInt()))
+	}
+
+	return toSquares
+}
+
 // advancedLogic обрабывает общую логику валидации хода. Возвращает доску и флаг валидации хода (true валиден, false нет).
 // В случае ошибки при обработке хода (некорректная клетка, фигура и т.п.), возвращает ошибку, в противном случае nil.
 func advancedLogic(b board.Board, from, to square, promoteTo board.Piece) (newBoard board.Board, isValid bool, err error) {

@@ -75,6 +75,128 @@ func TestCanMove(t *testing.T) {
 	}
 }
 
+func TestAvailableMoves(t *testing.T) {
+	var (
+		brdWhiteFEN = "3r4/p3PB2/2nr4/2k2Pp1/1b4Pq/1n1Q3P/1p1P1N2/RN2K2R w KQ g6 5 6"
+		brdBlackFEN = "3r4/p3PB2/2nr4/2k2Pp1/1b4Pq/1n1Q3P/1p1P1N2/RN2K2R b KQ - 5 6"
+		//invalidboardFEN = "dfahdfk 8jerq ~ + dfak"
+	)
+
+	brdWhite, _ := board.FromFEN(brdWhiteFEN)
+	brdBlack, _ := board.FromFEN(brdBlackFEN)
+	//invalidBrd, _ := board.FromFEN(invalidboardFEN)
+
+	tests := []struct {
+		name string
+		brd  board.Board
+		from board.Square
+		res  []board.Square
+	}{
+		//{"invalid board", *invalidBrd, board.Sq("e2"), []board.Square{}},
+		{"not exist 65", *brdWhite, board.Sq("65"), []board.Square{}},
+		{"empty c1", *brdWhite, board.Sq("c1"), []board.Square{}},
+
+		{"R a1 w", *brdWhite, board.Sq("a1"), []board.Square{board.Sq(8), board.Sq(16), board.Sq(24),
+			board.Sq(32), board.Sq(40), board.Sq(48)}},
+		{"R a1 b", *brdBlack, board.Sq("a1"), []board.Square{}},
+
+		{"N b1 w", *brdWhite, board.Sq(1), []board.Square{board.Sq(16), board.Sq(18)}},
+		{"N b1 b", *brdBlack, board.Sq(1), []board.Square{}},
+
+		{"K e1 w", *brdWhite, board.Sq("e1"), []board.Square{board.Sq(3), board.Sq(5),
+			board.Sq(6), board.Sq(12)}},
+		{"K e1 b", *brdBlack, board.Sq("e1"), []board.Square{}},
+
+		{"R h1 w", *brdWhite, board.Sq(7), []board.Square{board.Sq(5), board.Sq(6), board.Sq(15)}},
+		{"R h1 b", *brdBlack, board.Sq(7), []board.Square{}},
+
+		{"p b2 w", *brdWhite, board.Sq("b2"), []board.Square{}},
+		{"p b2 b", *brdBlack, board.Sq("b2"), []board.Square{board.Sq(0)}},
+
+		{"P d2 w", *brdWhite, board.Sq(11), []board.Square{}},
+		{"P d2 b", *brdBlack, board.Sq(11), []board.Square{}},
+
+		{"N f2 w", *brdWhite, board.Sq("f2"), []board.Square{}},
+		{"N f2 b", *brdBlack, board.Sq("f2"), []board.Square{}},
+
+		{"n b3 w", *brdWhite, board.Sq(17), []board.Square{}},
+		{"n b3 b", *brdBlack, board.Sq(17), []board.Square{board.Sq(0), board.Sq(2),
+			board.Sq(11), board.Sq(27), board.Sq(32)}},
+
+		{"Q d3 w", *brdWhite, board.Sq("d3"), []board.Square{board.Sq(5), board.Sq(10), board.Sq(12),
+			board.Sq(17), board.Sq(18), board.Sq(20), board.Sq(21), board.Sq(22), board.Sq(26),
+			board.Sq(27), board.Sq(28), board.Sq(33), board.Sq(35), board.Sq(40), board.Sq(43)}},
+		{"Q d3 b", *brdBlack, board.Sq("d3"), []board.Square{}},
+
+		{"P h3 w", *brdWhite, board.Sq(23), []board.Square{}},
+		{"P h3 b", *brdBlack, board.Sq(23), []board.Square{}},
+
+		{"b b4 w", *brdWhite, board.Sq("b4"), []board.Square{}},
+		{"b b4 b", *brdBlack, board.Sq("b4"), []board.Square{board.Sq(11), board.Sq(16),
+			board.Sq(18), board.Sq(32)}},
+
+		{"P g4 w", *brdWhite, board.Sq(30), []board.Square{}},
+		{"P g4 b", *brdBlack, board.Sq(30), []board.Square{}},
+
+		{"q h4 w", *brdWhite, board.Sq("h4"), []board.Square{}},
+		{"q h4 b", *brdBlack, board.Sq("h4"), []board.Square{board.Sq(13), board.Sq(22),
+			board.Sq(23), board.Sq(30), board.Sq(39), board.Sq(47), board.Sq(55), board.Sq(63)}},
+
+		{"k c5 w", *brdWhite, board.Sq(34), []board.Square{}},
+		{"k c5 b", *brdBlack, board.Sq(34), []board.Square{board.Sq(41)}},
+
+		{"P f5 w", *brdWhite, board.Sq("f5"), []board.Square{board.Sq(45), board.Sq(46)}},
+		{"P f5 b", *brdBlack, board.Sq("f5"), []board.Square{}},
+
+		{"p g5 w", *brdWhite, board.Sq(38), []board.Square{}},
+		{"p g5 b", *brdBlack, board.Sq(38), []board.Square{}},
+
+		{"n c6 w", *brdWhite, board.Sq("c6"), []board.Square{}},
+		{"n c6 b", *brdBlack, board.Sq("c6"), []board.Square{board.Sq(27), board.Sq(32), board.Sq(36),
+			board.Sq(52), board.Sq(57)}},
+
+		{"r d6 w", *brdWhite, board.Sq(43), []board.Square{}},
+		{"r d6 b", *brdBlack, board.Sq(43), []board.Square{board.Sq(19), board.Sq(27), board.Sq(35),
+			board.Sq(44), board.Sq(45), board.Sq(46), board.Sq(47), board.Sq(51)}},
+
+		{"p a7 w", *brdWhite, board.Sq("a7"), []board.Square{}},
+		{"p a7 b", *brdBlack, board.Sq("a7"), []board.Square{board.Sq(32), board.Sq(40)}},
+
+		{"P e7 w", *brdWhite, board.Sq(52), []board.Square{board.Sq(59), board.Sq(60)}},
+		{"P e7 b", *brdBlack, board.Sq(52), []board.Square{}},
+
+		{"B f7 w", *brdWhite, board.Sq("f7"), []board.Square{board.Sq(17), board.Sq(26), board.Sq(35),
+			board.Sq(39), board.Sq(44), board.Sq(46), board.Sq(60), board.Sq(62)}},
+		{"B f7 b", *brdBlack, board.Sq("f7"), []board.Square{}},
+
+		{"r d8 w", *brdWhite, board.Sq(59), []board.Square{}},
+		{"r d8 b", *brdBlack, board.Sq(59), []board.Square{board.Sq(51), board.Sq(56), board.Sq(57),
+			board.Sq(58), board.Sq(60), board.Sq(61), board.Sq(62), board.Sq(63)}},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+
+			res := AvailableMoves(tc.brd, tc.from)
+
+			fail := func() { t.Fatalf("want %d, got %d", tc.res, res) }
+
+			if len(res) != len(tc.res) {
+				fail()
+			}
+
+			sort.Slice(res, func(i, j int) bool { return int(res[i]) < int(res[j]) })
+			sort.Slice(tc.res, func(i, j int) bool { return int(tc.res[i]) < int(tc.res[j]) })
+
+			for i := range res {
+				if res[i] != tc.res[i] {
+					fail()
+				}
+			}
+		})
+	}
+}
+
 func TestAdvancedLogic(t *testing.T) {
 	var (
 		emptyBrd board.Board
