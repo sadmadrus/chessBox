@@ -7,7 +7,8 @@ import (
 	"github.com/sadmadrus/chessBox/internal/board"
 )
 
-func TestCanMove(t *testing.T) {
+// TODO: fix tests
+func TestIsValid(t *testing.T) {
 	var (
 		startBrd1WhiteFEN = "rnbq1bnr/ppP5/3p4/4pBBp/3PPPp1/QP2k1P1/P6P/R3K1NR w KQ - 5 6"
 		startBrd1BlackFEN = "rnbq1bnr/ppP5/3p4/4pB1p/3PPPp1/QP2k1P1/P6P/R3K1NR b KQ f3 5 6"
@@ -64,7 +65,7 @@ func TestCanMove(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			err := CanMove(tc.brd, tc.from, tc.to, tc.promoteTo)
+			_, err := IsValid(tc.brd, tc.from, tc.to, tc.promoteTo)
 			if err != nil && !tc.isErr {
 				t.Fatalf("want nil, got err: %v", err)
 			}
@@ -75,128 +76,7 @@ func TestCanMove(t *testing.T) {
 	}
 }
 
-func TestAvailableMoves(t *testing.T) {
-	var (
-		brdWhiteFEN = "3r4/p3PB2/2nr4/2k2Pp1/1b4Pq/1n1Q3P/1p1P1N2/RN2K2R w KQ g6 5 6"
-		brdBlackFEN = "3r4/p3PB2/2nr4/2k2Pp1/1b4Pq/1n1Q3P/1p1P1N2/RN2K2R b KQ - 5 6"
-		//invalidboardFEN = "dfahdfk 8jerq ~ + dfak"
-	)
-
-	brdWhite, _ := board.FromFEN(brdWhiteFEN)
-	brdBlack, _ := board.FromFEN(brdBlackFEN)
-	//invalidBrd, _ := board.FromFEN(invalidboardFEN)
-
-	tests := []struct {
-		name string
-		brd  board.Board
-		from board.Square
-		res  []board.Square
-	}{
-		//{"invalid board", *invalidBrd, board.Sq("e2"), []board.Square{}},
-		{"not exist 65", *brdWhite, board.Sq("65"), []board.Square{}},
-		{"empty c1", *brdWhite, board.Sq("c1"), []board.Square{}},
-
-		{"R a1 w", *brdWhite, board.Sq("a1"), []board.Square{board.Sq(8), board.Sq(16), board.Sq(24),
-			board.Sq(32), board.Sq(40), board.Sq(48)}},
-		{"R a1 b", *brdBlack, board.Sq("a1"), []board.Square{}},
-
-		{"N b1 w", *brdWhite, board.Sq(1), []board.Square{board.Sq(16), board.Sq(18)}},
-		{"N b1 b", *brdBlack, board.Sq(1), []board.Square{}},
-
-		{"K e1 w", *brdWhite, board.Sq("e1"), []board.Square{board.Sq(3), board.Sq(5),
-			board.Sq(6), board.Sq(12)}},
-		{"K e1 b", *brdBlack, board.Sq("e1"), []board.Square{}},
-
-		{"R h1 w", *brdWhite, board.Sq(7), []board.Square{board.Sq(5), board.Sq(6), board.Sq(15)}},
-		{"R h1 b", *brdBlack, board.Sq(7), []board.Square{}},
-
-		{"p b2 w", *brdWhite, board.Sq("b2"), []board.Square{}},
-		{"p b2 b", *brdBlack, board.Sq("b2"), []board.Square{board.Sq(0)}},
-
-		{"P d2 w", *brdWhite, board.Sq(11), []board.Square{}},
-		{"P d2 b", *brdBlack, board.Sq(11), []board.Square{}},
-
-		{"N f2 w", *brdWhite, board.Sq("f2"), []board.Square{}},
-		{"N f2 b", *brdBlack, board.Sq("f2"), []board.Square{}},
-
-		{"n b3 w", *brdWhite, board.Sq(17), []board.Square{}},
-		{"n b3 b", *brdBlack, board.Sq(17), []board.Square{board.Sq(0), board.Sq(2),
-			board.Sq(11), board.Sq(27), board.Sq(32)}},
-
-		{"Q d3 w", *brdWhite, board.Sq("d3"), []board.Square{board.Sq(5), board.Sq(10), board.Sq(12),
-			board.Sq(17), board.Sq(18), board.Sq(20), board.Sq(21), board.Sq(22), board.Sq(26),
-			board.Sq(27), board.Sq(28), board.Sq(33), board.Sq(35), board.Sq(40), board.Sq(43)}},
-		{"Q d3 b", *brdBlack, board.Sq("d3"), []board.Square{}},
-
-		{"P h3 w", *brdWhite, board.Sq(23), []board.Square{}},
-		{"P h3 b", *brdBlack, board.Sq(23), []board.Square{}},
-
-		{"b b4 w", *brdWhite, board.Sq("b4"), []board.Square{}},
-		{"b b4 b", *brdBlack, board.Sq("b4"), []board.Square{board.Sq(11), board.Sq(16),
-			board.Sq(18), board.Sq(32)}},
-
-		{"P g4 w", *brdWhite, board.Sq(30), []board.Square{}},
-		{"P g4 b", *brdBlack, board.Sq(30), []board.Square{}},
-
-		{"q h4 w", *brdWhite, board.Sq("h4"), []board.Square{}},
-		{"q h4 b", *brdBlack, board.Sq("h4"), []board.Square{board.Sq(13), board.Sq(22),
-			board.Sq(23), board.Sq(30), board.Sq(39), board.Sq(47), board.Sq(55), board.Sq(63)}},
-
-		{"k c5 w", *brdWhite, board.Sq(34), []board.Square{}},
-		{"k c5 b", *brdBlack, board.Sq(34), []board.Square{board.Sq(41)}},
-
-		{"P f5 w", *brdWhite, board.Sq("f5"), []board.Square{board.Sq(45), board.Sq(46)}},
-		{"P f5 b", *brdBlack, board.Sq("f5"), []board.Square{}},
-
-		{"p g5 w", *brdWhite, board.Sq(38), []board.Square{}},
-		{"p g5 b", *brdBlack, board.Sq(38), []board.Square{}},
-
-		{"n c6 w", *brdWhite, board.Sq("c6"), []board.Square{}},
-		{"n c6 b", *brdBlack, board.Sq("c6"), []board.Square{board.Sq(27), board.Sq(32), board.Sq(36),
-			board.Sq(52), board.Sq(57)}},
-
-		{"r d6 w", *brdWhite, board.Sq(43), []board.Square{}},
-		{"r d6 b", *brdBlack, board.Sq(43), []board.Square{board.Sq(19), board.Sq(27), board.Sq(35),
-			board.Sq(44), board.Sq(45), board.Sq(46), board.Sq(47), board.Sq(51)}},
-
-		{"p a7 w", *brdWhite, board.Sq("a7"), []board.Square{}},
-		{"p a7 b", *brdBlack, board.Sq("a7"), []board.Square{board.Sq(32), board.Sq(40)}},
-
-		{"P e7 w", *brdWhite, board.Sq(52), []board.Square{board.Sq(59), board.Sq(60)}},
-		{"P e7 b", *brdBlack, board.Sq(52), []board.Square{}},
-
-		{"B f7 w", *brdWhite, board.Sq("f7"), []board.Square{board.Sq(17), board.Sq(26), board.Sq(35),
-			board.Sq(39), board.Sq(44), board.Sq(46), board.Sq(60), board.Sq(62)}},
-		{"B f7 b", *brdBlack, board.Sq("f7"), []board.Square{}},
-
-		{"r d8 w", *brdWhite, board.Sq(59), []board.Square{}},
-		{"r d8 b", *brdBlack, board.Sq(59), []board.Square{board.Sq(51), board.Sq(56), board.Sq(57),
-			board.Sq(58), board.Sq(60), board.Sq(61), board.Sq(62), board.Sq(63)}},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-
-			res := AvailableMoves(tc.brd, tc.from)
-
-			fail := func() { t.Fatalf("want %d, got %d", tc.res, res) }
-
-			if len(res) != len(tc.res) {
-				fail()
-			}
-
-			sort.Slice(res, func(i, j int) bool { return int(res[i]) < int(res[j]) })
-			sort.Slice(tc.res, func(i, j int) bool { return int(tc.res[i]) < int(tc.res[j]) })
-
-			for i := range res {
-				if res[i] != tc.res[i] {
-					fail()
-				}
-			}
-		})
-	}
-}
-
+// TODO: fix tests
 func TestAdvancedLogic(t *testing.T) {
 	var (
 		emptyBrd board.Board
@@ -266,16 +146,7 @@ func TestAdvancedLogic(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			newBoardRes, isValidRes, err := advancedLogic(tc.brd, tc.from, tc.to, tc.promoteTo)
-			if err != nil && !tc.isErr {
-				t.Fatalf("want nil, got err: %v", err)
-			}
-			if err == nil && tc.isErr {
-				t.Fatalf("want err, got nil")
-			}
-			if newBoardRes != tc.newBoard {
-				t.Fatalf("want newBoard %v, got %v", tc.newBoard, newBoardRes)
-			}
+			isValidRes := validationLogic(tc.brd, tc.from, tc.to, tc.promoteTo)
 			if isValidRes != tc.isValid {
 				t.Fatalf("want isValid %v, got %v", tc.isValid, isValidRes)
 			}
@@ -285,11 +156,11 @@ func TestAdvancedLogic(t *testing.T) {
 
 func TestCheckPromotion(t *testing.T) {
 	tests := []struct {
-		name     string
-		piece    board.Piece
-		to       square
-		newpiece board.Piece
-		isOk     bool
+		name      string
+		piece     board.Piece
+		to        square
+		promoteTo board.Piece
+		isOk      bool
 	}{
 		{"p a1 to b", board.BlackPawn, newSquare(0), board.BlackBishop, true},
 		{"P h8 to 0", board.WhitePawn, newSquare(63), 0, false},
@@ -300,7 +171,7 @@ func TestCheckPromotion(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			res := checkPawnPromotion(tc.piece, tc.to, tc.newpiece)
+			res := checkPawnPromotion(tc.piece, tc.to, tc.promoteTo)
 			if res != tc.isOk {
 				t.Fatalf("want %v, got %v", tc.isOk, res)
 			}
@@ -625,6 +496,7 @@ func TestIsSquareChecked(t *testing.T) {
 	}
 }
 
+// TODO: fix tests
 func TestGetAvailableMoves(t *testing.T) {
 	var (
 		// Одна и та же позиция проверяется для каждой фигуры черных и белых
@@ -638,94 +510,84 @@ func TestGetAvailableMoves(t *testing.T) {
 	tests := []struct {
 		name  string
 		brd   board.Board
-		from  square
-		res   []square
+		from  board.Square
+		res   []board.Square
 		isErr bool
 	}{
-		{"not exist 65", *brdWhite, newSquare(65), []square{}, true},
-		{"empty c1", *brdWhite, newSquare(2), []square{}, false},
+		{"not exist 65", *brdWhite, board.Sq(65), []board.Square{}, true},
+		{"empty c1", *brdWhite, board.Sq(2), []board.Square{}, false},
 
-		{"R a1 w", *brdWhite, newSquare(0), []square{newSquare(8), newSquare(16), newSquare(24),
-			newSquare(32), newSquare(40), newSquare(48)}, false},
-		{"R a1 b", *brdBlack, newSquare(0), []square{}, false},
+		{"R a1 w", *brdWhite, board.Sq(0), []board.Square{8, 16, 24, 32, 40, 48}, false},
+		{"R a1 b", *brdBlack, board.Sq(0), []board.Square{}, false},
 
-		{"N b1 w", *brdWhite, newSquare(1), []square{newSquare(16), newSquare(18)}, false},
-		{"N b1 b", *brdBlack, newSquare(1), []square{}, false},
+		{"N b1 w", *brdWhite, board.Sq(1), []board.Square{16, 18}, false},
+		{"N b1 b", *brdBlack, board.Sq(1), []board.Square{}, false},
 
-		{"K e1 w", *brdWhite, newSquare(4), []square{newSquare(3), newSquare(5),
-			newSquare(6), newSquare(12)}, false},
-		{"K e1 b", *brdBlack, newSquare(4), []square{}, false},
+		{"K e1 w", *brdWhite, board.Sq(4), []board.Square{3, 5, 6, 12}, false},
+		{"K e1 b", *brdBlack, board.Sq(4), []board.Square{}, false},
 
-		{"R h1 w", *brdWhite, newSquare(7), []square{newSquare(5), newSquare(6), newSquare(15)}, false},
-		{"R h1 b", *brdBlack, newSquare(7), []square{}, false},
+		{"R h1 w", *brdWhite, board.Sq(7), []board.Square{5, 6, 15}, false},
+		{"R h1 b", *brdBlack, board.Sq(7), []board.Square{}, false},
 
-		{"p b2 w", *brdWhite, newSquare(9), []square{}, false},
-		{"p b2 b", *brdBlack, newSquare(9), []square{newSquare(0)}, false},
+		{"p b2 w", *brdWhite, board.Sq(9), []board.Square{}, false},
+		{"p b2 b", *brdBlack, board.Sq(9), []board.Square{0}, false},
 
-		{"P d2 w", *brdWhite, newSquare(11), []square{}, false},
-		{"P d2 b", *brdBlack, newSquare(11), []square{}, false},
+		{"P d2 w", *brdWhite, board.Sq(11), []board.Square{}, false},
+		{"P d2 b", *brdBlack, board.Sq(11), []board.Square{}, false},
 
-		{"N f2 w", *brdWhite, newSquare(13), []square{}, false},
-		{"N f2 b", *brdBlack, newSquare(13), []square{}, false},
+		{"N f2 w", *brdWhite, board.Sq(13), []board.Square{}, false},
+		{"N f2 b", *brdBlack, board.Sq(13), []board.Square{}, false},
 
-		{"n b3 w", *brdWhite, newSquare(17), []square{}, false},
-		{"n b3 b", *brdBlack, newSquare(17), []square{newSquare(0), newSquare(2), newSquare(11),
-			newSquare(27), newSquare(32)}, false},
+		{"n b3 w", *brdWhite, board.Sq(17), []board.Square{}, false},
+		{"n b3 b", *brdBlack, board.Sq(17), []board.Square{0, 2, 11, 27, 32}, false},
 
-		{"Q d3 w", *brdWhite, newSquare(19), []square{newSquare(17), newSquare(18), newSquare(20),
-			newSquare(21), newSquare(22), newSquare(27), newSquare(35), newSquare(43), newSquare(10),
-			newSquare(12), newSquare(5), newSquare(26), newSquare(33), newSquare(40), newSquare(28)}, false},
-		{"Q d3 b", *brdBlack, newSquare(19), []square{}, false},
+		{"Q d3 w", *brdWhite, board.Sq(19), []board.Square{17, 18, 20, 21, 22, 27, 35, 43, 10,
+			12, 5, 26, 33, 40, 28}, false},
+		{"Q d3 b", *brdBlack, board.Sq(19), []board.Square{}, false},
 
-		{"P h3 w", *brdWhite, newSquare(23), []square{}, false},
-		{"P h3 b", *brdBlack, newSquare(23), []square{}, false},
+		{"P h3 w", *brdWhite, board.Sq(23), []board.Square{}, false},
+		{"P h3 b", *brdBlack, board.Sq(23), []board.Square{}, false},
 
-		{"b b4 w", *brdWhite, newSquare(25), []square{}, false},
-		{"b b4 b", *brdBlack, newSquare(25), []square{newSquare(16), newSquare(18), newSquare(11),
-			newSquare(32)}, false},
+		{"b b4 w", *brdWhite, board.Sq(25), []board.Square{}, false},
+		{"b b4 b", *brdBlack, board.Sq(25), []board.Square{16, 18, 11, 32}, false},
 
-		{"P g4 w", *brdWhite, newSquare(30), []square{}, false},
-		{"P g4 b", *brdBlack, newSquare(30), []square{}, false},
+		{"P g4 w", *brdWhite, board.Sq(30), []board.Square{}, false},
+		{"P g4 b", *brdBlack, board.Sq(30), []board.Square{}, false},
 
-		{"q h4 w", *brdWhite, newSquare(31), []square{}, false},
-		{"q h4 b", *brdBlack, newSquare(31), []square{newSquare(23), newSquare(39), newSquare(47),
-			newSquare(55), newSquare(63), newSquare(30), newSquare(22), newSquare(13)}, false},
+		{"q h4 w", *brdWhite, board.Sq(31), []board.Square{}, false},
+		{"q h4 b", *brdBlack, board.Sq(31), []board.Square{23, 39, 47, 55, 63, 30, 22, 13}, false},
 
-		{"k c5 w", *brdWhite, newSquare(34), []square{}, false},
-		{"k c5 b", *brdBlack, newSquare(34), []square{newSquare(41)}, false},
+		{"k c5 w", *brdWhite, board.Sq(34), []board.Square{}, false},
+		{"k c5 b", *brdBlack, board.Sq(34), []board.Square{41}, false},
 
-		{"P f5 w", *brdWhite, newSquare(37), []square{newSquare(45), newSquare(46)}, false},
-		{"P f5 b", *brdBlack, newSquare(37), []square{}, false},
+		{"P f5 w", *brdWhite, board.Sq(37), []board.Square{45, 46}, false},
+		{"P f5 b", *brdBlack, board.Sq(37), []board.Square{}, false},
 
-		{"p g5 w", *brdWhite, newSquare(38), []square{}, false},
-		{"p g5 b", *brdBlack, newSquare(38), []square{}, false},
+		{"p g5 w", *brdWhite, board.Sq(38), []board.Square{}, false},
+		{"p g5 b", *brdBlack, board.Sq(38), []board.Square{}, false},
 
-		{"n c6 w", *brdWhite, newSquare(42), []square{}, false},
-		{"n c6 b", *brdBlack, newSquare(42), []square{newSquare(32), newSquare(27),
-			newSquare(36), newSquare(52), newSquare(57)}, false},
+		{"n c6 w", *brdWhite, board.Sq(42), []board.Square{}, false},
+		{"n c6 b", *brdBlack, board.Sq(42), []board.Square{32, 27, 36, 52, 57}, false},
 
-		{"r d6 w", *brdWhite, newSquare(43), []square{}, false},
-		{"r d6 b", *brdBlack, newSquare(43), []square{newSquare(19), newSquare(27), newSquare(35),
-			newSquare(51), newSquare(44), newSquare(45), newSquare(46), newSquare(47)}, false},
+		{"r d6 w", *brdWhite, board.Sq(43), []board.Square{}, false},
+		{"r d6 b", *brdBlack, board.Sq(43), []board.Square{19, 27, 35, 51, 44, 45, 46, 47}, false},
 
-		{"p a7 w", *brdWhite, newSquare(48), []square{}, false},
-		{"p a7 b", *brdBlack, newSquare(48), []square{newSquare(40), newSquare(32)}, false},
+		{"p a7 w", *brdWhite, board.Sq(48), []board.Square{}, false},
+		{"p a7 b", *brdBlack, board.Sq(48), []board.Square{40, 32}, false},
 
-		{"P e7 w", *brdWhite, newSquare(52), []square{newSquare(59), newSquare(60)}, false},
-		{"P e7 b", *brdBlack, newSquare(52), []square{}, false},
+		{"P e7 w", *brdWhite, board.Sq(52), []board.Square{59, 60}, false},
+		{"P e7 b", *brdBlack, board.Sq(52), []board.Square{}, false},
 
-		{"B f7 w", *brdWhite, newSquare(53), []square{newSquare(60), newSquare(62), newSquare(46),
-			newSquare(39), newSquare(44), newSquare(35), newSquare(26), newSquare(17)}, false},
-		{"B f7 b", *brdBlack, newSquare(53), []square{}, false},
+		{"B f7 w", *brdWhite, board.Sq(53), []board.Square{60, 62, 46, 39, 44, 35, 26, 17}, false},
+		{"B f7 b", *brdBlack, board.Sq(53), []board.Square{}, false},
 
-		{"r d8 w", *brdWhite, newSquare(59), []square{}, false},
-		{"r d8 b", *brdBlack, newSquare(59), []square{newSquare(51), newSquare(56), newSquare(57),
-			newSquare(58), newSquare(60), newSquare(61), newSquare(62), newSquare(63)}, false},
+		{"r d8 w", *brdWhite, board.Sq(59), []board.Square{}, false},
+		{"r d8 b", *brdBlack, board.Sq(59), []board.Square{51, 56, 57, 58, 60, 61, 62, 63}, false},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			res, err := getAvailableMoves(tc.brd, tc.from)
+			res, err := GetAvailableMoves(tc.brd, tc.from)
 			if err != nil && !tc.isErr {
 				t.Fatalf("want nil, got err")
 			}
@@ -738,8 +600,8 @@ func TestGetAvailableMoves(t *testing.T) {
 				fail()
 			}
 
-			sort.Slice(res, func(i, j int) bool { return res[i].toInt() < res[j].toInt() })
-			sort.Slice(tc.res, func(i, j int) bool { return tc.res[i].toInt() < tc.res[j].toInt() })
+			sort.Slice(res, func(i, j int) bool { return int(res[i]) < int(res[j]) })
+			sort.Slice(tc.res, func(i, j int) bool { return int(tc.res[i]) < int(tc.res[j]) })
 
 			for i := range res {
 				if res[i] != tc.res[i] {
