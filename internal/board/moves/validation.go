@@ -1,6 +1,6 @@
-// Пакет validation валидирует ходы по текущему состоянию доски, начальной и конечной клеткам, и фигуре.
+// Пакет moves валидирует ходы по текущему состоянию доски, начальной и конечной клеткам, и фигуре.
 
-package validation
+package moves
 
 import (
 	"fmt"
@@ -40,6 +40,48 @@ func IsValid(b board.Board, from, to board.Square, promoteTo board.Piece) (bool,
 	}
 
 	return true, nil
+}
+
+// GetAvailableMoves по текущей позиции на доске b и клетке, с которой делается ход from определяет срез допустимых
+// клеток, куда можно передвинуть данную фигуру moves. Срез клеток возвращается отсортированным по возрастанию.
+// Пустой срез означает, что либо клетка пустая, либо на клетке стоит фигура, которой не принадлежит ход, либо на клетке
+// стоит фигура правильного цвета, для которой нет разрешенных ходов.
+// Если в входные данные некорректны, возвращается ошибка, иначе возвращается nil. Некорректными считаются данные:
+// 1. доска b невалидна (ErrBoardNotValid).
+// 2. клетка from невалидна (ErrSquareNotExist).
+func GetAvailableMoves(b board.Board, from board.Square) ([]board.Square, error) {
+	// 1. валидность доски b.
+	if !position.IsValid(b) {
+		return nil, ErrBoardNotValid
+	}
+
+	// 2. валидность клетки from.
+	if !from.IsValid() {
+		return nil, ErrSquareNotExist
+	}
+
+	fromSquare := newSquare(int8(from))
+	allMoves, _ := getMoves(b, fromSquare)
+
+	var moves []board.Square
+	var piece board.Piece
+	piece, _ = b.Get(from)
+
+	for _, to := range allMoves {
+		var promoteTo board.Piece
+		if piece == board.WhitePawn && to.row == 7 {
+			promoteTo = board.WhiteQueen
+		} else if piece == board.BlackPawn && to.row == 0 {
+			promoteTo = board.BlackQueen
+		}
+
+		isValid, _ := IsValid(b, from, board.Sq(to.toInt()), promoteTo)
+		if isValid {
+			moves = append(moves, board.Sq(to.toInt()))
+		}
+	}
+
+	return moves, nil
 }
 
 // isDataValid проверяет корректность входных данных и возвращает ошибку или nil. Некорректными входными данными считаются:
@@ -82,50 +124,6 @@ func isDataValid(b board.Board, from, to board.Square, promoteTo board.Piece) er
 	}
 
 	return nil
-}
-
-// GetAvailableMoves по текущей позиции на доске b и клетке, с которой делается ход from определяет срез допустимых
-// клеток, куда можно передвинуть данную фигуру moves. Срез клеток возвращается отсортированным по возрастанию.
-// Пустой срез означает, что либо клетка пустая, либо на клетке стоит фигура, которой не принадлежит ход, либо на клетке
-// стоит фигура правильного цвета, для которой нет разрешенных ходов.
-// Если в входные данные некорректны, возвращается ошибка, иначе возвращается nil. Некорректными считаются данные:
-// 1. доска b невалидна (ErrBoardNotValid).
-// 2. клетка from невалидна (ErrSquareNotExist).
-// TODO пересмотреть тесты, переделала.
-func GetAvailableMoves(b board.Board, from board.Square) ([]board.Square, error) {
-	// 1. валидность доски b.
-	if !position.IsValid(b) {
-		return nil, ErrBoardNotValid
-	}
-
-	// 2. валидность клетки from.
-	if !from.IsValid() {
-		return nil, ErrSquareNotExist
-	}
-
-	fromSquare := newSquare(int8(from))
-	allMoves, _ := getMoves(b, fromSquare)
-
-	var moves []board.Square
-	var piece board.Piece
-	piece, _ = b.Get(from)
-
-	for _, to := range allMoves {
-		var isValid bool
-		var promoteTo board.Piece
-		if piece == board.WhitePawn && to.row == 7 {
-			promoteTo = board.WhiteQueen
-		} else if piece == board.BlackPawn && to.row == 0 {
-			promoteTo = board.BlackQueen
-		}
-
-		isValid = validationLogic(b, fromSquare, to, promoteTo)
-		if isValid {
-			moves = append(moves, board.Sq(to.toInt()))
-		}
-	}
-
-	return moves, nil
 }
 
 // validationLogic обрабывает общую логику валидации хода. Возвращает флаг валидации хода (true валиден, false нет).

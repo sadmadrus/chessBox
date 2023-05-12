@@ -1,12 +1,12 @@
-package validation
+package moves
 
 import (
+	"sort"
 	"testing"
 
 	"github.com/sadmadrus/chessBox/internal/board"
 )
 
-// TODO: fix tests
 func TestIsValid(t *testing.T) {
 	var (
 		startBrd1WhiteFEN = "rnbq1bnr/ppP5/3p4/4pBBp/3PPPp1/QP2k1P1/P6P/R3K1NR w KQ - 5 6"
@@ -522,118 +522,121 @@ func TestIsSquareChecked(t *testing.T) {
 	}
 }
 
-// TODO: fix tests
-//func TestGetAvailableMoves(t *testing.T) {
-//	var (
-//		// Одна и та же позиция проверяется для каждой фигуры черных и белых
-//		brdWhiteFEN = "3r4/p3PB2/2nr4/2k2Pp1/1b4Pq/1n1Q3P/1p1P1N2/RN2K2R w KQ g6 5 6"
-//		brdBlackFEN = "3r4/p3PB2/2nr4/2k2Pp1/1b4Pq/1n1Q3P/1p1P1N2/RN2K2R b KQ g6 5 6"
-//	)
-//
-//	brdWhite, _ := board.FromFEN(brdWhiteFEN)
-//	brdBlack, _ := board.FromFEN(brdBlackFEN)
-//
-//	tests := []struct {
-//		name  string
-//		brd   board.Board
-//		from  board.Square
-//		res   []board.Square
-//		isErr bool
-//	}{
-//		{"not exist 65", *brdWhite, board.Sq(65), []board.Square{}, true},
-//		{"empty c1", *brdWhite, board.Sq(2), []board.Square{}, false},
-//
-//		{"R a1 w", *brdWhite, board.Sq(0), []board.Square{8, 16, 24, 32, 40, 48}, false},
-//		{"R a1 b", *brdBlack, board.Sq(0), []board.Square{}, false},
-//
-//		{"N b1 w", *brdWhite, board.Sq(1), []board.Square{16, 18}, false},
-//		{"N b1 b", *brdBlack, board.Sq(1), []board.Square{}, false},
-//
-//		{"K e1 w", *brdWhite, board.Sq(4), []board.Square{3, 5, 6, 12}, false},
-//		{"K e1 b", *brdBlack, board.Sq(4), []board.Square{}, false},
-//
-//		{"R h1 w", *brdWhite, board.Sq(7), []board.Square{5, 6, 15}, false},
-//		{"R h1 b", *brdBlack, board.Sq(7), []board.Square{}, false},
-//
-//		{"p b2 w", *brdWhite, board.Sq(9), []board.Square{}, false},
-//		{"p b2 b", *brdBlack, board.Sq(9), []board.Square{0}, false},
-//
-//		{"P d2 w", *brdWhite, board.Sq(11), []board.Square{}, false},
-//		{"P d2 b", *brdBlack, board.Sq(11), []board.Square{}, false},
-//
-//		{"N f2 w", *brdWhite, board.Sq(13), []board.Square{}, false},
-//		{"N f2 b", *brdBlack, board.Sq(13), []board.Square{}, false},
-//
-//		{"n b3 w", *brdWhite, board.Sq(17), []board.Square{}, false},
-//		{"n b3 b", *brdBlack, board.Sq(17), []board.Square{0, 2, 11, 27, 32}, false},
-//
-//		{"Q d3 w", *brdWhite, board.Sq(19), []board.Square{17, 18, 20, 21, 22, 27, 35, 43, 10,
-//			12, 5, 26, 33, 40, 28}, false},
-//		{"Q d3 b", *brdBlack, board.Sq(19), []board.Square{}, false},
-//
-//		{"P h3 w", *brdWhite, board.Sq(23), []board.Square{}, false},
-//		{"P h3 b", *brdBlack, board.Sq(23), []board.Square{}, false},
-//
-//		{"b b4 w", *brdWhite, board.Sq(25), []board.Square{}, false},
-//		{"b b4 b", *brdBlack, board.Sq(25), []board.Square{16, 18, 11, 32}, false},
-//
-//		{"P g4 w", *brdWhite, board.Sq(30), []board.Square{}, false},
-//		{"P g4 b", *brdBlack, board.Sq(30), []board.Square{}, false},
-//
-//		{"q h4 w", *brdWhite, board.Sq(31), []board.Square{}, false},
-//		{"q h4 b", *brdBlack, board.Sq(31), []board.Square{23, 39, 47, 55, 63, 30, 22, 13}, false},
-//
-//		{"k c5 w", *brdWhite, board.Sq(34), []board.Square{}, false},
-//		{"k c5 b", *brdBlack, board.Sq(34), []board.Square{41}, false},
-//
-//		{"P f5 w", *brdWhite, board.Sq(37), []board.Square{45, 46}, false},
-//		{"P f5 b", *brdBlack, board.Sq(37), []board.Square{}, false},
-//
-//		{"p g5 w", *brdWhite, board.Sq(38), []board.Square{}, false},
-//		{"p g5 b", *brdBlack, board.Sq(38), []board.Square{}, false},
-//
-//		{"n c6 w", *brdWhite, board.Sq(42), []board.Square{}, false},
-//		{"n c6 b", *brdBlack, board.Sq(42), []board.Square{32, 27, 36, 52, 57}, false},
-//
-//		{"r d6 w", *brdWhite, board.Sq(43), []board.Square{}, false},
-//		{"r d6 b", *brdBlack, board.Sq(43), []board.Square{19, 27, 35, 51, 44, 45, 46, 47}, false},
-//
-//		{"p a7 w", *brdWhite, board.Sq(48), []board.Square{}, false},
-//		{"p a7 b", *brdBlack, board.Sq(48), []board.Square{40, 32}, false},
-//
-//		{"P e7 w", *brdWhite, board.Sq(52), []board.Square{59, 60}, false},
-//		{"P e7 b", *brdBlack, board.Sq(52), []board.Square{}, false},
-//
-//		{"B f7 w", *brdWhite, board.Sq(53), []board.Square{60, 62, 46, 39, 44, 35, 26, 17}, false},
-//		{"B f7 b", *brdBlack, board.Sq(53), []board.Square{}, false},
-//
-//		{"r d8 w", *brdWhite, board.Sq(59), []board.Square{}, false},
-//		{"r d8 b", *brdBlack, board.Sq(59), []board.Square{51, 56, 57, 58, 60, 61, 62, 63}, false},
-//	}
-//
-//	for _, tc := range tests {
-//		t.Run(tc.name, func(t *testing.T) {
-//			res, err := GetAvailableMoves(tc.brd, tc.from)
-//			if err != nil && !tc.isErr {
-//				t.Fatalf("want nil, got err")
-//			}
-//			if err == nil && tc.isErr {
-//				t.Fatalf("want err, got nil")
-//			}
-//
-//			fail := func() { t.Fatalf("want %d, got %d", tc.res, res) }
-//			if len(res) != len(tc.res) {
-//				fail()
-//			}
-//
-//			sort.Slice(res, func(i, j int) bool { return int(res[i]) < int(res[j]) })
-//			sort.Slice(tc.res, func(i, j int) bool { return int(tc.res[i]) < int(tc.res[j]) })
-//
-//			for i := range res {
-//				if res[i] != tc.res[i] {
-//					fail()
-//				}
-//			}
-//		})
-//	}
-//}
+func TestGetAvailableMoves(t *testing.T) {
+	var (
+		invalidBrdFEN = "rnbq1bnr/ppP5/3p4/4pBBp/3PPPp1/QP2k1P1/P6P/R3KKNR w KQ - 5 6"
+
+		// Одна и та же позиция проверяется для каждой фигуры черных и белых
+		brdWhiteFEN = "3r4/p3PB2/2nr4/2k2Pp1/1b4Pq/1n1Q3P/1p1P1N2/RN2K2R w KQ g6 5 6"
+		brdBlackFEN = "3r4/p3PB2/2nr4/2k2Pp1/1b4Pq/1n1Q3P/1p1P1N2/RN2K2R b KQ - 5 6"
+	)
+
+	invalidBrd, _ := board.FromFEN(invalidBrdFEN)
+	brdWhite, _ := board.FromFEN(brdWhiteFEN)
+	brdBlack, _ := board.FromFEN(brdBlackFEN)
+
+	tests := []struct {
+		name  string
+		brd   board.Board
+		from  board.Square
+		res   []board.Square
+		isErr bool
+	}{
+		{"invalid board", *invalidBrd, board.Sq(0), []board.Square{}, true},
+		{"not exist 65", *brdWhite, board.Sq(65), []board.Square{}, true},
+		{"empty c1", *brdWhite, board.Sq(2), []board.Square{}, false},
+
+		{"R a1 w", *brdWhite, board.Sq(0), []board.Square{8, 16, 24, 32, 40, 48}, false},
+		{"R a1 b", *brdBlack, board.Sq(0), []board.Square{}, false},
+
+		{"N b1 w", *brdWhite, board.Sq(1), []board.Square{16, 18}, false},
+		{"N b1 b", *brdBlack, board.Sq(1), []board.Square{}, false},
+
+		{"K e1 w", *brdWhite, board.Sq(4), []board.Square{3, 5, 6, 12}, false},
+		{"K e1 b", *brdBlack, board.Sq(4), []board.Square{}, false},
+
+		{"R h1 w", *brdWhite, board.Sq(7), []board.Square{5, 6, 15}, false},
+		{"R h1 b", *brdBlack, board.Sq(7), []board.Square{}, false},
+
+		{"p b2 w", *brdWhite, board.Sq(9), []board.Square{}, false},
+		{"p b2 b", *brdBlack, board.Sq(9), []board.Square{0}, false},
+
+		{"P d2 w", *brdWhite, board.Sq(11), []board.Square{}, false},
+		{"P d2 b", *brdBlack, board.Sq(11), []board.Square{}, false},
+
+		{"N f2 w", *brdWhite, board.Sq(13), []board.Square{}, false},
+		{"N f2 b", *brdBlack, board.Sq(13), []board.Square{}, false},
+
+		{"n b3 w", *brdWhite, board.Sq(17), []board.Square{}, false},
+		{"n b3 b", *brdBlack, board.Sq(17), []board.Square{0, 2, 11, 27, 32}, false},
+
+		{"Q d3 w", *brdWhite, board.Sq(19), []board.Square{17, 18, 20, 21, 22, 27, 35, 43, 10,
+			12, 5, 26, 33, 40, 28}, false},
+		{"Q d3 b", *brdBlack, board.Sq(19), []board.Square{}, false},
+
+		{"P h3 w", *brdWhite, board.Sq(23), []board.Square{}, false},
+		{"P h3 b", *brdBlack, board.Sq(23), []board.Square{}, false},
+
+		{"b b4 w", *brdWhite, board.Sq(25), []board.Square{}, false},
+		{"b b4 b", *brdBlack, board.Sq(25), []board.Square{16, 18, 11, 32}, false},
+
+		{"P g4 w", *brdWhite, board.Sq(30), []board.Square{}, false},
+		{"P g4 b", *brdBlack, board.Sq(30), []board.Square{}, false},
+
+		{"q h4 w", *brdWhite, board.Sq(31), []board.Square{}, false},
+		{"q h4 b", *brdBlack, board.Sq(31), []board.Square{23, 39, 47, 55, 63, 30, 22, 13}, false},
+
+		{"k c5 w", *brdWhite, board.Sq(34), []board.Square{}, false},
+		{"k c5 b", *brdBlack, board.Sq(34), []board.Square{41}, false},
+
+		{"P f5 w", *brdWhite, board.Sq(37), []board.Square{45, 46}, false},
+		{"P f5 b", *brdBlack, board.Sq(37), []board.Square{}, false},
+
+		{"p g5 w", *brdWhite, board.Sq(38), []board.Square{}, false},
+		{"p g5 b", *brdBlack, board.Sq(38), []board.Square{}, false},
+
+		{"n c6 w", *brdWhite, board.Sq(42), []board.Square{}, false},
+		{"n c6 b", *brdBlack, board.Sq(42), []board.Square{32, 27, 36, 52, 57}, false},
+
+		{"r d6 w", *brdWhite, board.Sq(43), []board.Square{}, false},
+		{"r d6 b", *brdBlack, board.Sq(43), []board.Square{19, 27, 35, 51, 44, 45, 46, 47}, false},
+
+		{"p a7 w", *brdWhite, board.Sq(48), []board.Square{}, false},
+		{"p a7 b", *brdBlack, board.Sq(48), []board.Square{40, 32}, false},
+
+		{"P e7 w", *brdWhite, board.Sq(52), []board.Square{59, 60}, false},
+		{"P e7 b", *brdBlack, board.Sq(52), []board.Square{}, false},
+
+		{"B f7 w", *brdWhite, board.Sq(53), []board.Square{60, 62, 46, 39, 44, 35, 26, 17}, false},
+		{"B f7 b", *brdBlack, board.Sq(53), []board.Square{}, false},
+
+		{"r d8 w", *brdWhite, board.Sq(59), []board.Square{}, false},
+		{"r d8 b", *brdBlack, board.Sq(59), []board.Square{51, 56, 57, 58, 60, 61, 62, 63}, false},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			res, err := GetAvailableMoves(tc.brd, tc.from)
+			if err != nil && !tc.isErr {
+				t.Fatalf("want nil, got err: %v", err)
+			}
+			if err == nil && tc.isErr {
+				t.Fatalf("want err, got nil")
+			}
+
+			fail := func() { t.Fatalf("want %d, got %d", tc.res, res) }
+			if len(res) != len(tc.res) {
+				fail()
+			}
+
+			sort.Slice(res, func(i, j int) bool { return int(res[i]) < int(res[j]) })
+			sort.Slice(tc.res, func(i, j int) bool { return int(tc.res[i]) < int(tc.res[j]) })
+
+			for i := range res {
+				if res[i] != tc.res[i] {
+					fail()
+				}
+			}
+		})
+	}
+}
