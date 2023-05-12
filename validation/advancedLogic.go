@@ -15,11 +15,11 @@ import (
 // IsValid валидирует ход по позиции на доске b, клетке откуда делается ход from, клетке куда делается ход to и новой
 // фигуре (в случае проведения пешки) promoteTo. Возвращает флаг валидации (true - ход валиден, false - ход невалиден).
 // При некорректных входных данных возвращает флаг false и ошибку. Некорректными входными данными считаются:
-// 1. доска b невалидна (errBoardNotValid).
-// 2. клетка from или to невалидна (errSquareNotExist), либо клетки совпадают (errFromToSquaresNotDiffer).
-// 3. указанная фигура promoteTo невалидна: то есть не конь, не слон, не ладья, не ферзь (errPromoteToNotValid);
-// или неправильного цвета; или указана фигура для проведения пешки, хотя в клетке from находится не пешка.
-// 4. в клетке from нет фигуры (errNoPieceOnFromSquare) либо фигура неправильного цвета (errPieceWrongColor).
+// 1. доска b невалидна (ErrBoardNotValid).
+// 2. клетка from или to невалидна (ErrSquareNotExist), либо клетки совпадают (ErrFromToSquaresNotDiffer).
+// 3. в клетке from нет фигуры (ErrNoPieceOnFromSquare) либо фигура неправильного цвета (ErrPieceWrongColor).
+// 4. указанная фигура promoteTo невалидна: то есть не конь, не слон, не ладья, не ферзь; или неправильного цвета; или
+// указана фигура для проведения пешки, хотя в клетке from находится не пешка (ErrPromoteToNotValid).
 // Если входные данные корректны, возвращается nil.
 func IsValid(b board.Board, from, to board.Square, promoteTo board.Piece) (bool, error) {
 	err := isDataValid(b, from, to, promoteTo)
@@ -42,44 +42,43 @@ func IsValid(b board.Board, from, to board.Square, promoteTo board.Piece) (bool,
 	return true, nil
 }
 
-// TODO: add tests
 // isDataValid проверяет корректность входных данных и возвращает ошибку или nil. Некорректными входными данными считаются:
-// 1. доска b невалидна (errBoardNotValid).
-// 2. клетка from или to невалидна (errSquareNotExist), либо клетки совпадают (errFromToSquaresNotDiffer).
-// 3. в клетке from нет фигуры (errNoPieceOnFromSquare) либо фигура неправильного цвета (errPieceWrongColor).
-// 4. указанная фигура promoteTo невалидна: то есть не конь, не слон, не ладья, не ферзь (errPromoteToNotValid);
-// или неправильного цвета; или указана фигура для проведения пешки, хотя в клетке from находится не пешка.
+// 1. доска b невалидна (ErrBoardNotValid).
+// 2. клетка from или to невалидна (ErrSquareNotExist), либо клетки совпадают (ErrFromToSquaresNotDiffer).
+// 3. в клетке from нет фигуры (ErrNoPieceOnFromSquare) либо фигура неправильного цвета (ErrPieceWrongColor).
+// 4. указанная фигура promoteTo невалидна: то есть не конь, не слон, не ладья, не ферзь; или неправильного цвета; или
+// указана фигура для проведения пешки, хотя в клетке from находится не пешка (ErrPromoteToNotValid).
 func isDataValid(b board.Board, from, to board.Square, promoteTo board.Piece) error {
 	// 1. валидность доски b.
 	if !position.IsValid(b) {
-		return errBoardNotValid
+		return ErrBoardNotValid
 	}
 
 	// 2. валидность клеток from, to.
 	if !from.IsValid() || !to.IsValid() {
-		return errSquareNotExist
+		return ErrSquareNotExist
 	}
 	if int(from) == int(to) {
-		return errFromToSquaresNotDiffer
+		return ErrFromToSquaresNotDiffer
 	}
 
 	// 3a. если в клетке from фигуры нет, ход невалиден.
 	var piece board.Piece
 	piece, _ = b.Get(from)
 	if piece == 0 {
-		return errNoPieceOnFromSquare
+		return ErrNoPieceOnFromSquare
 	}
 
 	// 3b. если фигура не принадлежит той стороне, чья очередь хода, ход невалиден.
 	isOk := checkPieceColor(b, piece)
 	if !isOk {
-		return errPieceWrongColor
+		return ErrPieceWrongColor
 	}
 
 	// 4. указанная фигура promoteTo невалидна.
 	isOk = checkPawnPromotion(piece, newSquare(int8(to)), promoteTo)
 	if !isOk {
-		return errPromoteToNotValid
+		return ErrPromoteToNotValid
 	}
 
 	return nil
@@ -90,18 +89,18 @@ func isDataValid(b board.Board, from, to board.Square, promoteTo board.Piece) er
 // Пустой срез означает, что либо клетка пустая, либо на клетке стоит фигура, которой не принадлежит ход, либо на клетке
 // стоит фигура правильного цвета, для которой нет разрешенных ходов.
 // Если в входные данные некорректны, возвращается ошибка, иначе возвращается nil. Некорректными считаются данные:
-// 1. доска b невалидна (errBoardNotValid).
-// 2. клетка from невалидна (errSquareNotExist).
+// 1. доска b невалидна (ErrBoardNotValid).
+// 2. клетка from невалидна (ErrSquareNotExist).
 // TODO пересмотреть тесты, переделала.
 func GetAvailableMoves(b board.Board, from board.Square) ([]board.Square, error) {
 	// 1. валидность доски b.
 	if !position.IsValid(b) {
-		return nil, errBoardNotValid
+		return nil, ErrBoardNotValid
 	}
 
 	// 2. валидность клетки from.
 	if !from.IsValid() {
-		return nil, errSquareNotExist
+		return nil, ErrSquareNotExist
 	}
 
 	fromSquare := newSquare(int8(from))
@@ -131,7 +130,6 @@ func GetAvailableMoves(b board.Board, from board.Square) ([]board.Square, error)
 
 // validationLogic обрабывает общую логику валидации хода. Возвращает флаг валидации хода (true валиден, false нет).
 func validationLogic(b board.Board, from, to square, promoteTo board.Piece) bool {
-	// TODO: пересмотреть тесты. Логика проверки адекватности входных данных уехала в другое место (isDataValidForMove).
 	// Логика валидации хода пошагово.
 	piece, _ := b.Get(board.Sq(from.toInt()))
 
@@ -171,7 +169,6 @@ func validationLogic(b board.Board, from, to square, promoteTo board.Piece) bool
 	// валидирован, ошибок не ожидаем.
 	// Проверяем, что при новой позиции на доске не появился шах для собственного короля. На этом шаге также
 	// проверяем, что король не находится вплотную к чужому королю - такой ход будет запрещен.
-	// TODO: убрала ошибку, так как ее здесь быть не должно! Может это стрельнуть?
 	var newBoard board.Board
 	newBoard, _ = getNewBoard(b, piece, from, to, promoteTo)
 	king := "k"
@@ -189,7 +186,6 @@ func validationLogic(b board.Board, from, to square, promoteTo board.Piece) bool
 
 // checkPawnPromotion проверяет, что указанная пользователем новая фигура promoteTo корректна относительно хода (то есть
 // для проведения пешки указаны конь или слон или ладья или ферзь нужного цвета; а если пешка не проводится, указан 0).
-// TODO: add tests (now checks for color and piece type!)
 func checkPawnPromotion(piece board.Piece, to square, promoteTo board.Piece) (isOk bool) {
 	if piece == board.WhitePawn && to.row == 7 {
 		switch promoteTo {
