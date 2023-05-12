@@ -66,11 +66,6 @@ func (s1 *square) diffColumn(s2 square) int {
 	return s1.column - s2.column
 }
 
-// isEqual возвращает true, если клетки s1, s2 одинаковы; в противном случае false.
-func (s1 *square) isEqual(s2 square) bool {
-	return s1.toInt() == s2.toInt()
-}
-
 // toInt возвращает представление клетки s1 в формате int.
 func (s1 *square) toInt() int {
 	return s1.row*8 + s1.column

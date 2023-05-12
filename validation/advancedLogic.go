@@ -177,11 +177,8 @@ func validationLogic(b board.Board, from, to square, promoteTo board.Piece) bool
 	}
 	kingSquare, _ := getSquareByPiece(newBoard, king)
 	checks := position.ThreatsTo(board.Sq(kingSquare.toInt()), newBoard)
-	if len(checks) != 0 {
-		return false
-	}
 
-	return true
+	return len(checks) == 0
 }
 
 // checkPawnPromotion проверяет, что указанная пользователем новая фигура promoteTo корректна относительно хода (то есть
