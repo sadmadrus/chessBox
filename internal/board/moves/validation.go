@@ -35,11 +35,7 @@ func IsValid(b board.Board, from, to board.Square, promoteTo board.Piece) (bool,
 		return false, err
 	}
 
-	if !ok {
-		return false, nil
-	}
-
-	return true, nil
+	return ok, nil
 }
 
 // GetAvailableMoves по текущей позиции на доске b и клетке, с которой делается ход from определяет срез допустимых

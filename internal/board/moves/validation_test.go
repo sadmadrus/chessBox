@@ -7,6 +7,36 @@ import (
 	"github.com/sadmadrus/chessBox/internal/board"
 )
 
+func FuzzIsValid(f *testing.F) {
+	f.Add("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 5 6", 5, 7, 0)
+	f.Add("rnbq1bnr/ppP5/3p4/4pB1p/3PPPp1/QP2k1P1/P6P/R3K1NR b KQ f3 5 6", 25, 50, 5)
+
+	f.Fuzz(func(t *testing.T, brd string, from, to, promoteTo int) {
+		b, _ := board.FromFEN(brd)
+		if b != nil { // TODO: убрать это (добавить в валидацию доски проверку на nil?)
+			res, err := IsValid(*b, board.Sq(from), board.Sq(to), board.Piece(promoteTo))
+			if res && err != nil {
+				t.Fatalf("res expected false when error is not nil, got false with err: %v", err)
+			}
+		}
+	})
+}
+
+func FuzzGetAvailableMoves(f *testing.F) {
+	f.Add("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 5 6", 5)
+	f.Add("rnbq1bnr/ppP5/3p4/4pB1p/3PPPp1/QP2k1P1/P6P/R3K1NR b KQ f3 5 6", 25)
+
+	f.Fuzz(func(t *testing.T, brd string, from int) {
+		b, _ := board.FromFEN(brd)
+		if b != nil { // TODO: убрать это (добавить в валидацию доски проверку на nil?)
+			res, err := GetAvailableMoves(*b, board.Sq(from))
+			if len(res) != 0 && err != nil {
+				t.Fatalf("expected empty slice when error is not nil, got res: %v; got err: %v", res, err)
+			}
+		}
+	})
+}
+
 func TestIsValid(t *testing.T) {
 	var (
 		startBrd1WhiteFEN = "rnbq1bnr/ppP5/3p4/4pBBp/3PPPp1/QP2k1P1/P6P/R3K1NR w KQ - 5 6"
