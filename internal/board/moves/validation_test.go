@@ -13,7 +13,7 @@ func FuzzIsValid(f *testing.F) {
 
 	f.Fuzz(func(t *testing.T, brd string, from, to, promoteTo int) {
 		b, _ := board.FromFEN(brd)
-		if b != nil { // TODO: убрать это (добавить в валидацию доски проверку на nil?)
+		if b != nil {
 			res, err := IsValid(*b, board.Sq(from), board.Sq(to), board.Piece(promoteTo))
 			if res && err != nil {
 				t.Fatalf("res expected false when error is not nil, got false with err: %v", err)
@@ -28,7 +28,7 @@ func FuzzGetAvailableMoves(f *testing.F) {
 
 	f.Fuzz(func(t *testing.T, brd string, from int) {
 		b, _ := board.FromFEN(brd)
-		if b != nil { // TODO: убрать это (добавить в валидацию доски проверку на nil?)
+		if b != nil {
 			res, err := GetAvailableMoves(*b, board.Sq(from))
 			if len(res) != 0 && err != nil {
 				t.Fatalf("expected empty slice when error is not nil, got res: %v; got err: %v", res, err)
