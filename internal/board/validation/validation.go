@@ -12,17 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Пакет position содержит логику, анализирующую позицию на доске.
-package position
+// Пакет validation содержит логику, анализирующую позицию на доске.
+package validation
 
 import "github.com/sadmadrus/chessBox/internal/board"
 
-// IsValid проверяет, могла ли позиция на доске легально возникнуть в ходе игры.
+// IsLegal проверяет, могла ли позиция на доске легально возникнуть в ходе игры.
 //
 // Проверки не доскональные, ряд нелегальных позиций могут быть определены как
 // легальные. А вот наоборот (чтоб легальная позиция была определена как
 // нелегальная) случиться не должно.
-func IsValid(b board.Board) bool {
+func IsLegal(b board.Board) bool {
 	bKing := board.Square(-1)
 	wKing := board.Square(-1)
 	var bPawns, wPawns []board.Square
