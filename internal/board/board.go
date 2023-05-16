@@ -452,7 +452,7 @@ func (s Square) IsValid() bool {
 	return s >= 0 && s <= 63
 }
 
-// isBlack возвращает true, если поле чёрное.
+// IsBlack возвращает true, если поле чёрное.
 func (s Square) IsBlack() bool {
 	return (s/8+s%8)%2 == 0
 }
