@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/sadmadrus/chessBox/internal/board"
+	"github.com/sadmadrus/chessBox/internal/board/moves"
 	"github.com/sadmadrus/chessBox/internal/board/position"
-	"github.com/sadmadrus/chessBox/validation"
 )
 
 const gameRequestTimeout = time.Second * 3
@@ -216,9 +216,12 @@ func (g *game) move(m Move) error {
 		promoteTo = p.toPiece()
 	}
 
-	err := validation.CanMove(g.board, m.FromSquare(), m.ToSquare(), promoteTo)
+	ok, err := moves.IsValid(g.board, m.FromSquare(), m.ToSquare(), promoteTo)
 	if err != nil {
 		return err
+	}
+	if !ok {
+		return ErrInvalidMove
 	}
 
 	switch v := m.(type) {
