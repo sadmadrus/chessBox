@@ -1,4 +1,4 @@
-package validation
+package moves
 
 import (
 	"fmt"
@@ -10,30 +10,26 @@ import (
 // Кастомные ошибки валидации
 
 var (
-	errPieceNotExist                 = fmt.Errorf("piece does not exist")
-	errNewpieceNotValid              = fmt.Errorf("newpiece is not valid")
-	errInvalidHttpMethod             = fmt.Errorf("method is not supported")
-	errFromToSquaresNotDiffer        = fmt.Errorf("from and to squares are not different")
+	ErrBoardNotValid          = fmt.Errorf("board has no valid position")
+	ErrSquareNotExist         = fmt.Errorf("square does not exist")
+	ErrPromoteToNotValid      = fmt.Errorf("promoteTo is not valid")
+	ErrFromToSquaresNotDiffer = fmt.Errorf("from and to squares are not different")
+	ErrNoPieceOnFromSquare    = fmt.Errorf("no piece on from square")
+	ErrPieceWrongColor        = fmt.Errorf("piece has wrong color")
+
 	errPawnMoveNotValid              = fmt.Errorf("pawn move is not valid")
 	errKnightMoveNotValid            = fmt.Errorf("knight move is not valid")
 	errBishopMoveNotValid            = fmt.Errorf("bishop move is not valid")
 	errRookMoveNotValid              = fmt.Errorf("rook move is not valid")
 	errQueenMoveNotValid             = fmt.Errorf("queen move is not valid")
 	errKingMoveNotValid              = fmt.Errorf("king move is not valid")
-	errNoPieceOnFromSquare           = fmt.Errorf("no piece on from square")
-	errPieceWrongColor               = fmt.Errorf("piece has wrong color")
 	errClashWithPieceOfSameColor     = fmt.Errorf("clash with piece of the same color")
 	errClashWithKing                 = fmt.Errorf("clash with king")
 	errClashWithPawn                 = fmt.Errorf("pawn can not clash with another piece when moving vertically")
-	errNewpieceExist                 = fmt.Errorf("newpiece exists with no pawn promotion")
-	errNewpieceNotExist              = fmt.Errorf("newpiece does not exist but pawn promotion required")
 	errPieceNotExistOnBoard          = fmt.Errorf("piece does not exist on board")
-	errKingChecked                   = fmt.Errorf("king checked after move")
 	errCastlingThroughCheckedSquare  = fmt.Errorf("castling is not valid through square under check")
 	errCastlingThroughOccupiedSquare = fmt.Errorf("castling is not valid through square occupied by other pieces")
 	errPiecesStayInTheWay            = fmt.Errorf("piece or pieces stay in the way of figure move")
-	errPiecetypeNotExist             = fmt.Errorf("piece type does not exist")
-	errBoardNotValid                 = fmt.Errorf("board has no valid position")
 )
 
 // Структуры клетки
@@ -68,11 +64,6 @@ func (s1 *square) diffRow(s2 square) int {
 // diffColumn дает разницу в колонках между клетками s1 и s2.
 func (s1 *square) diffColumn(s2 square) int {
 	return s1.column - s2.column
-}
-
-// isEqual возвращает true, если клетки s1, s2 одинаковы; в противном случае false.
-func (s1 *square) isEqual(s2 square) bool {
-	return s1.toInt() == s2.toInt()
 }
 
 // toInt возвращает представление клетки s1 в формате int.
