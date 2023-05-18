@@ -64,7 +64,7 @@ func TestIsValid(t *testing.T) {
 	}
 }
 
-func TestThreatsTo(t *testing.T) {
+func TestCheckedBy(t *testing.T) {
 	tests := []struct {
 		name string
 		fen  string
@@ -115,7 +115,7 @@ func TestThreatsTo(t *testing.T) {
 			} else {
 				s = board.Sq(tc.sq.(string))
 			}
-			got := validation.ThreatsTo(s, *b)
+			got := validation.CheckedBy(s, *b)
 			fail := func() { t.Fatalf("want %v\ngot%v", tc.want, got) }
 			if len(got) != len(tc.want) {
 				fail()
