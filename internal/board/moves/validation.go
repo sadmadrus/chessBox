@@ -170,7 +170,7 @@ func validationLogic(b board.Board, from, to square, promoteTo board.Piece) bool
 		king = "K"
 	}
 	kingSquare, _ := getSquareByPiece(newBoard, king)
-	checks := validation.ThreatsTo(board.Sq(kingSquare.toInt()), newBoard)
+	checks := validation.CheckedBy(board.Sq(kingSquare.toInt()), newBoard)
 
 	return len(checks) == 0
 }
@@ -495,5 +495,5 @@ func isSquareChecked(b board.Board, s board.Square, weAreWhite bool) bool {
 		p = board.WhitePawn
 	}
 	_ = b.Put(s, p)
-	return len(validation.ThreatsTo(s, b)) > 0
+	return len(validation.CheckedBy(s, b)) > 0
 }

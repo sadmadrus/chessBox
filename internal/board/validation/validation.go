@@ -74,10 +74,10 @@ func IsLegal(b board.Board) bool {
 	if !b.NextToMove() {
 		thatKing, thisKing = thisKing, thatKing
 	}
-	if len(ThreatsTo(thatKing, b)) > 0 {
+	if len(CheckedBy(thatKing, b)) > 0 {
 		return false
 	}
-	if !checkCombinationLegal(b, ThreatsTo(thisKing, b)) {
+	if !checkCombinationLegal(b, CheckedBy(thisKing, b)) {
 		return false
 	}
 
@@ -100,10 +100,10 @@ func IsLegal(b board.Board) bool {
 	return true
 }
 
-// ThreatsTo возвращает поля, на которых стоят фигуры, держащие данное поле «под
+// CheckedBy возвращает поля, на которых стоят фигуры, держащие данное поле «под
 // боем». Если поле не пустое, в расчёт берутся только фигуры противоположного
 // цвета.
-func ThreatsTo(s board.Square, b board.Board) []board.Square {
+func CheckedBy(s board.Square, b board.Board) []board.Square {
 	if s < 0 || s > 63 {
 		return nil
 	}
