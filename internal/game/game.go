@@ -11,7 +11,7 @@ import (
 
 	"github.com/sadmadrus/chessBox/internal/board"
 	"github.com/sadmadrus/chessBox/internal/board/moves"
-	"github.com/sadmadrus/chessBox/internal/board/position"
+	"github.com/sadmadrus/chessBox/internal/board/validation"
 )
 
 const gameRequestTimeout = time.Second * 3
@@ -112,7 +112,7 @@ func start(manager, white, black string, g *game) (ID, error) {
 
 	if g == nil {
 		g = &game{board: *board.Classical()}
-	} else if !position.IsValid(g.board) {
+	} else if !validation.IsLegal(g.board) {
 		return "", ErrInvalidPosition
 	}
 	g.id = gameId
