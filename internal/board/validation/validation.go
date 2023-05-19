@@ -12,17 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Пакет position содержит логику, анализирующую позицию на доске.
-package position
+// Пакет validation содержит логику, анализирующую позицию на доске.
+package validation
 
 import "github.com/sadmadrus/chessBox/internal/board"
 
-// IsValid проверяет, могла ли позиция на доске легально возникнуть в ходе игры.
+// IsLegal проверяет, могла ли позиция на доске легально возникнуть в ходе игры.
 //
 // Проверки не доскональные, ряд нелегальных позиций могут быть определены как
 // легальные. А вот наоборот (чтоб легальная позиция была определена как
 // нелегальная) случиться не должно.
-func IsValid(b board.Board) bool {
+func IsLegal(b board.Board) bool {
 	bKing := board.Square(-1)
 	wKing := board.Square(-1)
 	var bPawns, wPawns []board.Square
@@ -74,10 +74,10 @@ func IsValid(b board.Board) bool {
 	if !b.NextToMove() {
 		thatKing, thisKing = thisKing, thatKing
 	}
-	if len(ThreatsTo(thatKing, b)) > 0 {
+	if len(CheckedBy(thatKing, b)) > 0 {
 		return false
 	}
-	if !checkCombinationLegal(b, ThreatsTo(thisKing, b)) {
+	if !checkCombinationLegal(b, CheckedBy(thisKing, b)) {
 		return false
 	}
 
@@ -100,10 +100,10 @@ func IsValid(b board.Board) bool {
 	return true
 }
 
-// ThreatsTo возвращает поля, на которых стоят фигуры, держащие данное поле «под
+// CheckedBy возвращает поля, на которых стоят фигуры, держащие данное поле «под
 // боем». Если поле не пустое, в расчёт берутся только фигуры противоположного
 // цвета.
-func ThreatsTo(s board.Square, b board.Board) []board.Square {
+func CheckedBy(s board.Square, b board.Board) []board.Square {
 	if s < 0 || s > 63 {
 		return nil
 	}

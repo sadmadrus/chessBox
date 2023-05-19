@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/sadmadrus/chessBox/internal/board"
-	"github.com/sadmadrus/chessBox/internal/board/position"
+	"github.com/sadmadrus/chessBox/internal/board/validation"
 )
 
 // IsValid валидирует ход по позиции на доске b, клетке откуда делается ход from, клетке куда делается ход to и новой
@@ -47,7 +47,7 @@ func IsValid(b board.Board, from, to board.Square, promoteTo board.Piece) (bool,
 // 2. клетка from невалидна (ErrSquareNotExist).
 func GetAvailableMoves(b board.Board, from board.Square) ([]board.Square, error) {
 	// 1. валидность доски b.
-	if !position.IsValid(b) {
+	if !validation.IsLegal(b) {
 		return nil, ErrBoardNotValid
 	}
 
@@ -88,7 +88,7 @@ func GetAvailableMoves(b board.Board, from board.Square) ([]board.Square, error)
 // указана фигура для проведения пешки, хотя в клетке from находится не пешка (ErrPromoteToNotValid).
 func isDataValid(b board.Board, from, to board.Square, promoteTo board.Piece) error {
 	// 1. валидность доски b.
-	if !position.IsValid(b) {
+	if !validation.IsLegal(b) {
 		return ErrBoardNotValid
 	}
 
@@ -170,7 +170,7 @@ func validationLogic(b board.Board, from, to square, promoteTo board.Piece) bool
 		king = "K"
 	}
 	kingSquare, _ := getSquareByPiece(newBoard, king)
-	checks := position.ThreatsTo(board.Sq(kingSquare.toInt()), newBoard)
+	checks := validation.CheckedBy(board.Sq(kingSquare.toInt()), newBoard)
 
 	return len(checks) == 0
 }
@@ -495,5 +495,5 @@ func isSquareChecked(b board.Board, s board.Square, weAreWhite bool) bool {
 		p = board.WhitePawn
 	}
 	_ = b.Put(s, p)
-	return len(position.ThreatsTo(s, b)) > 0
+	return len(validation.CheckedBy(s, b)) > 0
 }

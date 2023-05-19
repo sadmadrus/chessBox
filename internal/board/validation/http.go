@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package position
+package validation
 
 import (
 	"net/http"
@@ -33,7 +33,7 @@ func Validator(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if IsValid(*b) {
+	if IsLegal(*b) {
 		w.WriteHeader(http.StatusOK)
 		return
 	}

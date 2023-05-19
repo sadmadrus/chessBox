@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package position_test
+package validation_test
 
 import (
 	"sort"
 	"testing"
 
 	"github.com/sadmadrus/chessBox/internal/board"
-	"github.com/sadmadrus/chessBox/internal/board/position"
+	"github.com/sadmadrus/chessBox/internal/board/validation"
 )
 
 func TestIsValid(t *testing.T) {
@@ -56,7 +56,7 @@ func TestIsValid(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			got := position.IsValid(*b)
+			got := validation.IsLegal(*b)
 			if got != tc.want {
 				t.Fatalf("want %v, got %v", tc.want, got)
 			}
@@ -64,7 +64,7 @@ func TestIsValid(t *testing.T) {
 	}
 }
 
-func TestThreatsTo(t *testing.T) {
+func TestCheckedBy(t *testing.T) {
 	tests := []struct {
 		name string
 		fen  string
@@ -115,7 +115,7 @@ func TestThreatsTo(t *testing.T) {
 			} else {
 				s = board.Sq(tc.sq.(string))
 			}
-			got := position.ThreatsTo(s, *b)
+			got := validation.CheckedBy(s, *b)
 			fail := func() { t.Fatalf("want %v\ngot%v", tc.want, got) }
 			if len(got) != len(tc.want) {
 				fail()
