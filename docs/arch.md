@@ -31,13 +31,13 @@ flowchart TD
         о каждой
         конкретной игре`")]
         LogStorage[("`Журналы
-        _(ограниченный срок хранения)_`")]
+        (ограниченный срок хранения)`")]
     end
         Logs{{Сервис журналирования}}
     Gate <--> Auth 
     GS <--> Gate
     GS <--> User <--> Auth
-    GS -- 1-month lifetime --> Logs
+    GS --> Logs
     Gate <--> Game --> Logs
     Client o--o Gate
     GS <--> Game
