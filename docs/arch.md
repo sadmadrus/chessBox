@@ -10,21 +10,30 @@ flowchart TD
     Gate[Гейт]
     Auth[Аутентификация]
     GS[Менеджер игровых сессий]
-    DB[(Сервис БД)]
-    Logs{{Сервис журналирования}}
     subgraph ChessGame[Игровая сессия]
         Game[Механизм игры]
         MoveValidator[Валидация ходов]
         Position[Проверка позиции]
         Timing[Учёт времени]
         Game -.- Timing
+        Game -.- MoveValidator -.- Position -.- Game
+    end
+    subgraph Repository[Хранилище]
+        subgraph SQL[SQL]
+            User[Информация о пользователях]
+            GamesInfo[Информация о всех играх]
+        end
+        GameDetail[Информация о каждой конкретной игре]
+        Logs{{Сервис журналирования}}
     end
     Client o--o Gate <--> Auth 
     GS <--> Gate
-    GS <--> DB <--> Auth
-    GS --> Logs
+    GS <--> User <--> Auth
+    GS -- 1-month lifetime --> Logs
     Gate <--> Game --> Logs
-    GS <--> Game -.- MoveValidator -.- Position -.- Game
+    GS <--> Game
+    GS --> GamesInfo
+    GS --> GameDetail
 ```
 
 На этой схеме сплошными стрелками показаны доверенные соединения, т.е. такие, в которых получатель уверен, что отправитель — тот, за кого он себя выдаёт, и что сообщение не было подменено по дороге. «Стрелка» с круглыми концами — полнодуплексное синхронное соединение (websocket или аналогичное), обычная стрелка — HTTP.
