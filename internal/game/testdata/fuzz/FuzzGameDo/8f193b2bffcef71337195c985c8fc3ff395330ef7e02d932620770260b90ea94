@@ -1,6 +1,0 @@
-go test fuzz v1
-string("r1b2rk1/pp1n1pbp/2pR1np1/4p3/2P1P3/2N1BN1P/PP3PP1/2K2B1R b - - 0 12")
-int(0)
-int(2)
-int(1)
-string("gh8h8")

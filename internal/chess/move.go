@@ -1,13 +1,8 @@
-package game
+package chess
 
 import (
 	"github.com/sadmadrus/chessBox/internal/board"
 )
-
-// fullMove содержит информацию о ходе.
-type fullMove struct {
-	white, black Move
-}
 
 // Move содержит информацию о ходе одного игрока.
 type Move interface {

@@ -8,7 +8,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/sadmadrus/chessBox/cmd/game/gameserver"
+	"github.com/sadmadrus/chessBox/internal/gameserver"
 )
 
 var (
@@ -17,7 +17,8 @@ var (
 )
 
 func main() {
-	http.HandleFunc("/", gameserver.RootHandler)
+	stor := gameserver.NewMemoryStorage() // TODO: use a proper storage
+	http.HandleFunc("/", gameserver.HandleRoot(stor))
 	s := http.Server{
 		Addr: address,
 	}
