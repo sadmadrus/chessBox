@@ -88,7 +88,7 @@ func TestForfeit(t *testing.T) {
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			g := chess.Game{StartingPosition: *board.Classical()}
-			g.Forfeit(tc.player)
+			_ = g.Forfeit(tc.player)
 			if g.State != tc.want {
 				t.Fatalf("want %v, got %v", tc.want, g.State)
 			}
